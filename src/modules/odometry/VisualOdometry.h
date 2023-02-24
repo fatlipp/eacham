@@ -53,9 +53,11 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data, render::Render &re
 
     if (frame.isValid())
     {
+        Eigen::Matrix4f odom;
+
         if (frames.size() > 0)
         {
-            motionEstimator.Estimate(frame, frames.back());
+            odom = motionEstimator.Estimate(frame, frames.back());
         }
 
         frames.push_back(frame);
@@ -72,7 +74,7 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data, render::Render &re
                             0, -1, 0,
                             0, 0, 1;
 
-            for (const auto& p : frame.GetPoints())
+            for (const auto& p : frame.GetPoints3d())
             {
                 cv::Mat_<float> src(3/*rows*/,1 /* cols */); 
                 src(0,0)=p.x; 
@@ -83,6 +85,8 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data, render::Render &re
                 renderer.AddPoint({mm.at<float>(0, 0), mm.at<float>(1, 0), mm.at<float>(2, 0)});
             }
         }
+
+        return odom;
     }
 
     return Eigen::Matrix4f::Identity();

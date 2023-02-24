@@ -12,20 +12,7 @@ public:
     MotionEstimator();
     ~MotionEstimator();
 
-    void Estimate(const Frame& frame1, const Frame& frame2);
+    Eigen::Matrix4f Estimate(const Frame& frame1, const Frame& frame2);
 };
-
-MotionEstimator::MotionEstimator()
-{
-}
-
-MotionEstimator::~MotionEstimator()
-{
-}
-
-void MotionEstimator::Estimate(const Frame& frame1, const Frame& frame2)
-{
-    
-}
     
 }

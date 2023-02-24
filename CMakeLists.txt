@@ -21,6 +21,8 @@ message("EIGEN3_INCLUDE_DIR = ${EIGEN3_INCLUDE_DIR}")
 
 set(SOURCE
     src/modules/odometry/VisualOdometry.cpp
+    src/modules/odometry/MotionEstimator.cpp
+    
     src/modules/odometry/features/FeatureExtractor.cpp
     src/modules/odometry/frame/FrameCreator.cpp
 )

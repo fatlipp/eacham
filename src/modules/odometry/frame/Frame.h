@@ -23,7 +23,24 @@ public:
         return position;
     }
 
-    std::vector<cv::Point3f> GetPoints() const
+    const std::vector<cv::KeyPoint>& GetFeatures() const
+    {
+        return keypoints;
+    }
+
+    cv::Mat GetDescriptors() const
+    {
+        cv::Mat result(descriptors.size(), 32, descriptors[0].type());
+
+        for (int i = 0; i < descriptors.size(); ++i)
+        {
+            result.row(i) = descriptors[i];
+        }
+
+        return result;
+    }
+
+    const std::vector<cv::Point3f>& GetPoints3d() const
     {
         return points;
     }
