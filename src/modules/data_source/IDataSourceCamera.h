@@ -9,17 +9,19 @@ namespace data_source
 {
 
 template<typename T>
-class IDataSource
+class IDataSourceCamera
 {
 public:
     using ReturnType = T;
 
 public:
-    IDataSource() = default;
+    IDataSourceCamera() = default;
 
-    virtual ~IDataSource() = default;
+    virtual ~IDataSourceCamera() = default;
 
     virtual T GetNext() const = 0;
+
+    virtual cv::Mat GetParameters() const = 0;
 
 private:
     const std::string sourcePath;

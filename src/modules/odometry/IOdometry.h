@@ -12,7 +12,7 @@ class IOdometry
 public:
     ~IOdometry() = default;
     
-    virtual Eigen::Matrix4f GetOdometry(const T &data) = 0;
+    virtual Eigen::Matrix4f GetOdometry(const T &data) {};
 };
 
 } // namespace odometry

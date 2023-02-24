@@ -7,7 +7,7 @@ class FeatureExtractor
 public:
     FeatureExtractor()
     {
-        this->detector = cv::ORB::create(1000);
+        this->detector = cv::ORB::create(1500);
     }
 
     std::tuple<std::vector<cv::KeyPoint>, cv::Mat> GetFeatures(const cv::Mat &image);

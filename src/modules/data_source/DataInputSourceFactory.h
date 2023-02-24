@@ -9,12 +9,13 @@
 
 namespace data_source
 {
-std::unique_ptr<IDataSource<stereodata_t>> CreateStereo(const DataSourceType& dataSourceType, const std::string &path)
+template<typename T>
+std::unique_ptr<IDataSourceCamera<T>> CreateStereo(const DataSourceType& dataSourceType, const std::string &path)
 {
     switch (dataSourceType)
     {
     case DataSourceType::DATASET:
-        return std::make_unique<DataSourceKittyStereo<stereodata_t>>(path);
+        return std::make_unique<DataSourceKittyStereo<T>>(path);
     }
 
     return {};
