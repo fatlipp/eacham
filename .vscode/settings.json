@@ -64,6 +64,7 @@
         "variant": "cpp",
         "core": "cpp",
         "*.ipp": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "geometry": "cpp"
     }
 }

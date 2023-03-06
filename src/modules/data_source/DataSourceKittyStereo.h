@@ -19,8 +19,9 @@ public:
     DataSourceKittyStereo(const std::string &sourcePath) 
         : folderLeft(sourcePath + "/dataset/sequences/00/image_0/")
         , folderRight(sourcePath + "/dataset/sequences/00/image_1/")
+        , timestampFolder(sourcePath + "/dataset/sequences/00/times.txt")
     {
-        // this->cameraMatrix = Eigen::Matrix4f::Identity();
+        timeFileStream.open(timestampFolder, std::ios::in);
 
         std::ifstream file;
         file.open(sourcePath + "/dataset/sequences/00/calib.txt", std::ios::in);
@@ -54,25 +55,10 @@ public:
                         // this->camera1Matrix(row, col) = value1;
                         projMat.at<float>(row, col) = value1;
                     }
-                    // else if (name.find("P1:") == 0)
-                    // {
-                    //     this->camera2Matrix(row, col) = value1;
-                    //     proj1.at<float>(row, col) = value1;
-                    // }
-                    // else if (name.find("P2:") == 0)
-                    // {
-                    //     this->camera3Matrix(row, col) = value1;
-                    // }
-                    // else if (name.find("P3:") == 0)
-                    // {
-                    //     this->camera4Matrix(row, col) = value1;
-                    // }
 
                     ++count;
                 }
             }
-
-            std::cout << "projMat:\n" << projMat << std::endl;
 
             cv::Mat proj;
             cv::Mat rot;
@@ -88,7 +74,7 @@ public:
             this->cameraMatrix.at<float>(0, 1) = projMat.at<float>(1, 1);
             this->cameraMatrix.at<float>(0, 2) = projMat.at<float>(0, 2);
             this->cameraMatrix.at<float>(0, 3) = projMat.at<float>(1, 2);
-            this->cameraMatrix.at<float>(0, 4) = (trans.at<float>(0) * projMat.at<float>(0, 0));
+            this->cameraMatrix.at<float>(0, 4) = (-projMat.at<float>(0, 3));
             // this->cameraMatrix.at<float>(0, 4) = (trans.at<float>(0));
 
             std::cout << "this->cameraMatrix: " << this->cameraMatrix << std::endl;
@@ -97,14 +83,26 @@ public:
         }
     }
 
+    ~DataSourceKittyStereo()
+    {
+        if (timeFileStream.is_open())
+        {
+            timeFileStream.close();
+        }
+    }
+
     T GetNext() const override;
 
     cv::Mat GetParameters() const override;
+    cv::Mat GetDistortion() const override;
 
 private:
     const std::string folderLeft;
     const std::string folderRight;
-    cv::Mat cameraMatrix;
+    const std::string timestampFolder;
+    mutable std::ifstream timeFileStream;
+
+    cv::Mat_<float> cameraMatrix;
 
     mutable unsigned id;
 };
@@ -142,9 +140,18 @@ T DataSourceKittyStereo<T>::GetNext() const
 {
     const auto im1 = cv::imread(folderLeft  + format(id) + ".png");
     const auto im2 = cv::imread(folderRight + format(id) + ".png");
+    double timestamp = -1.0;
+
+    if (timeFileStream.is_open())
+    {
+        //std::string timestampStr;
+
+        timeFileStream >> timestamp;
+    }
+
     ++id;
 
-    return {im1, im2};
+    return {timestamp, im1.clone(), im2.clone()};
 }
 
 template<typename T>
@@ -152,5 +159,15 @@ cv::Mat DataSourceKittyStereo<T>::GetParameters() const
 {
     return cameraMatrix;
 }
+
+template<typename T>
+cv::Mat DataSourceKittyStereo<T>::GetDistortion() const
+{
+    // cv::Mat dist(1, 5);
+    // dist.zero();
+    return cv::Mat::zeros(1, 5, CV_32F);
+}
+
+
 
 }

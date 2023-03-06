@@ -22,6 +22,7 @@ public:
     virtual T GetNext() const = 0;
 
     virtual cv::Mat GetParameters() const = 0;
+    virtual cv::Mat GetDistortion() const = 0;
 
 private:
     const std::string sourcePath;

@@ -14,10 +14,8 @@ message("Pangolin_LIBRARIES = ${Pangolin_LIBRARIES}")
 find_package(Eigen3 REQUIRED)
 message("EIGEN3_INCLUDE_DIR = ${EIGEN3_INCLUDE_DIR}")
 
-# // lib
-# set(HEADER
-#     src/modules
-# )
+find_package(PCL REQUIRED)
+message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
 set(SOURCE
     src/modules/odometry/VisualOdometry.cpp
@@ -25,6 +23,8 @@ set(SOURCE
     
     src/modules/odometry/features/FeatureExtractor.cpp
     src/modules/odometry/frame/FrameCreator.cpp
+
+    src/modules/odometry/optimization/LocalFramesOptimizer.cpp
 )
 
 # add_library(eacham_lib INTERFACE)
@@ -40,9 +40,7 @@ set(SOURCE
 #         # where top-level project will look for the library's public headers
 #         ${OpenCV_INCLUDE_DIRS}
 # )
-
 # target_link_libraries(eacham_lib ${OpenCV_LIBRARIES})
-
 
 
 # // exe
@@ -63,4 +61,5 @@ target_include_directories(read_dataset
 target_link_libraries(read_dataset 
     ${OpenCV_LIBRARIES}
     ${Pangolin_LIBRARIES}
+    ${PCL_LIBRARIES}
     )

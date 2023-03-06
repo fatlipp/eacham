@@ -28,14 +28,14 @@ public:
 
         // Define Projection and initial ModelView matrix
         pangolin::OpenGlRenderState s_cam(
-            pangolin::ProjectionMatrix(640,480,420,420,320,240,0.2,100),
+            pangolin::ProjectionMatrix(1280, 720, 420, 420, 320, 240 ,0.01, 10000),
             pangolin::ModelViewLookAt(-2, 2, -2, 0,0,0, pangolin::AxisY)
         );
 
         // Create Interactive View in window
         pangolin::Handler3D handler(s_cam);
         pangolin::View& d_cam = pangolin::CreateDisplay()
-                .SetBounds(0.0, 1.0, 0.0, 1.0, -640.0f/480.0f)
+                .SetBounds(0.0, 1.0, 0.0, 1.0, -1280.0f/720.0f)
                 .SetHandler(&handler);
 
         pangolin::OpenGlMatrix Twc, Twr;
@@ -89,6 +89,14 @@ public:
                 }
                 glEnd();
 
+                glPointSize(15);
+                glBegin(GL_POINTS);
+                for (const auto& point : this->frames)
+                {
+                    glVertex3f(point.x(), point.y(), point.z());
+                }
+                glEnd();
+
                 // Swap frames and Process Events
                 pangolin::FinishFrame();
             }
@@ -101,6 +109,14 @@ public:
     {
         std::lock_guard<std::mutex> lock(mute);
         this->cameraPos = pos;
+
+    }
+
+    void AddFramePoint(const Eigen::Matrix4f &pos)
+    {
+        std::lock_guard<std::mutex> lock(mute);
+
+        this->frames.push_back({pos(0, 3), pos(1, 3), pos(2, 3)});
     }
 
     void AddPoint(const Eigen::Vector3f &pos)
@@ -131,6 +147,7 @@ private:
 
     Eigen::Matrix4f cameraPos;
     std::vector<Eigen::Vector3f> points;
+    std::vector<Eigen::Vector3f> frames;
 };
 
 }

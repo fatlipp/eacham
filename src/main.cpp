@@ -5,40 +5,33 @@
 #include "modules/performance/BlockTimer.h"
 #include "visualization/Render.h"
 
-
-int main()
-{    
-    auto dataSource = data_source::CreateStereo<stereodata_t>(data_source::DataSourceType::DATASET, "/home/blackdyce/Datasets/kitty/data_odometry_gray");
-    auto kittySOurce = dynamic_cast<data_source::DataSourceKittyStereo<stereodata_t>*>(dataSource.get());
-
-    auto visualOdometry = std::make_unique<odometry::VisualOdometry<stereodata_t>>(dataSource.get());
-    // visualOdometry->GetOdometry
+int main(int argc, char* argv[])
+{
+    if (argc > 1)
+    {
+    }
 
     render::Render renderer;
-    Eigen::Vector3f z(0.0f, 0.0f, 3.0f);
-    Eigen::Vector3f y(0.0f, 3.0f, 0.0f);
-    Eigen::Vector3f x(3.0f, 0.0f, 0.0f);
-    renderer.AddPoint(x);
-    renderer.AddPoint(y);
-    renderer.AddPoint(z);
-    const auto images1 = dataSource->GetNext();
-    visualOdometry->GetOdometry(images1, renderer);
+
+    // TODO: Config
+    const auto sourceType = data_source::DataSourceType::DATASET;
+    const std::string folder = "/home/blackdyce/Datasets/kitty/data_odometry_gray";
+    
+    auto dataSource = data_source::CreateStereo<stereodata_t>(sourceType, folder);
+    auto visualOdometry = std::make_unique<odometry::VisualOdometry<stereodata_t>>(dataSource.get());
 
     for (int i = 0; i < 1000; ++i)
     {
         const auto images = dataSource->GetNext();
-        cv::imshow("im1", std::get<0>(images));
 
         {
             performance::BlockTimer timer;
-            const auto odom = visualOdometry->GetOdometry(images, renderer);
-            // renderer.SetCameraPosition(odom);
+            const auto odom = visualOdometry->GetOdometry(images);
+            renderer.AddFramePoint(odom);
         }
 
-        cv::waitKey(10);
+        cv::waitKey(1);
     }
-
-    std::this_thread::sleep_for(std::chrono::seconds(25));
 
     renderer.Stop();
 

@@ -3,11 +3,16 @@
 #include <vector>
 #include <list>
 
+#include <pcl/common/eigen.h>
+#include <pcl/common/common.h>
+
 #include "IOdometry.h"
+#include "tools/Tools3d.h"
 #include "types/DataTypes.h"
 #include "data_source/IDataSourceCamera.h"
 #include "odometry/frame/FrameCreator.h"
 #include "odometry/frame/KeyFrame.h"
+#include "odometry/optimization/LocalFramesOptimizer.h"
 #include "../visualization/Render.h"
 #include "MotionEstimator.h"
 
@@ -20,6 +25,9 @@ public:
     VisualOdometry(const data_source::IDataSourceCamera<T>* camera)
         : camera(camera)
     {
+        this->motionEstimator = { camera->GetParameters(), camera->GetDistortion() };
+
+        this->transform = Eigen::Affine3f::Identity();
     }
 
     void SetCameraMatrix()
@@ -27,15 +35,16 @@ public:
         
     }
 
-    Eigen::Matrix4f GetOdometry(const T &data, render::Render &renderer) ;
+    Eigen::Matrix4f GetOdometry(const T &data) ;
 
 private:
     const data_source::IDataSourceCamera<T>* camera;
 
-
     std::list<Frame> frames;
     FrameCreator frameCreator;
     MotionEstimator motionEstimator;
+    LocalFramesOptimizer localOptimizer;
+    Eigen::Affine3f transform;
 };
 
 } // namespace odometry
@@ -45,9 +54,9 @@ namespace odometry
 {
 
 template<typename T>
-Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data, render::Render &renderer)
+Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
 {
-    renderer.ClearPoints();
+    std::cout << "--------------------------------------------------------------------" << std::endl;
 
     const Frame frame = frameCreator.Create(data, camera->GetParameters());
 
@@ -57,39 +66,31 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data, render::Render &re
 
         if (frames.size() > 0)
         {
-            odom = motionEstimator.Estimate(frame, frames.back());
+            const double dt = frame.timestamp - frames.back().timestamp;
+
+            Eigen::Matrix4f odom = motionEstimator.Estimate(frames.back(), frame);
+
+            this->transform.matrix() = this->transform.matrix() * odom;
         }
 
         frames.push_back(frame);
 
-        if (frames.size() > 10)
+        if (frames.size() > 5)
         {
             frames.pop_front();
-        }
 
-        // vis
-        {
-            cv::Mat_<float> worldToCam(3, 3);
-            worldToCam <<   -1, 0, 0,
-                            0, -1, 0,
-                            0, 0, 1;
+            // optimize
+            const bool isOptimized = localOptimizer.Optimize(frames);
 
-            for (const auto& p : frame.GetPoints3d())
+            if (isOptimized)
             {
-                cv::Mat_<float> src(3/*rows*/,1 /* cols */); 
-                src(0,0)=p.x; 
-                src(1,0)=p.y; 
-                src(2,0)=p.z; 
-
-                const cv::Mat mm = worldToCam * src;
-                renderer.AddPoint({mm.at<float>(0, 0), mm.at<float>(1, 0), mm.at<float>(2, 0)});
+                std::cout << "Optimized.." << std::endl;
             }
-        }
 
-        return odom;
+        }
     }
 
-    return Eigen::Matrix4f::Identity();
+    return this->transform.matrix();
 }
 
 }

@@ -8,62 +8,80 @@
 namespace odometry
 {
 
+struct PointData
+{
+    cv::KeyPoint keypoint;
+    cv::Point3f point3d;
+    cv::Mat descriptor;
+
+    PointData(const cv::KeyPoint &keypoint, const cv::Point3f &point3d, const cv::Mat &descriptor)
+        : keypoint(keypoint)
+        , point3d(point3d)
+        , descriptor(descriptor.clone())
+        {}
+};
+
 class Frame
 {
 public:
-    Frame(){}
+    Frame()
+        : timestamp(-1.0)
+    {}
     
-    Frame(const std::tuple<std::vector<cv::KeyPoint>, cv::Mat> &features)
-        : features(features)
+    Frame(const double timestamp, const cv::Mat &imageInp, const std::tuple<std::vector<cv::KeyPoint>, cv::Mat> &features)
+        : timestamp(timestamp)
     {
+        imageInp.copyTo(image);
     }
 
-    Eigen::Matrix4f GetPosition() const
+    cv::Mat GetImage() const
     {
-        return position;
+        return image.clone();
     }
 
-    const std::vector<cv::KeyPoint>& GetFeatures() const
+    cv::KeyPoint GetFeature(const int id) const
     {
-        return keypoints;
+        return pointsData[id].keypoint;
+    }
+
+    cv::Point3f GetPoint3d(const int id) const
+    {
+        return pointsData[id].point3d;
     }
 
     cv::Mat GetDescriptors() const
     {
-        cv::Mat result(descriptors.size(), 32, descriptors[0].type());
+        cv::Mat result = cv::Mat(pointsData.size(), 32, pointsData[0].descriptor.type());
 
-        for (int i = 0; i < descriptors.size(); ++i)
+        for (int i = 0; i < pointsData.size(); ++i)
         {
-            result.row(i) = descriptors[i];
+            pointsData[i].descriptor.copyTo(result.row(i));
         }
 
         return result;
     }
 
-    const std::vector<cv::Point3f>& GetPoints3d() const
-    {
-        return points;
-    }
-
     bool isValid() const
     {
-        return points.size() > 0;
+        return pointsData.size() > 0;
     }
 
-    void AddPoint(const int pointId, const cv::Point3f& point, const cv::KeyPoint& kp, const cv::Mat &descriptor)
+    size_t GetSize() const
     {
-        points.push_back(point);
-        keypoints.push_back(kp);
-        descriptors.push_back(descriptor);
+        return pointsData.size();
     }
 
+    void AddPoint(const int pointId, const cv::Point3f& point3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
+    {
+        pointsData.push_back({keypoint, point3d, descriptor.clone()});
+    }
+
+    double timestamp;
 
 protected:
     Eigen::Matrix4f position;
-    std::tuple<std::vector<cv::KeyPoint>, cv::Mat> features;
-    std::vector<cv::Point3f> points;
-    std::vector<cv::KeyPoint> keypoints;
-    std::vector<cv::Mat> descriptors;
+    cv::Mat image;
+    std::vector<PointData> pointsData;
 };
 
 } // namespace odometry
