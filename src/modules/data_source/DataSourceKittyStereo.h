@@ -7,31 +7,30 @@
 #include <algorithm>
 #include <istream>
 
+#include "IDataset.h"
 #include "IDataSourceCamera.h"
 
 namespace data_source
 {
 
 template<typename T>
-class DataSourceKittyStereo : public IDataSourceCamera<T>
+class DataSourceKittyStereo : public IDataSourceCamera<T>, public IDataset<T>
 {
 public:
     DataSourceKittyStereo(const std::string &sourcePath) 
-        : folderLeft(sourcePath + "/dataset/sequences/00/image_0/")
-        , folderRight(sourcePath + "/dataset/sequences/00/image_1/")
-        , timestampFolder(sourcePath + "/dataset/sequences/00/times.txt")
+        : folderLeft(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_0/")
+        , folderRight(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_1/")
+        , timestampFolder(sourcePath + "/data_odometry_gray/dataset/sequences/00/times.txt")
+        , gtPoses(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
     {
         timeFileStream.open(timestampFolder, std::ios::in);
+        gtFileStream.open(gtPoses, std::ios::in);
 
         std::ifstream file;
-        file.open(sourcePath + "/dataset/sequences/00/calib.txt", std::ios::in);
+        file.open(sourcePath + "/data_odometry_gray/dataset/sequences/00/calib.txt", std::ios::in);
 
         if (file.is_open())
         {
-            // this->cameraMatrix
-
-            std::cout << "matrix: \n";
-
             std::string name;
 
             cv::Mat projMat = cv::Mat(3, 4, CV_32F);
@@ -52,7 +51,6 @@ public:
 
                     if (name.find("P1:") == 0)
                     {
-                        // this->camera1Matrix(row, col) = value1;
                         projMat.at<float>(row, col) = value1;
                     }
 
@@ -60,14 +58,14 @@ public:
                 }
             }
 
-            cv::Mat proj;
-            cv::Mat rot;
-            cv::Mat trans;
-            cv::decomposeProjectionMatrix(projMat, proj, rot, trans);
-            trans = trans / trans.at<float>(3);
-            std::cout << "proj:\n" << proj << std::endl;
-            std::cout << "rot:\n" << rot << std::endl;
-            std::cout << "trans:\n" << trans.t() << std::endl;
+            // cv::Mat proj;
+            // cv::Mat rot;
+            // cv::Mat trans;
+            // cv::decomposeProjectionMatrix(projMat, proj, rot, trans);
+            // trans = trans / trans.at<float>(3);
+            // std::cout << "proj:\n" << proj << std::endl;
+            // std::cout << "rot:\n" << rot << std::endl;
+            // std::cout << "trans:\n" << trans.t() << std::endl;
 
             this->cameraMatrix = cv::Mat(1, 5, CV_32F);
             this->cameraMatrix.at<float>(0, 0) = projMat.at<float>(0, 0);
@@ -89,9 +87,17 @@ public:
         {
             timeFileStream.close();
         }
+
+        if (gtFileStream.is_open())
+        {
+            gtFileStream.close();
+        }
     }
 
-    T GetNext() const override;
+    T Get() const override;
+
+    void ReadNext() override;
+    Eigen::Matrix4f GetGtPose() const override;
 
     cv::Mat GetParameters() const override;
     cv::Mat GetDistortion() const override;
@@ -100,7 +106,12 @@ private:
     const std::string folderLeft;
     const std::string folderRight;
     const std::string timestampFolder;
+    const std::string gtPoses;
     mutable std::ifstream timeFileStream;
+    mutable std::ifstream gtFileStream;
+
+    T currentData;
+    Eigen::Matrix4f currentPose;
 
     cv::Mat_<float> cameraMatrix;
 
@@ -112,6 +123,7 @@ private:
 namespace data_source
 {
 
+// TODO: fix it
 std::string format(const unsigned number)
 {
     std::string prefix = "00000";
@@ -136,7 +148,7 @@ std::string format(const unsigned number)
 }
 
 template<typename T>
-T DataSourceKittyStereo<T>::GetNext() const
+void DataSourceKittyStereo<T>::ReadNext()
 {
     const auto im1 = cv::imread(folderLeft  + format(id) + ".png");
     const auto im2 = cv::imread(folderRight + format(id) + ".png");
@@ -144,14 +156,33 @@ T DataSourceKittyStereo<T>::GetNext() const
 
     if (timeFileStream.is_open())
     {
-        //std::string timestampStr;
-
         timeFileStream >> timestamp;
     }
 
-    ++id;
+    currentData = {timestamp, im1.clone(), im2.clone()};
+    
+    currentPose = Eigen::Matrix4f::Identity();
 
-    return {timestamp, im1.clone(), im2.clone()};
+    if (gtFileStream.is_open())
+    {
+        gtFileStream >> currentPose(0, 0) >> currentPose(0, 1) >> currentPose(0, 2) >> currentPose(0, 3);
+        gtFileStream >> currentPose(1, 0) >> currentPose(1, 1) >> currentPose(1, 2) >> currentPose(1, 3);
+        gtFileStream >> currentPose(2, 0) >> currentPose(2, 1) >> currentPose(2, 2) >> currentPose(2, 3);
+    }
+
+    ++id;
+}
+
+template<typename T>
+Eigen::Matrix4f DataSourceKittyStereo<T>::GetGtPose() const
+{
+    return currentPose;
+}
+
+template<typename T>
+T DataSourceKittyStereo<T>::Get() const
+{
+    return currentData;
 }
 
 template<typename T>
@@ -163,8 +194,6 @@ cv::Mat DataSourceKittyStereo<T>::GetParameters() const
 template<typename T>
 cv::Mat DataSourceKittyStereo<T>::GetDistortion() const
 {
-    // cv::Mat dist(1, 5);
-    // dist.zero();
     return cv::Mat::zeros(1, 5, CV_32F);
 }
 

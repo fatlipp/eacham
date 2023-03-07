@@ -12,20 +12,14 @@ template<typename T>
 class IDataSourceCamera
 {
 public:
-    using ReturnType = T;
-
-public:
     IDataSourceCamera() = default;
 
     virtual ~IDataSourceCamera() = default;
 
-    virtual T GetNext() const = 0;
+    virtual T Get() const = 0;
 
     virtual cv::Mat GetParameters() const = 0;
     virtual cv::Mat GetDistortion() const = 0;
-
-private:
-    const std::string sourcePath;
 };
 
 }

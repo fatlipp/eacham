@@ -66,7 +66,7 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
 
         if (frames.size() > 0)
         {
-            const double dt = frame.timestamp - frames.back().timestamp;
+            const double dt = frame.GetTimestamp() - frames.back().GetTimestamp();
 
             Eigen::Matrix4f odom = motionEstimator.Estimate(frames.back(), frame);
 

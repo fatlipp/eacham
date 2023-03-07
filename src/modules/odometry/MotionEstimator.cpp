@@ -161,6 +161,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
                         maxErr = err1;
                     }
 				}
+                
                 err = err / inliers.size();
                 err = std::sqrt(err);
 

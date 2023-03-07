@@ -66,9 +66,9 @@ public:
         return pointsData.size() > 0;
     }
 
-    size_t GetSize() const
+    double GetTimestamp() const
     {
-        return pointsData.size();
+        return timestamp;
     }
 
     void AddPoint(const int pointId, const cv::Point3f& point3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
@@ -76,12 +76,13 @@ public:
         pointsData.push_back({keypoint, point3d, descriptor.clone()});
     }
 
-    double timestamp;
-
 protected:
+    const double timestamp;
+
     Eigen::Matrix4f position;
     cv::Mat image;
     std::vector<PointData> pointsData;
+
 };
 
 } // namespace odometry
