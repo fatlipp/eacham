@@ -76,10 +76,31 @@ public:
         pointsData.push_back({keypoint, point3d, descriptor.clone()});
     }
 
+    void SetOdometry(const Eigen::Matrix4f &odom) 
+    {
+        this->odometry = odometry;
+    }
+
+    void SetPosition(const Eigen::Matrix4f &position) 
+    {
+        this->position = position;
+    }
+
+    Eigen::Matrix4f GetOdometry() const
+    {
+        return this->odometry;
+    }
+
+    Eigen::Matrix4f GetPosition() const
+    {
+        return this->position;
+    }
+
 protected:
     const double timestamp;
 
     Eigen::Matrix4f position;
+    Eigen::Matrix4f odometry;
     cv::Mat image;
     std::vector<PointData> pointsData;
 

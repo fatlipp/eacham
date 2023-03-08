@@ -58,7 +58,7 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
 {
     std::cout << "--------------------------------------------------------------------" << std::endl;
 
-    const Frame frame = frameCreator.Create(data, camera->GetParameters());
+    Frame frame = frameCreator.Create(data, camera->GetParameters());
 
     if (frame.isValid())
     {
@@ -69,8 +69,23 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
             const double dt = frame.GetTimestamp() - frames.back().GetTimestamp();
 
             Eigen::Matrix4f odom = motionEstimator.Estimate(frames.back(), frame);
+            frame.SetOdometry(odom);
+
+            if (frames.size() > 0)
+            {
+                frame.SetPosition(frames.back().GetPosition() * odom);
+            }
+            else
+            {
+                frame.SetPosition(odom);
+            }
 
             this->transform.matrix() = this->transform.matrix() * odom;
+        }
+        else
+        {
+            frame.SetOdometry(Eigen::Matrix4f::Identity());
+            frame.SetPosition(Eigen::Matrix4f::Identity());
         }
 
         frames.push_back(frame);

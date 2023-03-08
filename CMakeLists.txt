@@ -17,6 +17,8 @@ message("EIGEN3_INCLUDE_DIR = ${EIGEN3_INCLUDE_DIR}")
 find_package(PCL REQUIRED)
 message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
+find_package(GTSAM REQUIRED PATHS /home/blackdyce/Apps/gtsam)
+
 set(SOURCE
     src/modules/odometry/VisualOdometry.cpp
     src/modules/odometry/MotionEstimator.cpp
@@ -62,4 +64,6 @@ target_link_libraries(read_dataset
     ${OpenCV_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${PCL_LIBRARIES}
+    gtsam
+    metis-gtsam
     )
