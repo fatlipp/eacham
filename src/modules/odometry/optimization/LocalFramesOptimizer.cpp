@@ -15,9 +15,9 @@ namespace odometry
     {
     }
 
-    bool LocalFramesOptimizer::Optimize(const std::list<Frame> &frames)
+    bool LocalFramesOptimizer::Optimize(LocalMap &map)
     {
-        if (frames.size() < 3)
+        if (map.size() < 3)
         {
             return false;
         }
@@ -32,7 +32,7 @@ namespace odometry
 
         const int INITIAL_ID = 1;
         int id = INITIAL_ID;
-        for (const auto &frame : frames)
+        for (auto &frame : map.GetFrames())
         {
             const Eigen::Matrix4d position = frame.GetPosition().cast<double>();
             framePoses.insert(id, gtsam::Pose3(position));
@@ -43,6 +43,15 @@ namespace odometry
                 graph.emplace_shared<gtsam::BetweenFactor<gtsam::Pose3> >(id - 1, id, gtsam::Pose3(odom), noiseModel);
                 
             }
+
+            // map
+            for (auto &point : frame.GetPointsData())
+            {
+                auto mapPoint = map.GetPoint(point.point3d.mapPointId);
+
+
+            }
+
 
             ++id;
         }

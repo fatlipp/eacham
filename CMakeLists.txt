@@ -20,6 +20,8 @@ message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 find_package(GTSAM REQUIRED PATHS /home/blackdyce/Apps/gtsam)
 
 set(SOURCE
+    src/modules/odometry/map/LocalMap.cpp
+
     src/modules/odometry/VisualOdometry.cpp
     src/modules/odometry/MotionEstimator.cpp
     

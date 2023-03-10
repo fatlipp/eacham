@@ -1,8 +1,6 @@
 #pragma once
 
-#include "odometry/frame/Frame.h"
-#include <list>
-
+#include "odometry/map/LocalMap.h"
 
 namespace odometry
 {
@@ -12,8 +10,7 @@ class LocalFramesOptimizer
 public:
     LocalFramesOptimizer();
 
-    bool Optimize(const std::list<Frame> &frames);
-
+    bool Optimize(LocalMap &map);
 };
 
 }

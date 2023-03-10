@@ -8,13 +8,31 @@
 namespace odometry
 {
 
+struct FramePoint3d
+{
+    unsigned mapPointId = 0;
+    cv::Point3f position;
+
+    FramePoint3d(const unsigned mapPointId, const cv::Point3f &position)
+        : mapPointId(mapPointId)
+        , position(position)
+        {}
+
+    void SetMapPointId(const unsigned mapPointId)
+    {
+        this->mapPointId = mapPointId;
+    }
+};
+
 struct PointData
 {
+    unsigned id;
+
     cv::KeyPoint keypoint;
-    cv::Point3f point3d;
+    FramePoint3d point3d;
     cv::Mat descriptor;
 
-    PointData(const cv::KeyPoint &keypoint, const cv::Point3f &point3d, const cv::Mat &descriptor)
+    PointData(const cv::KeyPoint &keypoint, const FramePoint3d &point3d, const cv::Mat &descriptor)
         : keypoint(keypoint)
         , point3d(point3d)
         , descriptor(descriptor.clone())
@@ -44,9 +62,14 @@ public:
         return pointsData[id].keypoint;
     }
 
-    cv::Point3f GetPoint3d(const int id) const
+    FramePoint3d GetPoint3d(const int id) const
     {
         return pointsData[id].point3d;
+    }
+
+    std::vector<PointData>& GetPointsData()
+    {
+        return pointsData;
     }
 
     cv::Mat GetDescriptors() const
@@ -73,7 +96,7 @@ public:
 
     void AddPoint(const int pointId, const cv::Point3f& point3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
     {
-        pointsData.push_back({keypoint, point3d, descriptor.clone()});
+        pointsData.push_back({keypoint, {0, point3d}, descriptor.clone()});
     }
 
     void SetOdometry(const Eigen::Matrix4f &odom) 
@@ -97,7 +120,7 @@ public:
     }
 
 protected:
-    const double timestamp;
+    double timestamp;
 
     Eigen::Matrix4f position;
     Eigen::Matrix4f odometry;

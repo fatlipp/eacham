@@ -53,6 +53,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
 
 
     std::vector<cv::Point3f> pts3d1; 
+    std::vector<cv::Point3f> pts3d2; 
     std::vector<cv::Point2f> pts2d2; 
 
     std::vector<cv::KeyPoint> kp1;
@@ -70,7 +71,8 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
                 // continue;
             }
 
-            pts3d1.push_back(frame1.GetPoint3d(m[0].queryIdx));
+            pts3d1.push_back(frame1.GetPoint3d(m[0].queryIdx).position);
+            pts3d2.push_back(frame2.GetPoint3d(m[0].trainIdx).position);
             pts2d2.push_back(frame2.GetFeature(m[0].trainIdx).pt);
 
             kp1.push_back(frame1.GetFeature(m[0].queryIdx));
@@ -128,6 +130,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
                 float minErr = 999999;
                 float maxErr = -10000;
 
+                // reprojection error check
 				for (int i = 0; i < inliers.size(); ++i)
 				{
                     const int id = inliers[i];
@@ -160,6 +163,10 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
                     {
                         maxErr = err1;
                     }
+
+                    // add observations
+                    // frame.Get
+
 				}
                 
                 err = err / inliers.size();

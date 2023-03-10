@@ -9,6 +9,7 @@
 #include "IOdometry.h"
 #include "tools/Tools3d.h"
 #include "types/DataTypes.h"
+#include "odometry/map/LocalMap.h"
 #include "data_source/IDataSourceCamera.h"
 #include "odometry/frame/FrameCreator.h"
 #include "odometry/frame/KeyFrame.h"
@@ -28,6 +29,8 @@ public:
         this->motionEstimator = { camera->GetParameters(), camera->GetDistortion() };
 
         this->transform = Eigen::Affine3f::Identity();
+
+        this->localMap = LocalMap(10U);
     }
 
     void SetCameraMatrix()
@@ -40,11 +43,13 @@ public:
 private:
     const data_source::IDataSourceCamera<T>* camera;
 
-    std::list<Frame> frames;
+    LocalMap localMap;
+    Frame lastFrame;
     FrameCreator frameCreator;
     MotionEstimator motionEstimator;
-    LocalFramesOptimizer localOptimizer;
     Eigen::Affine3f transform;
+
+    LocalFramesOptimizer localOptimizer;
 };
 
 } // namespace odometry
@@ -64,21 +69,13 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
     {
         Eigen::Matrix4f odom;
 
-        if (frames.size() > 0)
+        if (lastFrame.isValid())
         {
-            const double dt = frame.GetTimestamp() - frames.back().GetTimestamp();
+            const double dt = frame.GetTimestamp() - lastFrame.GetTimestamp();
 
-            Eigen::Matrix4f odom = motionEstimator.Estimate(frames.back(), frame);
+            Eigen::Matrix4f odom = motionEstimator.Estimate(lastFrame, frame);
             frame.SetOdometry(odom);
-
-            if (frames.size() > 0)
-            {
-                frame.SetPosition(frames.back().GetPosition() * odom);
-            }
-            else
-            {
-                frame.SetPosition(odom);
-            }
+            frame.SetPosition(lastFrame.GetPosition() * odom);
 
             this->transform.matrix() = this->transform.matrix() * odom;
         }
@@ -88,21 +85,10 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
             frame.SetPosition(Eigen::Matrix4f::Identity());
         }
 
-        frames.push_back(frame);
+        localMap.AddFrame(frame);
+        localOptimizer.Optimize(localMap);
 
-        if (frames.size() > 5)
-        {
-            frames.pop_front();
-
-            // optimize
-            const bool isOptimized = localOptimizer.Optimize(frames);
-
-            if (isOptimized)
-            {
-                std::cout << "Optimized.." << std::endl;
-            }
-
-        }
+        this->lastFrame = frame;
     }
 
     return this->transform.matrix();
