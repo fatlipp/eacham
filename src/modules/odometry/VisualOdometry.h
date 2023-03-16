@@ -38,6 +38,11 @@ public:
         
     }
 
+    std::vector<FramePoint3d> GetLocalMapPoints() 
+    {
+        return localMap.GetPoints();
+    }
+
     Eigen::Matrix4f GetOdometry(const T &data) ;
 
 private:
@@ -71,13 +76,20 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
 
         if (lastFrame.isValid())
         {
-            const double dt = frame.GetTimestamp() - lastFrame.GetTimestamp();
+            const auto [odom, inliers] = motionEstimator.Estimate(lastFrame, frame);
+            // odom(0, 3) = -0.02f;
+            // odom(1, 3) = -0.02f;
+            // odom(2, 3) = 0.85f;
 
-            Eigen::Matrix4f odom = motionEstimator.Estimate(lastFrame, frame);
+            if (inliers == 0)
+            {
+                std::cout << "\n\nMotion estimation error\n\n";
+
+                return frame.GetPosition();
+            }
+            
             frame.SetOdometry(odom);
             frame.SetPosition(lastFrame.GetPosition() * odom);
-
-            this->transform.matrix() = this->transform.matrix() * odom;
         }
         else
         {
@@ -86,12 +98,14 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
         }
 
         localMap.AddFrame(frame);
-        localOptimizer.Optimize(localMap);
+
+        if (localMap.size() == 2)
+            localOptimizer.Optimize(localMap);
 
         this->lastFrame = frame;
     }
 
-    return this->transform.matrix();
+    return frame.GetPosition();
 }
 
 }

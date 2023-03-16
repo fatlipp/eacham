@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
     {
     }
 
-    render::Render renderer;
+    // render::Render renderer;
 
     // TODO: Config
     const auto sourceType = data_source::DataSourceType::DATASET;
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    for (int i = 0; i < 1000; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         // dataset (camera should use concurrent thread to get the next frame)
         dataset->ReadNext();
@@ -37,7 +37,8 @@ int main(int argc, char* argv[])
         {
             performance::BlockTimer timer;
             const auto odom = visualOdometry->GetOdometry(images);
-            renderer.AddFramePoint(odom);
+            // renderer.AddFramePoint(odom);
+            // renderer.DrawMap(visualOdometry->GetLocalMapPoints());
 
 
             std::cout << "ODOM:\n" << odom << std::endl;
@@ -48,7 +49,9 @@ int main(int argc, char* argv[])
         cv::waitKey(1);
     }
 
-    renderer.Stop();
+    cv::waitKey(1000000);
+
+    // renderer.Stop();
 
     return 0;
 }

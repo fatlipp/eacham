@@ -12,6 +12,7 @@ struct FramePoint3d
 {
     unsigned mapPointId = 0;
     cv::Point3f position;
+    unsigned observers = 0;
 
     FramePoint3d(const unsigned mapPointId, const cv::Point3f &position)
         : mapPointId(mapPointId)
@@ -101,7 +102,7 @@ public:
 
     void SetOdometry(const Eigen::Matrix4f &odom) 
     {
-        this->odometry = odometry;
+        this->odometry = odom;
     }
 
     void SetPosition(const Eigen::Matrix4f &position) 
@@ -117,6 +118,16 @@ public:
     Eigen::Matrix4f GetPosition() const
     {
         return this->position;
+    }
+
+    void SetPointsData(const std::vector<PointData> &data)
+    {
+        this->pointsData = data;
+    }
+
+    PointData GetPointData(const int id) const
+    {
+        return pointsData[id];
     }
 
 protected:

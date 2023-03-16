@@ -40,7 +40,7 @@ public:
 
     FramePoint3d& GetPoint(unsigned id)
     {
-        return points3d[id];
+        return points3d[id - 1];
     }
 
 private:

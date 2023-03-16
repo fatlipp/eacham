@@ -37,7 +37,7 @@ MotionEstimator::~MotionEstimator()
 {
 }
 
-Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimator::Estimate(const Frame& frame1, Frame& frame2)
 {
     const cv::Mat descriptor1 = frame1.GetDescriptors().clone();
     const cv::Mat descriptor2 = frame2.GetDescriptors().clone();
@@ -48,13 +48,14 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
 
     if (matches.size() < 1)
     {
-        return Eigen::Matrix4f::Identity();
+        return {Eigen::Matrix4f::Identity(), 0};
     }
 
 
     std::vector<cv::Point3f> pts3d1; 
-    std::vector<cv::Point3f> pts3d2; 
+    std::vector<FramePoint3d> pts3d1_data; 
     std::vector<cv::Point2f> pts2d2; 
+    std::vector<PointData> pts3d2; 
 
     std::vector<cv::KeyPoint> kp1;
     std::vector<cv::KeyPoint> kp2;
@@ -64,7 +65,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
 
     for (const auto& m : matches)
     {
-        if (m[0].distance < 0.7f * m[1].distance)
+        if (m[0].distance < 0.6f * m[1].distance)
         {
             if (tools::BinaryDescriptorDist(descriptor1.row(m[0].queryIdx), descriptor2.row(m[0].trainIdx)) > 30)
             {
@@ -72,8 +73,9 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
             }
 
             pts3d1.push_back(frame1.GetPoint3d(m[0].queryIdx).position);
-            pts3d2.push_back(frame2.GetPoint3d(m[0].trainIdx).position);
+            pts3d1_data.push_back(frame1.GetPoint3d(m[0].queryIdx));
             pts2d2.push_back(frame2.GetFeature(m[0].trainIdx).pt);
+            pts3d2.push_back(frame2.GetPointData(m[0].trainIdx));
 
             kp1.push_back(frame1.GetFeature(m[0].queryIdx));
             kp2.push_back(frame2.GetFeature(m[0].trainIdx));
@@ -94,6 +96,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
     std::cout << "matches: " << static_cast<float>(matches.size()) << ", good matches: " << pts3d1.size() << std::endl;
 
     Eigen::Affine3f motion = Eigen::Affine3f::Identity();
+    unsigned inliersCount = 0;
 
     const int MIN_INLIERS = 20;
 
@@ -103,12 +106,14 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
 		cv::Mat tvec = cv::Mat_<double>(3, 1);
 
         std::vector<int> inliers;
-        cv::solvePnPRansac(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, false, 100, 4.0f, 0.99f, inliers, cv::SOLVEPNP_EPNP);
+        cv::solvePnPRansac(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, false, 1000, 2.0f, 0.99f, inliers, cv::SOLVEPNP_ITERATIVE);
     
         std::cout << "inliers: " << inliers.size() << " (" << (inliers.size() / static_cast<float>(pts2d2.size())) << ")" << std::endl;
 
         if (inliers.size() >= MIN_INLIERS)
 		{
+            inliersCount = inliers.size();
+
             cv::Mat R;
 			cv::Rodrigues(rvec, R);
             Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> R_Eigen(R.ptr<double>(), R.rows, R.cols);
@@ -139,6 +144,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
                     auto pp1 = tools::transformPointD(pt, R, tvec);
                     const auto pp = tools::project3dPoint(pp1, this->cameraMatOneDim);
 
+                    
                     // real points
                     cv::circle(reprIm2, pts2d2.at(id), 6, {0, 255, 0}, 3);
                     cv::circle(reprIm2, pp, 4, {0, 255, 255}, 3);
@@ -165,10 +171,12 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
                     }
 
                     // add observations
-                    // frame.Get
+                    pts3d2[id].point3d.SetMapPointId(pts3d1_data[id].mapPointId);
 
 				}
                 
+                frame2.SetPointsData(pts3d2);
+
                 err = err / inliers.size();
                 err = std::sqrt(err);
 
@@ -185,7 +193,7 @@ Eigen::Matrix4f MotionEstimator::Estimate(const Frame& frame1, const Frame& fram
 
     }
 
-    return motion.matrix();
+    return {motion.matrix(), inliersCount};
 }
 
 }

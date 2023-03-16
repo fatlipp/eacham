@@ -40,18 +40,9 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
     std::vector<cv::Point2f> ptsGood1;
     std::vector<cv::Point3f> pts3d1;
 
-	// static Transform opticalRotation() {return Transform(0,0,1,0, -1,0,0,0, 0,-1,0,0);}
-    cv::Mat_<float> worldToCam(3, 3);
-    worldToCam <<   0, 0, 1,
-                    -1, 0, 0,
-                    0, -1, 0;
-    worldToCam <<   1, 0, 0,
-                    0, 1, 0,
-                    0, 0, 1;
-
     for (const auto& m : matches)
     {
-        if (m[0].distance < 0.7f * m[1].distance)
+        if (m[0].distance < 0.65f * m[1].distance)
         {
             const int id1 = m[0].queryIdx;
             const int id2 = m[0].trainIdx;
@@ -63,7 +54,7 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
 
             cv::Point3f pos3d = tools::Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, camera);
 
-            if (pos3d.z > 0.0f && pos3d.z < 1000.0f)
+            if (pos3d.z > 0.0f && pos3d.z < 50.0f)
             {
                 frame.AddPoint(pointId, pos3d, features1[id1], descriptor1.row(id1).clone());
 

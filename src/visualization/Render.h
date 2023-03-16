@@ -9,6 +9,8 @@
 #include <pangolin/handler/handler.h>
 #include <pangolin/gl/gldraw.h>
 
+#include "../modules/odometry/frame/Frame.h"
+
 namespace render
 {
 class Render
@@ -83,6 +85,7 @@ public:
 
                 glPointSize(5);
                 glBegin(GL_POINTS);
+                glColor3f(0.0, 1.0, 0.0);
                 for (const auto& point : this->points)
                 {
                     glVertex3f(point.x(), point.y(), point.z());
@@ -91,6 +94,8 @@ public:
 
                 glPointSize(15);
                 glBegin(GL_POINTS);
+                glColor3f(1.0, 0.0, 0.0);
+                
                 for (const auto& point : this->frames)
                 {
                     glVertex3f(point.x(), point.y(), point.z());
@@ -121,14 +126,22 @@ public:
 
     void AddPoint(const Eigen::Vector3f &pos)
     {
-        std::lock_guard<std::mutex> lock(mute);
-        this->points.push_back(pos);
     }
 
     void ClearPoints()
     {
         std::lock_guard<std::mutex> lock(mute);
         this->points.clear();
+    }
+
+    void DrawMap(const std::vector<odometry::FramePoint3d> &points)
+    {
+        std::lock_guard<std::mutex> lock(mute);
+
+        for (auto &p : points)
+        {
+            this->points.push_back({p.position.x, p.position.y, p.position.z});
+        }
     }
 
     void Stop()
