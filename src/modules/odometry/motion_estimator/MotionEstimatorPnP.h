@@ -1,17 +1,17 @@
 #pragma once
 
 #include "odometry/frame/Frame.h"
-#include "IMotionEstimator.h"
+#include "MotionEstimatorBase.h"
 
 namespace eacham
 {
-class MotionEstimatorPnP : public IMotionEstimator
+class MotionEstimatorPnP : public MotionEstimatorBase
 {
 
 public:
-    MotionEstimatorPnP();
+    MotionEstimatorPnP(const FeatureExtractorType &featureExtractor);
 
-    MotionEstimatorPnP(const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
+    MotionEstimatorPnP(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
 
     std::tuple<Eigen::Matrix4f, unsigned> Estimate(const Frame& frame1, Frame& frame2) override;
 

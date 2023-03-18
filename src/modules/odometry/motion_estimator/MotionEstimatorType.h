@@ -5,6 +5,6 @@ namespace eacham
     enum class MotionEstimatorType
     {
         PNP = 0,
-        OPT
+        OPT = 1
     };
 } // namespace gtsam

@@ -10,7 +10,7 @@ namespace eacham
 
 Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
 {
-    const auto fd = extractor.GetFeatures(std::get<1>(data));
+    const auto fd = extractor->GetFeatures(std::get<1>(data));
     const auto [features1, descriptor1] = fd;
     
     if (features1.size() < 11)
@@ -18,7 +18,7 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
         return {};
     }
 
-    const auto [features2, descriptor2] = extractor.GetFeatures(std::get<2>(data)); 
+    const auto [features2, descriptor2] = extractor->GetFeatures(std::get<2>(data)); 
 
     if (features2.size() < 11)
     {

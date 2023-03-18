@@ -26,17 +26,19 @@ template<typename T>
 class VisualOdometry : public IOdometry<T>
 {
 public:
-    VisualOdometry(const MotionEstimatorType &type, const IDataSourceCamera<T>* camera)
+    VisualOdometry(const FeatureExtractorType &featureExtractor, const MotionEstimatorType &type, const IDataSourceCamera<T>* camera)
         : camera(camera)
     {
+        this->frameCreator = std::make_unique<FrameCreator>(featureExtractor);
+
         switch (type)
         {
         case MotionEstimatorType::OPT:
-            this->motionEstimator = std::make_unique<MotionEstimatorOpt>(camera->GetParameters(), camera->GetDistortion());
+            this->motionEstimator = std::make_unique<MotionEstimatorOpt>(featureExtractor, camera->GetParameters(), camera->GetDistortion());
             break;
         
         default:
-            this->motionEstimator = std::make_unique<MotionEstimatorPnP>(camera->GetParameters(), camera->GetDistortion());
+            this->motionEstimator = std::make_unique<MotionEstimatorPnP>(featureExtractor, camera->GetParameters(), camera->GetDistortion());
             break;
         }
 
@@ -64,7 +66,7 @@ private:
 
     LocalMap localMap;
     Frame lastFrame;
-    FrameCreator frameCreator;
+    std::unique_ptr<FrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
     Eigen::Affine3f transform;
 
@@ -80,9 +82,9 @@ namespace eacham
 template<typename T>
 bool VisualOdometry<T>::Proceed(const T &data)
 {
-    std::cout << "--------------------------------------------------------------------" << std::endl;
+    std::cout << "----------------------------------------------------------------------------------------" << std::endl;
 
-    Frame frame = frameCreator.Create(data, camera->GetParameters());
+    Frame frame = frameCreator->Create(data, camera->GetParameters());
 
     if (frame.isValid())
     {

@@ -23,11 +23,13 @@
 namespace eacham
 {
 
-MotionEstimatorOpt::MotionEstimatorOpt()
+MotionEstimatorOpt::MotionEstimatorOpt(const FeatureExtractorType &featureExtractor)
+    : MotionEstimatorBase(featureExtractor)
 {
 }
 
-MotionEstimatorOpt::MotionEstimatorOpt(const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
+MotionEstimatorOpt::MotionEstimatorOpt(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
+    : MotionEstimatorBase(featureExtractor)
 {
     if (cameraMatInp.rows == 1)
     {
@@ -66,30 +68,7 @@ void addFramePointsToTheGraph(const std::vector<PointData>& points, const unsign
 
 std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& frame1, Frame& frame2)
 {
-    const cv::Mat descriptor1 = frame1.GetDescriptors().clone();
-    const cv::Mat descriptor2 = frame2.GetDescriptors().clone();
-
-    const static matcher_t mather = FeatureExtractor::GetMatcher();
-
-    std::vector<std::vector<cv::DMatch>> matches;
-    mather->knnMatch(descriptor1, descriptor2, matches, 2);
-
-    if (matches.size() < 1)
-    {
-        return {Eigen::Matrix4f::Identity(), 0};
-    }
-
-    std::vector<PointData> pts3d1; 
-    std::vector<PointData> pts3d2; 
-
-    for (const auto& m : matches)
-    {
-        if (m[0].distance < 0.7f * m[1].distance)
-        {
-            pts3d1.push_back(frame1.GetPointData(m[0].queryIdx));
-            pts3d2.push_back(frame2.GetPointData(m[0].trainIdx));
-        }
-    }
+    const auto [pts3d1, pts3d2] = Match(frame1, frame2); 
 
     const unsigned inliers = pts3d1.size();
 
@@ -136,29 +115,23 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
         ++landmarkId;
     }
 
-
     std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
 
     gtsam::LevenbergMarquardtParams params;
     params.maxIterations = 1000;
     params.absoluteErrorTol = 0.000001;
-    // params.verbosity = gtsam::NonlinearOptimizerParams::ERROR;
-    // params.linearSolverType = gtsam::NonlinearOptimizerParams::CHOLMOD;
     optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
 
-    gtsam::Values optimizationResult = optimizer->optimize();
+    const gtsam::Values optimizationResult = optimizer->optimize();
 
     std::cout << "frames: " << frameId << ", mapPoints: " << landmarkId << std::endl;
     std::cout << "++initial error = " << graph.error(initialMeasurements) << std::endl;
     std::cout << "++final error = " << graph.error(optimizationResult) << std::endl << std::endl;
 
-    gtsam::Pose3 frame11 = optimizationResult.at<gtsam::Pose3>(gtsam::Symbol('x', 1));
-    const auto rr = frame11.rotation();
-    std::cout << "frame " << 1 << " = \n" << rr.matrix() << "\n" << frame11.translation() << std::endl;
-    
+    const gtsam::Pose3 targetFrame = optimizationResult.at<gtsam::Pose3>(gtsam::Symbol('x', 1));
     Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
-    result.block<3, 3>(0, 0) = rr.matrix();
-    result.block<3, 1>(0, 3) = frame11.translation();
+    result.block<3, 3>(0, 0) = targetFrame.rotation().matrix();
+    result.block<3, 1>(0, 3) = targetFrame.translation();
 
     return { result.cast<float>(), inliers };
 }

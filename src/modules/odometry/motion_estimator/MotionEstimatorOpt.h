@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odometry/frame/Frame.h"
-#include "IMotionEstimator.h"
+#include "MotionEstimatorBase.h"
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
@@ -21,13 +21,13 @@ namespace eacham
 {
 class Cal3_S2;
 
-class MotionEstimatorOpt : public IMotionEstimator
+class MotionEstimatorOpt : public MotionEstimatorBase
 {
 
 public:
-    MotionEstimatorOpt();
+    MotionEstimatorOpt(const FeatureExtractorType &featureExtractor);
 
-    MotionEstimatorOpt(const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
+    MotionEstimatorOpt(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
 
     std::tuple<Eigen::Matrix4f, unsigned> Estimate(const Frame& frame1, Frame& frame2) override;
 

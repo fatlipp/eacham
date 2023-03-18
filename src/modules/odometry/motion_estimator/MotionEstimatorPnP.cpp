@@ -8,12 +8,14 @@
 namespace eacham
 {
 
-MotionEstimatorPnP::MotionEstimatorPnP()
+MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtractor)
+    : MotionEstimatorBase(featureExtractor)
 {
 }
 
-MotionEstimatorPnP::MotionEstimatorPnP(const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
-    : distCoeffs(distCoeffs)
+MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
+    : MotionEstimatorBase(featureExtractor)
+    , distCoeffs(distCoeffs)
 {
     if (cameraMatInp.rows == 1)
     {
@@ -36,57 +38,56 @@ MotionEstimatorPnP::MotionEstimatorPnP(const cv::Mat &cameraMatInp, const cv::Ma
 
 std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& frame1, Frame& frame2)
 {
-    const cv::Mat descriptor1 = frame1.GetDescriptors().clone();
-    const cv::Mat descriptor2 = frame2.GetDescriptors().clone();
-
-    const static matcher_t mather = FeatureExtractor::GetMatcher();
-
-    std::vector<std::vector<cv::DMatch>> matches;
-    mather->knnMatch(descriptor1, descriptor2, matches, 2);
-
-    if (matches.size() < 1)
-    {
-        return {Eigen::Matrix4f::Identity(), 0};
-    }
-
+    const auto [pts1, pts2] = Match(frame1, frame2);
+    const auto matches = pts1.size();
 
     std::vector<cv::Point3f> pts3d1; 
-    std::vector<FramePoint3d> pts3d1_data; 
     std::vector<cv::Point2f> pts2d2; 
-    std::vector<PointData> pts3d2; 
 
-    std::vector<cv::KeyPoint> kp1;
-    std::vector<cv::KeyPoint> kp2;
-    std::vector<std::vector<cv::DMatch>> matchesGood;
-
-    int pointId = 0;
-
-    for (const auto& m : matches)
+    for (size_t i = 0; i < matches; ++i)
     {
-        if (m[0].distance < 0.7f * m[1].distance)
-        {
-            pts3d1.push_back(frame1.GetPoint3d(m[0].queryIdx).position);
-            pts3d1_data.push_back(frame1.GetPoint3d(m[0].queryIdx));
-            pts2d2.push_back(frame2.GetFeature(m[0].trainIdx).pt);
-            pts3d2.push_back(frame2.GetPointData(m[0].trainIdx));
-
-            kp1.push_back(frame1.GetFeature(m[0].queryIdx));
-            kp2.push_back(frame2.GetFeature(m[0].trainIdx));
-            cv::DMatch mm2 = cv::DMatch(pointId, pointId, 0);
-            matchesGood.push_back({mm2});
-            ++pointId;
-        }
+        pts3d1.push_back(pts1[i].point3d.position);
+        pts2d2.push_back(pts2[i].keypoint.pt);
     }
 
-    if (kp1.size() > 0)
-    {
-        cv::Mat img_match;
-        cv::drawMatches(frame1.GetImage(), kp1, frame2.GetImage(), kp2, matchesGood, img_match);
-        cv::resize(img_match, img_match, {img_match.cols * 0.7f, img_match.rows * 0.7f});
-        cv::imshow("motionEST", img_match);
-    }
 
-    std::cout << "matches: " << static_cast<float>(matches.size()) << ", good matches: " << pts3d1.size() << std::endl;
+    // std::vector<cv::Point3f> pts3d1; 
+    // std::vector<FramePoint3d> pts3d1_data; 
+    // std::vector<cv::Point2f> pts2d2; 
+    // std::vector<PointData> pts3d2; 
+
+    // std::vector<cv::KeyPoint> kp1;
+    // std::vector<cv::KeyPoint> kp2;
+    // std::vector<std::vector<cv::DMatch>> matchesGood;
+
+    // int pointId = 0;
+
+    // for (const auto& m : matches)
+    // {
+    //     if (m[0].distance < 0.7f * m[1].distance)
+    //     {
+    //         pts3d1.push_back(frame1.GetPoint3d(m[0].queryIdx).position);
+    //         pts3d1_data.push_back(frame1.GetPoint3d(m[0].queryIdx));
+    //         pts2d2.push_back(frame2.GetFeature(m[0].trainIdx).pt);
+    //         pts3d2.push_back(frame2.GetPointData(m[0].trainIdx));
+
+    //         // kp1.push_back(frame1.GetFeature(m[0].queryIdx));
+    //         // kp2.push_back(frame2.GetFeature(m[0].trainIdx));
+    //         // cv::DMatch mm2 = cv::DMatch(pointId, pointId, 0);
+    //         // matchesGood.push_back({mm2});
+    //         // ++pointId;
+    //     }
+    // }
+
+    // if (kp1.size() > 0)
+    // {
+    //     cv::Mat img_match;
+    //     cv::drawMatches(frame1.GetImage(), kp1, frame2.GetImage(), kp2, matchesGood, img_match);
+    //     cv::resize(img_match, img_match, {img_match.cols * 0.7f, img_match.rows * 0.7f});
+    //     cv::imshow("motionEST", img_match);
+    // }
+
+    std::cout << "matches: " << matches << std::endl;
 
     Eigen::Affine3f motion = Eigen::Affine3f::Identity();
     unsigned inliersCount = 0;
@@ -117,9 +118,9 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
             motion = motion.inverse();
 
             {
-                cv::Mat reprIm = frame2.GetImage();
-                cv::Mat reprIm2;
-                cv::cvtColor(reprIm, reprIm2, cv::COLOR_BGR2RGB);
+                // cv::Mat reprIm = frame2.GetImage();
+                // cv::Mat reprIm2;
+                // cv::cvtColor(reprIm, reprIm2, cv::COLOR_BGR2RGB);
                 // pts3d1
 				// std::vector<cv::Point2f> imagePointsReproj;
 				// cv::projectPoints(pts3d1, rvec, tvec, this->cameraMat, this->distCoeffs, imagePointsReproj);
@@ -139,9 +140,9 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
 
                     
                     // real points
-                    cv::circle(reprIm2, pts2d2.at(id), 6, {0, 255, 0}, 3);
-                    cv::circle(reprIm2, pp, 4, {0, 255, 255}, 3);
-                    cv::line(reprIm2, pts2d2.at(id), pp, {0, 255, 255});
+                    // cv::circle(reprIm2, pts2d2.at(id), 6, {0, 255, 0}, 3);
+                    // cv::circle(reprIm2, pp, 4, {0, 255, 255}, 3);
+                    // cv::line(reprIm2, pts2d2.at(id), pp, {0, 255, 255});
 
                     // reprojected
                     // cv::circle(reprIm2, imagePointsReproj.at(id), 2, {255, 0, 255}, 3);
@@ -164,16 +165,15 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
                     }
 
                     // add observations
-                    pts3d2[id].point3d.SetMapPointId(pts3d1_data[id].mapPointId);
-
+                    // pts3d2[id].point3d.SetMapPointId(pts3d1_data[id].mapPointId);
 				}
                 
-                frame2.SetPointsData(pts3d2);
+                // frame2.SetPointsData(pts3d2);
 
                 err = err / inliers.size();
                 err = std::sqrt(err);
 
-                cv::imshow("reprIm2", reprIm2);
+                // cv::imshow("reprIm2", reprIm2);
 
 				// *covariance *= std::sqrt(err/float(inliers.size()));
                 std::cout << "===========================================" << std::endl;
