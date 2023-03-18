@@ -4,7 +4,7 @@
 
 #include <chrono>
 
-namespace performance
+namespace eacham
 {
 
 class BlockTimer
@@ -29,5 +29,5 @@ private:
 
 };
 
-} // namespace performance
+} // namespace eacham
 

@@ -4,7 +4,7 @@
 #include <tuple>
 #include <eigen3/Eigen/Core>
 
-namespace data_source
+namespace eacham
 {
 
 template<typename T>

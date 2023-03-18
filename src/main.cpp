@@ -5,6 +5,8 @@
 #include "modules/performance/BlockTimer.h"
 #include "visualization/Render.h"
 
+using namespace eacham;
+
 int main(int argc, char* argv[])
 {
     if (argc > 1)
@@ -14,19 +16,19 @@ int main(int argc, char* argv[])
     // render::Render renderer;
 
     // TODO: Config
-    const auto sourceType = data_source::DataSourceType::DATASET;
+    const auto sourceType = DataSourceType::DATASET;
     const std::string folder = "/home/blackdyce/Datasets/KITTI";
     
-    auto dataSource = data_source::CreateStereo<stereodata_t>(sourceType, folder);
-    auto dataset = dynamic_cast<data_source::IDataset<stereodata_t>*>(dataSource.get());
-    auto visualOdometry = std::make_unique<odometry::VisualOdometry<stereodata_t>>(dataSource.get());
+    auto dataSource = CreateStereo<stereodata_t>(sourceType, folder);
+    auto dataset = dynamic_cast<IDataset<stereodata_t>*>(dataSource.get());
+    auto visualOdometry = std::make_unique<VisualOdometry<stereodata_t>>(MotionEstimatorType::OPT, dataSource.get());
 
     if (dataset == nullptr)
     {
         return -1;
     }
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < 50; ++i)
     {
         // dataset (camera should use concurrent thread to get the next frame)
         dataset->ReadNext();
@@ -35,15 +37,17 @@ int main(int argc, char* argv[])
         const auto images = dataSource->Get();
 
         {
-            performance::BlockTimer timer;
-            const auto odom = visualOdometry->GetOdometry(images);
-            // renderer.AddFramePoint(odom);
-            // renderer.DrawMap(visualOdometry->GetLocalMapPoints());
+            BlockTimer timer;
+            if (visualOdometry->Proceed(images))
+            {
+                const auto odom = visualOdometry->GetOdometry();
+                // renderer.AddFramePoint(odom);
+                // renderer.DrawMap(visualOdometry->GetLocalMapPoints());
 
-
-            std::cout << "ODOM:\n" << odom << std::endl;
-            std::cout << "GT:\n" << gtPose << std::endl;
-            std::cout << "DIFF:\n" << (odom - gtPose) << std::endl;
+                std::cout << "ODOM:\n" << odom << std::endl;
+                std::cout << "GT:\n" << gtPose << std::endl;
+                std::cout << "DIFF:\n" << (odom - gtPose) << std::endl;
+            }
         }
 
         cv::waitKey(1);

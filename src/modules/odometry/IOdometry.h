@@ -3,7 +3,7 @@
 #include <iostream>
 #include <eigen3/Eigen/Core>
 
-namespace odometry
+namespace eacham
 {
 
 template<typename T>
@@ -11,8 +11,10 @@ class IOdometry
 {
 public:
     ~IOdometry() = default;
+
+    virtual bool Proceed(const T &data) = 0;
     
-    virtual Eigen::Matrix4f GetOdometry(const T &data) {};
+    virtual Eigen::Matrix4f GetOdometry() = 0;
 };
 
-} // namespace odometry
+} // namespace eacham

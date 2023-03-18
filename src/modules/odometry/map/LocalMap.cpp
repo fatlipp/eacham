@@ -3,7 +3,7 @@
 
 #include <eigen3/Eigen/Geometry>
 
-namespace odometry
+namespace eacham
 {
     void LocalMap::AddFrame(Frame &frame)
     {
@@ -28,7 +28,7 @@ namespace odometry
             point.point3d.SetMapPointId(ID++);
 
             auto ppp = point.point3d;
-            ppp.position = tools::transformPoint3d(ppp.position, framePos);
+            ppp.position = transformPoint3d(ppp.position, framePos);
             ppp.observers = 1;
             points3d.push_back(ppp);
         }

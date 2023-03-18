@@ -15,18 +15,30 @@
 #include "odometry/frame/KeyFrame.h"
 #include "odometry/optimization/LocalFramesOptimizer.h"
 #include "../visualization/Render.h"
-#include "MotionEstimator.h"
+#include "motion_estimator/MotionEstimatorPnP.h"
+#include "motion_estimator/MotionEstimatorOpt.h"
+#include "motion_estimator/IMotionEstimator.h"
+#include "odometry/motion_estimator/MotionEstimatorType.h"
 
-namespace odometry
+namespace eacham
 {
 template<typename T>
 class VisualOdometry : public IOdometry<T>
 {
 public:
-    VisualOdometry(const data_source::IDataSourceCamera<T>* camera)
+    VisualOdometry(const MotionEstimatorType &type, const IDataSourceCamera<T>* camera)
         : camera(camera)
     {
-        this->motionEstimator = { camera->GetParameters(), camera->GetDistortion() };
+        switch (type)
+        {
+        case MotionEstimatorType::OPT:
+            this->motionEstimator = std::make_unique<MotionEstimatorOpt>(camera->GetParameters(), camera->GetDistortion());
+            break;
+        
+        default:
+            this->motionEstimator = std::make_unique<MotionEstimatorPnP>(camera->GetParameters(), camera->GetDistortion());
+            break;
+        }
 
         this->transform = Eigen::Affine3f::Identity();
 
@@ -43,28 +55,30 @@ public:
         return localMap.GetPoints();
     }
 
-    Eigen::Matrix4f GetOdometry(const T &data) ;
+    bool Proceed(const T &data) override;
+
+    Eigen::Matrix4f GetOdometry() override;
 
 private:
-    const data_source::IDataSourceCamera<T>* camera;
+    const IDataSourceCamera<T>* camera;
 
     LocalMap localMap;
     Frame lastFrame;
     FrameCreator frameCreator;
-    MotionEstimator motionEstimator;
+    std::unique_ptr<IMotionEstimator> motionEstimator;
     Eigen::Affine3f transform;
 
     LocalFramesOptimizer localOptimizer;
 };
 
-} // namespace odometry
+} // namespace eacham
 
 
-namespace odometry
+namespace eacham
 {
 
 template<typename T>
-Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
+bool VisualOdometry<T>::Proceed(const T &data)
 {
     std::cout << "--------------------------------------------------------------------" << std::endl;
 
@@ -76,16 +90,13 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
 
         if (lastFrame.isValid())
         {
-            const auto [odom, inliers] = motionEstimator.Estimate(lastFrame, frame);
-            // odom(0, 3) = -0.02f;
-            // odom(1, 3) = -0.02f;
-            // odom(2, 3) = 0.85f;
+            auto [odom, inliers] = motionEstimator->Estimate(lastFrame, frame);
 
             if (inliers == 0)
             {
-                std::cout << "\n\nMotion estimation error\n\n";
+                std::cout << "\n++++++++++\nMotion estimation error\n++++++++++\n";
 
-                return frame.GetPosition();
+                return false;
             }
             
             frame.SetOdometry(odom);
@@ -99,13 +110,19 @@ Eigen::Matrix4f VisualOdometry<T>::GetOdometry(const T &data)
 
         localMap.AddFrame(frame);
 
-        if (localMap.size() == 2)
-            localOptimizer.Optimize(localMap);
+        // if (localMap.size() == 2)
+        //     localOptimizer.Optimize(localMap);
 
         this->lastFrame = frame;
     }
 
-    return frame.GetPosition();
+    return true;
+}
+
+template<typename T>
+Eigen::Matrix4f VisualOdometry<T>::GetOdometry()
+{
+    return this->lastFrame.GetPosition();
 }
 
 }

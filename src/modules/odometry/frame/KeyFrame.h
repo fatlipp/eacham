@@ -3,7 +3,7 @@
 #include "odometry/frame/Frame.h"
 #include "types/DataTypes.h"
 
-namespace odometry
+namespace eacham
 {
 
 class KeyFrame : public Frame
@@ -15,4 +15,4 @@ public:
     }
 };
 
-} // namespace odometry
+} // namespace eacham

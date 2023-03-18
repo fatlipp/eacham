@@ -2,7 +2,7 @@
 
 #include "odometry/map/LocalMap.h"
 
-namespace odometry
+namespace eacham
 {
 
 class LocalFramesOptimizer

@@ -5,7 +5,7 @@
 #include <vector>
 
 
-namespace odometry
+namespace eacham
 {
 
 class LocalMap

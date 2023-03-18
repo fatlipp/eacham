@@ -1,17 +1,18 @@
-#include "MotionEstimator.h"
+#include "MotionEstimatorPnP.h"
 #include "tools/Tools3d.h"
+#include "odometry/features/FeatureExtractor.h"
 
 #include <opencv2/calib3d.hpp>
 #include <eigen3/Eigen/Geometry>
 
-namespace odometry
+namespace eacham
 {
 
-MotionEstimator::MotionEstimator()
+MotionEstimatorPnP::MotionEstimatorPnP()
 {
 }
 
-MotionEstimator::MotionEstimator(const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
+MotionEstimatorPnP::MotionEstimatorPnP(const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
     : distCoeffs(distCoeffs)
 {
     if (cameraMatInp.rows == 1)
@@ -29,20 +30,17 @@ MotionEstimator::MotionEstimator(const cv::Mat &cameraMatInp, const cv::Mat &dis
     {
         cameraMat = cameraMatInp;
 
-        std::cerr << "NEED CHECK VALUES!!!!!!!!!";
+        std::cerr << "NEED CHECK VALUES!!!!!!!!!\n";
     }
 }
 
-MotionEstimator::~MotionEstimator()
-{
-}
-
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimator::Estimate(const Frame& frame1, Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& frame1, Frame& frame2)
 {
     const cv::Mat descriptor1 = frame1.GetDescriptors().clone();
     const cv::Mat descriptor2 = frame2.GetDescriptors().clone();
 
-    const static auto mather = std::make_unique<cv::BFMatcher>(cv::NORM_HAMMING, false);
+    const static matcher_t mather = FeatureExtractor::GetMatcher();
+
     std::vector<std::vector<cv::DMatch>> matches;
     mather->knnMatch(descriptor1, descriptor2, matches, 2);
 
@@ -65,13 +63,8 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimator::Estimate(const Frame& fra
 
     for (const auto& m : matches)
     {
-        if (m[0].distance < 0.6f * m[1].distance)
+        if (m[0].distance < 0.7f * m[1].distance)
         {
-            if (tools::BinaryDescriptorDist(descriptor1.row(m[0].queryIdx), descriptor2.row(m[0].trainIdx)) > 30)
-            {
-                // continue;
-            }
-
             pts3d1.push_back(frame1.GetPoint3d(m[0].queryIdx).position);
             pts3d1_data.push_back(frame1.GetPoint3d(m[0].queryIdx));
             pts2d2.push_back(frame2.GetFeature(m[0].trainIdx).pt);
@@ -106,7 +99,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimator::Estimate(const Frame& fra
 		cv::Mat tvec = cv::Mat_<double>(3, 1);
 
         std::vector<int> inliers;
-        cv::solvePnPRansac(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, false, 1000, 2.0f, 0.99f, inliers, cv::SOLVEPNP_ITERATIVE);
+        cv::solvePnPRansac(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, false, 1000, 8.0f, 0.99f, inliers, cv::SOLVEPNP_EPNP);
     
         std::cout << "inliers: " << inliers.size() << " (" << (inliers.size() / static_cast<float>(pts2d2.size())) << ")" << std::endl;
 
@@ -127,7 +120,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimator::Estimate(const Frame& fra
                 cv::Mat reprIm = frame2.GetImage();
                 cv::Mat reprIm2;
                 cv::cvtColor(reprIm, reprIm2, cv::COLOR_BGR2RGB);
-                
+                // pts3d1
 				// std::vector<cv::Point2f> imagePointsReproj;
 				// cv::projectPoints(pts3d1, rvec, tvec, this->cameraMat, this->distCoeffs, imagePointsReproj);
                 
@@ -136,13 +129,13 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimator::Estimate(const Frame& fra
                 float maxErr = -10000;
 
                 // reprojection error check
-				for (int i = 0; i < inliers.size(); ++i)
+				for (int i = 0; i < pts3d1.size(); ++i)
 				{
-                    const int id = inliers[i];
+                    const int id = i;//inliers[i];
 
                     auto pt = pts3d1.at(id);
-                    auto pp1 = tools::transformPointD(pt, R, tvec);
-                    const auto pp = tools::project3dPoint(pp1, this->cameraMatOneDim);
+                    auto pp1 = transformPointD(pt, R, tvec);
+                    const auto pp = project3dPoint(pp1, this->cameraMatOneDim);
 
                     
                     // real points

@@ -2,10 +2,10 @@
 
 #include "types/DataTypes.h"
 
-#include <opencv4/opencv2/core.hpp>
+#include <opencv2/core.hpp>
 #include <eigen3/Eigen/Core>
 
-namespace odometry
+namespace eacham
 {
 
 struct FramePoint3d
@@ -75,7 +75,7 @@ public:
 
     cv::Mat GetDescriptors() const
     {
-        cv::Mat result = cv::Mat(pointsData.size(), 32, pointsData[0].descriptor.type());
+        cv::Mat result = cv::Mat(pointsData.size(), pointsData[0].descriptor.cols, pointsData[0].descriptor.type());
 
         for (int i = 0; i < pointsData.size(); ++i)
         {
@@ -140,4 +140,4 @@ protected:
 
 };
 
-} // namespace odometry
+} // namespace eacham

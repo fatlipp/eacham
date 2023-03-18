@@ -1,11 +1,11 @@
 #include "FrameCreator.h"
 
-#include <opencv4/opencv2/core.hpp>
+#include <opencv2/core.hpp>
 #include <eigen3/Eigen/Core>
 
 #include "tools/Tools3d.h"
 
-namespace odometry
+namespace eacham
 {
 
 Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
@@ -47,14 +47,14 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
             const int id1 = m[0].queryIdx;
             const int id2 = m[0].trainIdx;
 
-            if (tools::BinaryDescriptorDist(descriptor1.row(id1), descriptor2.row(id2)) > 40)
+            if (BinaryDescriptorDist(descriptor1.row(id1), descriptor2.row(id2)) > 30)
             {
-                continue;
+                // continue;
             }
 
-            cv::Point3f pos3d = tools::Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, camera);
+            cv::Point3f pos3d = Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, camera);
 
-            if (pos3d.z > 0.0f && pos3d.z < 50.0f)
+            if (pos3d.z > 0.0f && pos3d.z < 60.0f)
             {
                 frame.AddPoint(pointId, pos3d, features1[id1], descriptor1.row(id1).clone());
 
@@ -70,7 +70,7 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
 
     for (int i = 0; i < ptsGood1.size(); ++i)
     {
-        const auto pp = tools::project3dPoint(pts3d1.at(i), camera);
+        const auto pp = project3dPoint(pts3d1.at(i), camera);
 
         cv::circle(reprIm, ptsGood1.at(i), 6, {0, 255, 0}, 3);
         cv::circle(reprIm, pp, 3, {255, 0, 0}, 3);

@@ -3,7 +3,7 @@ project(eacham)
 
 set (CMAKE_CXX_STANDARD 17)
 
-find_package(OpenCV 4.2 REQUIRED)
+find_package(OpenCV 4.7 REQUIRED PATHS /home/blackdyce/Apps/opencv4)
 message("OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
 message("OpenCV_LIBRARIES = ${OpenCV_LIBRARIES}")
 
@@ -23,7 +23,8 @@ set(SOURCE
     src/modules/odometry/map/LocalMap.cpp
 
     src/modules/odometry/VisualOdometry.cpp
-    src/modules/odometry/MotionEstimator.cpp
+    src/modules/odometry/motion_estimator/MotionEstimatorPnP.cpp
+    src/modules/odometry/motion_estimator/MotionEstimatorOpt.cpp
     
     src/modules/odometry/features/FeatureExtractor.cpp
     src/modules/odometry/frame/FrameCreator.cpp

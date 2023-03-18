@@ -2,10 +2,10 @@
 
 #include <string>
 #include <tuple>
-#include <opencv4/opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 
 
-namespace data_source
+namespace eacham
 {
 
 template<typename T>

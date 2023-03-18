@@ -7,7 +7,7 @@
 #include "DataSourceKittyStereo.h"
 #include "types/DataTypes.h"
 
-namespace data_source
+namespace eacham
 {
 template<typename T>
 std::unique_ptr<IDataSourceCamera<T>> CreateStereo(const DataSourceType& dataSourceType, const std::string &path)
@@ -21,4 +21,4 @@ std::unique_ptr<IDataSourceCamera<T>> CreateStereo(const DataSourceType& dataSou
     return {};
 }
     
-} // namespace data_source
+} // namespace eacham

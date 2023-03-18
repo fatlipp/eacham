@@ -20,7 +20,7 @@
 
 #include <map>
 
-namespace odometry
+namespace eacham
 {
     LocalFramesOptimizer::LocalFramesOptimizer()
     {
@@ -53,21 +53,21 @@ namespace odometry
 
         for (auto &frame : map.GetFrames())
         {
-            const Eigen::Matrix4d position = frame.GetPosition().cast<double>();
+            const Eigen::Matrix4d position = Eigen::Matrix4d::Identity();//frame.GetPosition().cast<double>();
             initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
             
             std::cout << frameId << "] ==================================================================================================================\n";
 
             if (frameId > INITIAL_ID)
             {
-                const auto noise = CreateNoise6(10.532, 13.5);  
+                const auto noise = CreateNoise6(0.32, 3.5);  
 
                 Eigen::Matrix4d odom = frame.GetOdometry().cast<double>();
                 std::cout << frameId << ") odom:\n" << odom << std::endl;
 
                 // graph.emplace_shared<gtsam::BetweenFactor<gtsam::Pose3> >(gtsam::Symbol('x', frameId), gtsam::Symbol('x', frameId - 1), 
                 //     gtsam::Pose3(odom), noise);
-                graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
+                // graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
             else
             {
@@ -88,10 +88,10 @@ namespace odometry
                 const gtsam::Point2 measurement1 = camera.projectSafe(mapPointGTSAM).first;
                 const gtsam::Point2 measurement2 = {point.keypoint.pt.x, point.keypoint.pt.y};
 
-                std::cout << "measurement = 1: [" << measurement0.x() << ", " << measurement0.y() << 
-                    "], 2: [" << measurement1.x() << ", " << measurement1.y() << 
-                    "], 3: [" << measurement2.x() << ", " << measurement2.y() << 
-                    "], map: [" << mapPointGTSAM.x() << ", " << mapPointGTSAM.y() << ", " << mapPointGTSAM.z() << "] " << std::endl;
+                // std::cout << "measurement = 1: [" << measurement0.x() << ", " << measurement0.y() << 
+                //     "], 2: [" << measurement1.x() << ", " << measurement1.y() << 
+                //     "], 3: [" << measurement2.x() << ", " << measurement2.y() << 
+                //     "], map: [" << mapPointGTSAM.x() << ", " << mapPointGTSAM.y() << ", " << mapPointGTSAM.z() << "] " << std::endl;
 
                 const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
@@ -118,7 +118,7 @@ namespace odometry
             // graph.emplace_shared<gtsam::NonlinearEquality<gtsam::Point3> >(gtsam::Symbol('l', point.mapPointId), mapPointGTSAM);
 
             // add uncertatinty to the map points
-            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.05);
+            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.15);
             graph.addPrior(gtsam::Symbol('l', point.mapPointId), mapPointGTSAM, priorNoise);
         }
 
@@ -177,4 +177,4 @@ namespace odometry
 
         return true;
     }
-} // namespace odometry
+} // namespace eacham

@@ -4,7 +4,7 @@
 #include "types/DataTypes.h"
 #include "odometry/features/FeatureExtractor.h"
 
-namespace odometry
+namespace eacham
 {
 
 class FrameCreator
@@ -12,16 +12,16 @@ class FrameCreator
 public:
     FrameCreator()
     {
-        this->mather = std::make_unique<cv::BFMatcher>(cv::NORM_HAMMING, false);
+        this->mather = FeatureExtractor::GetMatcher();
     }
 
     Frame Create(const stereodata_t& data, const cv::Mat &camera);
 
 private:
-    std::unique_ptr<cv::BFMatcher> mather;
+    matcher_t mather;
 
     FeatureExtractor extractor;
 
 };
 
-} // namespace odometry
+} // namespace eacham
