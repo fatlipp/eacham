@@ -65,6 +65,7 @@
         "core": "cpp",
         "*.ipp": "cpp",
         "future": "cpp",
-        "geometry": "cpp"
+        "geometry": "cpp",
+        "*.txx": "cpp"
     }
 }

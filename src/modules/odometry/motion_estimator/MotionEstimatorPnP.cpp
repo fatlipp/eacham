@@ -38,7 +38,7 @@ MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtrac
 
 std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& frame1, Frame& frame2)
 {
-    const auto [pts1, pts2] = Match(frame1, frame2);
+    const auto [pts1, pts2] = FindMatches(frame1, frame2);
     const auto matches = pts1.size();
 
     std::vector<cv::Point3f> pts3d1; 
@@ -46,10 +46,11 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
 
     for (size_t i = 0; i < matches; ++i)
     {
-        pts3d1.push_back(pts1[i].point3d.position);
-        pts2d2.push_back(pts2[i].keypoint.pt);
-    }
+        pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
+        pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
 
+        frame2.GetPointData(pts2[i]).associatedMapPointId = frame1.GetPointData(pts1[i]).associatedMapPointId;
+    }
 
     // std::vector<cv::Point3f> pts3d1; 
     // std::vector<FramePoint3d> pts3d1_data; 

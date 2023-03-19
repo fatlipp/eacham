@@ -50,14 +50,16 @@ gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2(const float posNoise, con
                 (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
 }
 
-void addFramePointsToTheGraph(const std::vector<PointData>& points, const unsigned id, gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &K)
+void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& pointsIds, const unsigned id, 
+    gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &K)
 {
     const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
 
     unsigned landmarkId = 0;
-    for (auto &point : points)
+    for (auto &pointId : pointsIds)
     {
-        const gtsam::Point2 measurement2 = {point.keypoint.pt.x, point.keypoint.pt.y};
+        const auto point = frame.GetPointData(pointId).keypoint.pt;
+        const gtsam::Point2 measurement2 = {point.x, point.y};
 
         graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
             measurement2, measurementNoise, gtsam::Symbol('x', id), gtsam::Symbol('l', landmarkId), K);
@@ -68,13 +70,18 @@ void addFramePointsToTheGraph(const std::vector<PointData>& points, const unsign
 
 std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& frame1, Frame& frame2)
 {
-    const auto [pts3d1, pts3d2] = Match(frame1, frame2); 
+    const auto [pts1, pts2] = FindMatches(frame1, frame2); 
 
-    const unsigned inliers = pts3d1.size();
+    const unsigned matches = pts1.size();
 
-    std::cout << "MotionEstimationOpt() Good matches: " << inliers << std::endl;
+    for (size_t i = 0; i < matches; ++i)
+    {
+        frame2.GetPointData(pts2[i]).associatedMapPointId = frame1.GetPointData(pts1[i]).associatedMapPointId;
+    }
 
-    if (inliers < 10)
+    std::cout << "MotionEstimationOpt() Good matches: " << matches << std::endl;
+
+    if (matches < 10)
     {
         std::cout << "Motion Estimation error: Not enough matches count\n";
 
@@ -96,16 +103,16 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise2);
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
 
-    addFramePointsToTheGraph(pts3d1, 0, graph, this->K);
-    addFramePointsToTheGraph(pts3d2, 1, graph, this->K);
+    addFramePointsToTheGraph(frame1, pts1, 0, graph, this->K);
+    addFramePointsToTheGraph(frame2, pts2, 1, graph, this->K);
     
     // map
     unsigned landmarkId = 0;
-    for (auto &point1 : pts3d1)
+    for (auto &point1 : pts1)
     {
-        const auto point = point1.point3d;
+        const auto point = frame1.GetPointData(point1).position3d;
 
-        const auto mapPointGTSAM = gtsam::Point3( point.position.x, point.position.y, point.position.z );
+        const auto mapPointGTSAM = gtsam::Point3( point.x, point.y, point.z );
         initialMeasurements.insert(gtsam::Symbol('l', landmarkId), mapPointGTSAM);
 
         // add uncertatinty to the map points
@@ -133,7 +140,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     result.block<3, 3>(0, 0) = targetFrame.rotation().matrix();
     result.block<3, 1>(0, 3) = targetFrame.translation();
 
-    return { result.cast<float>(), inliers };
+    return { result.cast<float>(), matches };
 }
 
 }

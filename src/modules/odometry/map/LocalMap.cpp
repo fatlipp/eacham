@@ -13,24 +13,23 @@ namespace eacham
         }
 
         static unsigned ID = 1;
-        Eigen::Matrix4f framePos = frame.GetPosition();
-        // Eigen::Affine3f aff = Eigen::Affine3f(framePos);
+        const Eigen::Matrix4f framePos = frame.GetPosition();
 
         for (auto &point : frame.GetPointsData())
         {
-            if (point.point3d.mapPointId > 0)
+            if (point.associatedMapPointId > 0)
             {
-                GetPoint(point.point3d.mapPointId).observers++;
+                GetPoint(point.associatedMapPointId).AddObserver();
 
                 continue;
             }
+            // point.point3d.SetMapPointId(ID++);
 
-            point.point3d.SetMapPointId(ID++);
+            MapPoint3d mapPoint { ID++, transformPoint3d(point.position3d, framePos) };
+            mapPoint.observers = 1;
+            points3d.push_back(mapPoint);
 
-            auto ppp = point.point3d;
-            ppp.position = transformPoint3d(ppp.position, framePos);
-            ppp.observers = 1;
-            points3d.push_back(ppp);
+            point.associatedMapPointId = mapPoint.id;
         }
 
         frames.push_back(frame);

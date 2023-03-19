@@ -42,17 +42,16 @@ public:
             break;
         }
 
-        this->transform = Eigen::Affine3f::Identity();
+        this->localOptimizer = std::make_unique<LocalFramesOptimizer>(camera->GetParameters(), camera->GetDistortion());
 
         this->localMap = LocalMap(10U);
     }
 
     void SetCameraMatrix()
     {
-        
     }
 
-    std::vector<FramePoint3d> GetLocalMapPoints() 
+    std::vector<MapPoint3d> GetLocalMapPoints() 
     {
         return localMap.GetPoints();
     }
@@ -66,11 +65,10 @@ private:
 
     LocalMap localMap;
     Frame lastFrame;
+
     std::unique_ptr<FrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
-    Eigen::Affine3f transform;
-
-    LocalFramesOptimizer localOptimizer;
+    std::unique_ptr<LocalFramesOptimizer> localOptimizer;
 };
 
 } // namespace eacham
@@ -88,11 +86,9 @@ bool VisualOdometry<T>::Proceed(const T &data)
 
     if (frame.isValid())
     {
-        Eigen::Matrix4f odom;
-
         if (lastFrame.isValid())
         {
-            auto [odom, inliers] = motionEstimator->Estimate(lastFrame, frame);
+            const auto [odom, inliers] = motionEstimator->Estimate(lastFrame, frame);
 
             if (inliers == 0)
             {
@@ -111,9 +107,7 @@ bool VisualOdometry<T>::Proceed(const T &data)
         }
 
         localMap.AddFrame(frame);
-
-        // if (localMap.size() == 2)
-        //     localOptimizer.Optimize(localMap);
+        localOptimizer->Optimize(localMap);
 
         this->lastFrame = frame;
     }

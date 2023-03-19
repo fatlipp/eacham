@@ -18,7 +18,7 @@ public:
     }
 
 public:
-    std::tuple<std::vector<PointData>, std::vector<PointData>> Match(const Frame& frame1, Frame& frame2)
+    std::tuple<std::vector<int>, std::vector<int>> FindMatches(const Frame& frame1, const Frame& frame2)
     {
         const cv::Mat descriptor1 = frame1.GetDescriptors();
         const cv::Mat descriptor2 = frame2.GetDescriptors();
@@ -26,15 +26,15 @@ public:
         std::vector<std::vector<cv::DMatch>> matches;
         this->mather->knnMatch(descriptor1, descriptor2, matches, 2);
 
-        std::vector<PointData> pts1; 
-        std::vector<PointData> pts2; 
+        std::vector<int> pts1; 
+        std::vector<int> pts2; 
 
         for (const auto& m : matches)
         {
             if (m[0].distance < 0.7f * m[1].distance)
             {
-                pts1.push_back(frame1.GetPointData(m[0].queryIdx));
-                pts2.push_back(frame2.GetPointData(m[0].trainIdx));
+                pts1.push_back(m[0].queryIdx);
+                pts2.push_back(m[0].trainIdx);
             }
         }
 

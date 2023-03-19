@@ -134,7 +134,7 @@ public:
         this->points.clear();
     }
 
-    void DrawMap(const std::vector<FramePoint3d> &points)
+    void DrawMap(const std::vector<MapPoint3d> &points)
     {
         std::lock_guard<std::mutex> lock(mute);
 

@@ -22,8 +22,18 @@
 
 namespace eacham
 {
-    LocalFramesOptimizer::LocalFramesOptimizer()
+    LocalFramesOptimizer::LocalFramesOptimizer(const cv::Mat &cameraMat, const cv::Mat &distCoeffs)
     {
+        if (cameraMat.rows == 1)
+        {
+            this->K = boost::make_shared<gtsam::Cal3_S2>(cameraMat.at<float>(0, 0), cameraMat.at<float>(0, 1), 
+                                                        0.0, 
+                                                        cameraMat.at<float>(0, 2) , cameraMat.at<float>(0, 3));
+        }
+        else
+        {
+            std::cerr << "NEED CHECK VALUES!!!!!!!!!\n";
+        }
     }
 
     gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6(const float posNoise, const float rot)
@@ -35,15 +45,13 @@ namespace eacham
 
     bool LocalFramesOptimizer::Optimize(LocalMap &map)
     {
-        std::cout << "map.size() = " << map.size() << std::endl;
+        std::cout << "LocalFramesOptimizer() map.size() = " << map.size() << std::endl;
 
-        if (map.size() < 2)
+        if (map.size() < 5)
         {
             return false;
         }
         
-        gtsam::Cal3_S2::shared_ptr K(new gtsam::Cal3_S2(718.85602, 718.85602, 0.0, 607.19281, 185.2157));
-
         gtsam::NonlinearFactorGraph graph;
         gtsam::Values initialMeasurements;
 
@@ -75,17 +83,17 @@ namespace eacham
 
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
-    
+
             for (auto &point : frame.GetPointsData())
             {
-                if (point.point3d.mapPointId == 0 || map.GetPoint(point.point3d.mapPointId).observers < 2)
+                if (point.associatedMapPointId == 0 || map.GetPoint(point.associatedMapPointId).observers < 2)
                     continue;
 
-                const auto mapPoint = map.GetPoint(point.point3d.mapPointId).position;
-                const auto mapPointGTSAM = gtsam::Point3( mapPoint.x, mapPoint.y, mapPoint.z );
-                gtsam::PinholeCamera<gtsam::Cal3_S2> camera(gtsam::Pose3(position), *K);
-                const gtsam::Point2 measurement0 = camera.project2(mapPointGTSAM);
-                const gtsam::Point2 measurement1 = camera.projectSafe(mapPointGTSAM).first;
+                // const auto mapPoint = map.GetPoint(point.point3d.mapPointId).position;
+                // const auto mapPointGTSAM = gtsam::Point3( mapPoint.x, mapPoint.y, mapPoint.z );
+                // gtsam::PinholeCamera<gtsam::Cal3_S2> camera(gtsam::Pose3(position), *K);
+                // const gtsam::Point2 measurement0 = camera.project2(mapPointGTSAM);
+                // const gtsam::Point2 measurement1 = camera.projectSafe(mapPointGTSAM).first;
                 const gtsam::Point2 measurement2 = {point.keypoint.pt.x, point.keypoint.pt.y};
 
                 // std::cout << "measurement = 1: [" << measurement0.x() << ", " << measurement0.y() << 
@@ -95,7 +103,7 @@ namespace eacham
 
                 const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
-                    measurement2, measurementNoise, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.point3d.mapPointId), K);
+                    measurement2, measurementNoise, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->K);
 
             }
 
@@ -106,20 +114,20 @@ namespace eacham
         unsigned mapPoints = 0;
         for (auto &point : map.GetPoints())
         {
-            if (point.mapPointId == 0 || point.observers < 2)
+            if (point.id == 0 || point.observers < 2)
                 continue;
 
             ++mapPoints;
 
             const auto mapPointGTSAM = gtsam::Point3( point.position.x, point.position.y, point.position.z );
-            initialMeasurements.insert(gtsam::Symbol('l', point.mapPointId), mapPointGTSAM);
+            initialMeasurements.insert(gtsam::Symbol('l', point.id), mapPointGTSAM);
 
             // make const
             // graph.emplace_shared<gtsam::NonlinearEquality<gtsam::Point3> >(gtsam::Symbol('l', point.mapPointId), mapPointGTSAM);
 
             // add uncertatinty to the map points
             const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.15);
-            graph.addPrior(gtsam::Symbol('l', point.mapPointId), mapPointGTSAM, priorNoise);
+            graph.addPrior(gtsam::Symbol('l', point.id), mapPointGTSAM, priorNoise);
         }
 
 
