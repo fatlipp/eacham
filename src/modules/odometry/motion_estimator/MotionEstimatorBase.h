@@ -31,7 +31,7 @@ public:
 
         for (const auto& m : matches)
         {
-            if (m[0].distance < 0.7f * m[1].distance)
+            if (m[0].distance < 0.6f * m[1].distance)
             {
                 pts1.push_back(m[0].queryIdx);
                 pts2.push_back(m[0].trainIdx);

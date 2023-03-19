@@ -35,7 +35,7 @@ public:
     void Start()
     {
         const int WIDTH = 1280;
-        const int HEIGHT = 720;
+        const int HEIGHT = 500;
 
         const int UI_WIDTH = 120;
 
@@ -50,7 +50,7 @@ public:
 
         // Define Projection and initial ModelView matrix
         pangolin::OpenGlRenderState cameraState(
-            pangolin::ProjectionMatrix(WIDTH, HEIGHT, 420, 420, 320, 240 ,0.01, 10000),
+            pangolin::ProjectionMatrix(WIDTH, HEIGHT, 420, 420, static_cast<float>(WIDTH) / 2.0f, static_cast<float>(HEIGHT) / 2.0f ,0.01, 10000),
             pangolin::ModelViewLookAt(-2, 2, -2, 0,0,0, pangolin::AxisY)
         );
 
@@ -132,10 +132,47 @@ public:
 
                 glPointSize(15);
                 glBegin(GL_POINTS);
-                glColor3f(1.0, 0.0, 0.0);
-                
-                for (const auto& point : this->frames)
+
+                for (int i = 0; i < this->frames.size(); ++i)
                 {
+                    auto point = this->frames[i];
+
+                    if (i == 0)
+                    {
+                        glColor3f(1.0, 1.0, 0.0);
+                    }
+                    else if (i == this->frames.size() - 1)
+                    {
+                        glColor3f(0.0, 1.0, 1.0);
+
+                        glEnd();
+
+                        glBegin(GL_LINES);
+                        glLineWidth(3);
+                        auto point2 = this->frames[i - 1];
+                        glVertex3f(point.x(), point.y(), point.z());
+                        glVertex3f(point2.x(), point2.y(), point2.z());
+                        glEnd();
+
+                        glPointSize(15);
+                        glBegin(GL_POINTS);
+                        glColor3f(0.0, 1.0, 1.0);
+                    }
+                    else
+                    {
+                        glEnd();
+
+                        glBegin(GL_LINES);
+                        glLineWidth(3);
+                        auto point2 = this->frames[i - 1];
+                        glVertex3f(point.x(), point.y(), point.z());
+                        glVertex3f(point2.x(), point2.y(), point2.z());
+                        glEnd();
+
+                        glPointSize(15);
+                        glBegin(GL_POINTS);
+                        glColor3f(1.0, 0.0, 0.0);
+                    }
                     glVertex3f(point.x(), point.y(), point.z());
                 }
                 glEnd();

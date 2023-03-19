@@ -59,17 +59,6 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
         }
     }
 
-    cv::Mat reprIm = std::get<1>(data).clone();
-    for (int i = 0; i < ptsGood1.size(); ++i)
-    {
-        const auto pp = project3dPoint(pts3d1.at(i), camera);
-
-        cv::circle(reprIm, ptsGood1.at(i), 6, {0, 255, 0}, 3);
-        cv::circle(reprIm, pp, 3, {255, 0, 0}, 3);
-        cv::line(reprIm, ptsGood1.at(i), pp, {0, 0, 255});
-    }
-    cv::imshow("keyFramePts", reprIm);
-
     return frame;
 }
 
