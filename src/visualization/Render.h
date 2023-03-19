@@ -44,6 +44,7 @@ public:
         glEnable (GL_BLEND);
 
         pangolin::CreatePanel("ui").SetBounds(0.0, 1.0, 0.0, pangolin::Attach::Pix(UI_WIDTH));
+        pangolin::Var<bool> buttonPlay("ui.Play", false, false);
         pangolin::Var<bool> buttonStep("ui.Step", false, false);
         pangolin::Var<bool> buttonClose("ui.Close", false, false);
 
@@ -68,6 +69,10 @@ public:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             {
+                if (pangolin::Pushed(buttonPlay) && onPlayClick != nullptr)
+                {
+                    onPlayClick();
+                }
                 if (pangolin::Pushed(buttonStep) && onStepClick != nullptr)
                 {
                     onStepClick();
@@ -217,6 +222,11 @@ public:
         }
     }
 
+    void SetOnPlayClick(std::function<void()> onPlayClick)
+    {
+        this->onPlayClick = onPlayClick;
+    }
+
     void SetOnStepClick(std::function<void()> onStepClick)
     {
         this->onStepClick = onStepClick;
@@ -237,6 +247,7 @@ private:
     std::vector<Eigen::Vector3f> frames;
     std::vector<Eigen::Vector3f> framesGT;
 
+    std::function<void()> onPlayClick;
     std::function<void()> onStepClick;
     std::function<void()> onCloseClick;
 };

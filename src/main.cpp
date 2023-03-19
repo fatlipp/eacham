@@ -32,13 +32,19 @@ int main(int argc, char* argv[])
     std::cout << "extractorType: " << static_cast<int>(extractorType) << std::endl; 
     std::cout << "motionEstimatorType: " << static_cast<int>(motionEstimatorType) << std::endl; 
 
-    bool close = false;
+    bool play = false;
     bool nextStep = true;
+    bool close = false;
 
     Render renderer;
+    renderer.SetOnPlayClick([&]()
+        {
+            play = true;
+        });
     renderer.SetOnStepClick([&]()
         {
-            nextStep = true;
+            nextStep = !play;
+            play = false;
         });
     renderer.SetOnCloseClick([&]()
         {
@@ -60,11 +66,11 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    int i = 0;
+    int frameId = 0;
 
     while (!close)
     {
-        if (nextStep)
+        if (nextStep || play)
         {
             nextStep = false;
 
@@ -75,6 +81,10 @@ int main(int argc, char* argv[])
             const auto images = dataSource->Get();
 
             {
+                std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+                std::cout << "+++++++++++++++++++++++++++++[" << frameId << "]+++++++++++++++++++++++++++++" << std::endl;
+                std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+
                 BlockTimer timer;
                 if (visualOdometry->Proceed(images))
                 {
@@ -93,6 +103,8 @@ int main(int argc, char* argv[])
                     break;
                 }
             }
+
+            ++frameId;
         }
 
         cv::waitKey(1);
