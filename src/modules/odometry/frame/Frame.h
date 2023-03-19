@@ -136,6 +136,8 @@ public:
         return pointsData[id];
     }
 
+    unsigned id;
+
 protected:
     double timestamp;
 

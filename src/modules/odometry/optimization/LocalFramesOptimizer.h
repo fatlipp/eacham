@@ -19,7 +19,7 @@ class LocalFramesOptimizer
 public:
     LocalFramesOptimizer(const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
 
-    bool Optimize(LocalMap &map);
+    bool Optimize(LocalMap *map);
 
 private:
     boost::shared_ptr<gtsam::Cal3_S2> K;

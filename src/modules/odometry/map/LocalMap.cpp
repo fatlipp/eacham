@@ -32,6 +32,9 @@ namespace eacham
             point.associatedMapPointId = mapPoint.id;
         }
 
+        static unsigned FRAME_ID = 1;
+        frame.id = FRAME_ID++;
+        
         frames.push_back(frame);
     }
 }

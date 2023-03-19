@@ -43,11 +43,11 @@ namespace eacham
                     (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
     }
 
-    bool LocalFramesOptimizer::Optimize(LocalMap &map)
+    bool LocalFramesOptimizer::Optimize(LocalMap *map)
     {
-        std::cout << "LocalFramesOptimizer() map.size() = " << map.size() << std::endl;
+        std::cout << "LocalFramesOptimizer() map.size() = " << map->size() << std::endl;
 
-        if (map.size() < 5)
+        if (map->size() < 5)
         {
             return false;
         }
@@ -55,38 +55,34 @@ namespace eacham
         gtsam::NonlinearFactorGraph graph;
         gtsam::Values initialMeasurements;
 
-        const int INITIAL_ID = 0;
-        int frameId = INITIAL_ID;
-        int landmarkId = INITIAL_ID;
+        int frameId = 0;
 
-        for (auto &frame : map.GetFrames())
+        for (auto &frame : map->GetFrames())
         {
-            const Eigen::Matrix4d position = Eigen::Matrix4d::Identity();//frame.GetPosition().cast<double>();
+            const Eigen::Matrix4d position = frame.GetPosition().cast<double>();
             initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
             
-            std::cout << frameId << "] ==================================================================================================================\n";
+            // std::cout << frameId << "] ==================================================================================================================\n";
 
-            if (frameId > INITIAL_ID)
+            if (frame.id > 1)
             {
-                const auto noise = CreateNoise6(0.32, 3.5);  
+                const auto noise = CreateNoise6(0.2, 1.5);  
 
-                Eigen::Matrix4d odom = frame.GetOdometry().cast<double>();
-                std::cout << frameId << ") odom:\n" << odom << std::endl;
-
+                // const Eigen::Matrix4d odom = frame.GetOdometry().cast<double>();
                 // graph.emplace_shared<gtsam::BetweenFactor<gtsam::Pose3> >(gtsam::Symbol('x', frameId), gtsam::Symbol('x', frameId - 1), 
                 //     gtsam::Pose3(odom), noise);
-                // graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
+                graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
             else
             {
-                const auto noise = CreateNoise6(0.0001, 0.0001); 
+                const auto noise = CreateNoise6(0.000001, 0.0000001); 
 
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
 
             for (auto &point : frame.GetPointsData())
             {
-                if (point.associatedMapPointId == 0 || map.GetPoint(point.associatedMapPointId).observers < 2)
+                if (point.associatedMapPointId == 0 || map->GetPoint(point.associatedMapPointId).observers < 2)
                     continue;
 
                 // const auto mapPoint = map.GetPoint(point.point3d.mapPointId).position;
@@ -101,7 +97,7 @@ namespace eacham
                 //     "], 3: [" << measurement2.x() << ", " << measurement2.y() << 
                 //     "], map: [" << mapPointGTSAM.x() << ", " << mapPointGTSAM.y() << ", " << mapPointGTSAM.z() << "] " << std::endl;
 
-                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
+                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 2.1);
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
                     measurement2, measurementNoise, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->K);
 
@@ -112,76 +108,61 @@ namespace eacham
         
         // map
         unsigned mapPoints = 0;
-        for (auto &point : map.GetPoints())
+        std::vector<unsigned> mapPointIds;
+        for (auto &point : map->GetPoints())
         {
             if (point.id == 0 || point.observers < 2)
                 continue;
 
-            ++mapPoints;
-
             const auto mapPointGTSAM = gtsam::Point3( point.position.x, point.position.y, point.position.z );
             initialMeasurements.insert(gtsam::Symbol('l', point.id), mapPointGTSAM);
 
-            // make const
-            // graph.emplace_shared<gtsam::NonlinearEquality<gtsam::Point3> >(gtsam::Symbol('l', point.mapPointId), mapPointGTSAM);
-
             // add uncertatinty to the map points
-            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.15);
+            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.05);
             graph.addPrior(gtsam::Symbol('l', point.id), mapPointGTSAM, priorNoise);
-        }
 
+            mapPointIds.push_back(point.id);
+
+            ++mapPoints;
+        }
 
         std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
 
-        gtsam::GaussNewtonParams parameters;
-        parameters.relativeErrorTol = 1e-7;
-        parameters.maxIterations = 10000;
-        // optimizer = std::make_unique<gtsam::GaussNewtonOptimizer>(graph, initialMeasurements, parameters);
-
         gtsam::LevenbergMarquardtParams params;
-        params.lambdaInitial = 1;
         params.lambdaFactor = 10;
         params.maxIterations = 1000;
-        params.absoluteErrorTol = 0.000000000001;
-        params.verbosity = gtsam::NonlinearOptimizerParams::ERROR;
-        params.verbosityLM = gtsam::LevenbergMarquardtParams::TRYLAMBDA;
-        params.linearSolverType = gtsam::NonlinearOptimizerParams::CHOLMOD;
-        // optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
-        optimizer = std::make_unique<gtsam::DoglegOptimizer>(graph, initialMeasurements);
+        params.absoluteErrorTol = 0.00001;
+        optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
 
-        // std::cout << "Before" << std::endl;
-
-        // for (int i = 1; i < frameId; ++i)
-        // {
-        //     gtsam::Pose3 frame1 = initialMeasurements.at<gtsam::Pose3>(gtsam::Symbol('x', i));
-        //     std::cout << "frame " << i << " = " << frame1 << std::endl;
-        // }
-
-        // for (int i = 1; i < 5; ++i)
-        // {
-        //     gtsam::Point3 frame1 = initialMeasurements.at<gtsam::Point3>(gtsam::Symbol('l', mapIds[i]));
-        //     std::cout << "mapPoint " << mapIds[i] << " = [" << frame1.x() << ", " << frame1.y() << ", " << frame1.z() << "]" << std::endl;
-        // }
-
-        gtsam::Values result = optimizer->optimize();
+        gtsam::Values optimizationResult = optimizer->optimize();
 
         // result.print("Optimization result:\n");
         // std::cout << "final error = " << graph.error(result) << std::endl;
         std::cout << "frames: " << frameId << ", mapPoints: " << mapPoints << std::endl;
         std::cout << "++initial error = " << graph.error(initialMeasurements) << std::endl;
-        std::cout << "++final error = " << graph.error(result) << std::endl << std::endl;
+        std::cout << "++final error = " << graph.error(optimizationResult) << std::endl << std::endl;
 
-        for (int i = 1; i < frameId; ++i)
+        for (int i = 0; i < frameId; ++i)
         {
-            gtsam::Pose3 frame1 = result.at<gtsam::Pose3>(gtsam::Symbol('x', i));
-            std::cout << "frame " << i << " = " << frame1 << std::endl;
+            const gtsam::Pose3 targetFrame = optimizationResult.at<gtsam::Pose3>(gtsam::Symbol('x', i));
+            Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
+            result.block<3, 3>(0, 0) = targetFrame.rotation().matrix();
+            result.block<3, 1>(0, 3) = targetFrame.translation();
+
+            // std::cout << "ID: " << i << ", BEFORE:\n" << map->GetFrame(i).GetPosition() << std::endl;
+            map->GetFrame(i).SetPosition(result.cast<float>());
+            // std::cout << "AFTER:\n" << map->GetFrame(i).GetPosition() << std::endl;
         }
 
-        // for (int i = 1; i < 5; ++i)
-        // {
-        //     gtsam::Point3 frame1 = result.at<gtsam::Point3>(gtsam::Symbol('l', mapIds[i]));
-        //     std::cout << "mapPoint " << mapIds[i] << " = [" << frame1.x() << ", " << frame1.y() << ", " << frame1.z() << "]" << std::endl;
-        // }
+        for (const auto id : mapPointIds)
+        {
+            const gtsam::Point3 mapPoint = optimizationResult.at<gtsam::Point3>(gtsam::Symbol('l', id));
+            cv::Point3f result { mapPoint.x(), mapPoint.y(), mapPoint.z() };
+
+            // std::cout << "ID: " << id << ", BEFORE: " << map->GetPoint(id).position;
+            map->GetPoint(id).position = result;
+            // std::cout << ", AFTER: " << map->GetPoint(id).position << std::endl;
+        }
 
         return true;
     }

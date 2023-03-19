@@ -38,7 +38,10 @@ public:
 
     void AddFrame(Frame &frame);
 
-    bool Optimize();
+    Frame GetLatest() const
+    {
+        return frames.back();
+    }
 
     size_t size() const
     {
@@ -48,6 +51,14 @@ public:
     std::list<Frame>& GetFrames() 
     {
         return frames;
+    }
+
+    Frame& GetFrame(const size_t id) 
+    {
+        auto firstItem = frames.begin();
+        std::advance(firstItem, id);
+
+        return *firstItem;
     }
 
     std::vector<MapPoint3d>& GetPoints() 

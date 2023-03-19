@@ -14,7 +14,6 @@
 #include "odometry/frame/FrameCreator.h"
 #include "odometry/frame/KeyFrame.h"
 #include "odometry/optimization/LocalFramesOptimizer.h"
-#include "../visualization/Render.h"
 #include "motion_estimator/MotionEstimatorPnP.h"
 #include "motion_estimator/MotionEstimatorOpt.h"
 #include "motion_estimator/IMotionEstimator.h"
@@ -43,8 +42,7 @@ public:
         }
 
         this->localOptimizer = std::make_unique<LocalFramesOptimizer>(camera->GetParameters(), camera->GetDistortion());
-
-        this->localMap = LocalMap(10U);
+        this->localMap = std::make_unique<LocalMap>(5U);
     }
 
     void SetCameraMatrix()
@@ -53,7 +51,17 @@ public:
 
     std::vector<MapPoint3d> GetLocalMapPoints() 
     {
-        return localMap.GetPoints();
+        return localMap->GetPoints();
+    }
+
+    std::list<Frame> GetLocalMapFrames() 
+    {
+        return localMap->GetFrames();
+    }
+
+    void SetLocalOptimizerState(const bool state)
+    {
+        this->isLocalOptimizerEnabled = state;
     }
 
     bool Proceed(const T &data) override;
@@ -63,9 +71,11 @@ public:
 private:
     const IDataSourceCamera<T>* camera;
 
-    LocalMap localMap;
+    bool isLocalOptimizerEnabled;
+
     Frame lastFrame;
 
+    std::unique_ptr<LocalMap> localMap;
     std::unique_ptr<FrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
     std::unique_ptr<LocalFramesOptimizer> localOptimizer;
@@ -106,10 +116,14 @@ bool VisualOdometry<T>::Proceed(const T &data)
             frame.SetPosition(Eigen::Matrix4f::Identity());
         }
 
-        localMap.AddFrame(frame);
-        localOptimizer->Optimize(localMap);
+        localMap->AddFrame(frame);
 
-        this->lastFrame = frame;
+        if (this->isLocalOptimizerEnabled)
+        {
+            localOptimizer->Optimize(localMap.get());
+        }
+
+        this->lastFrame = localMap->GetLatest();
     }
 
     return true;
