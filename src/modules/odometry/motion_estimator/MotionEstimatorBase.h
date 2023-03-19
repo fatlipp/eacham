@@ -18,28 +18,15 @@ public:
     }
 
 public:
-    std::tuple<std::vector<int>, std::vector<int>> FindMatches(const Frame& frame1, const Frame& frame2)
-    {
-        const cv::Mat descriptor1 = frame1.GetDescriptors();
-        const cv::Mat descriptor2 = frame2.GetDescriptors();
+    std::tuple<std::vector<int>, std::vector<int>> FindMatches(const Frame& frame1, const Frame& frame2);
 
-        std::vector<std::vector<cv::DMatch>> matches;
-        this->mather->knnMatch(descriptor1, descriptor2, matches, 2);
+    void CalcReprojectionError(const cv::Mat &image, const std::vector<cv::Point3f> &pts3d1, const std::vector<cv::Point2f> &pts2d2,
+        const cv::Mat &R, const cv::Mat &t);
 
-        std::vector<int> pts1; 
-        std::vector<int> pts2; 
-
-        for (const auto& m : matches)
-        {
-            if (m[0].distance < 0.6f * m[1].distance)
-            {
-                pts1.push_back(m[0].queryIdx);
-                pts2.push_back(m[0].trainIdx);
-            }
-        }
-
-        return { pts1, pts2 };
-    }
+protected:
+    cv::Mat cameraMat;
+    cv::Mat cameraMatOneDim;
+    cv::Mat distCoeffs;
 
 private:
     matcher_t mather;

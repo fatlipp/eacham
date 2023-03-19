@@ -23,12 +23,7 @@
 namespace eacham
 {
 
-MotionEstimatorOpt::MotionEstimatorOpt(const FeatureExtractorType &featureExtractor)
-    : MotionEstimatorBase(featureExtractor)
-{
-}
-
-MotionEstimatorOpt::MotionEstimatorOpt(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
+MotionEstimatorOpt::MotionEstimatorOpt(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMatInp, const cv::Mat &distCoeffsInp)
     : MotionEstimatorBase(featureExtractor)
 {
     if (cameraMatInp.rows == 1)
@@ -36,11 +31,21 @@ MotionEstimatorOpt::MotionEstimatorOpt(const FeatureExtractorType &featureExtrac
         this->K = boost::make_shared<gtsam::Cal3_S2>(cameraMatInp.at<float>(0, 0), cameraMatInp.at<float>(0, 1), 
                                     0.0, 
                                     cameraMatInp.at<float>(0, 2) , cameraMatInp.at<float>(0, 3));
+        cameraMat = cv::Mat::eye(3, 3, CV_32FC1);
+        cameraMat.at<float>(0, 0) = cameraMatInp.at<float>(0, 0);
+        cameraMat.at<float>(1, 1) = cameraMatInp.at<float>(0, 1);
+        cameraMat.at<float>(0, 2) = cameraMatInp.at<float>(0, 2);
+        cameraMat.at<float>(1, 2) = cameraMatInp.at<float>(0, 3);
+        cameraMat.at<float>(2, 2) = 1.0f;
+
+        this->cameraMatOneDim = cameraMatInp.clone();
     }
     else
     {
         std::cerr << "NEED CHECK VALUES!!!!!!!!!\n";
     }
+
+    this->distCoeffs = distCoeffsInp;
 }
 
 gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2(const float posNoise, const float rot)
@@ -139,6 +144,38 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
     result.block<3, 3>(0, 0) = targetFrame.rotation().matrix();
     result.block<3, 1>(0, 3) = targetFrame.translation();
+
+    {
+        std::vector<cv::Point3f> pts3d1;
+        std::vector<cv::Point2f> pts2d2; 
+
+        for (size_t i = 0; i < matches; ++i)
+        {
+            pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
+            pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
+        }
+
+		cv::Mat Rmat = cv::Mat_<double>(3, 3);
+
+        for (int i = 0; i < 3; ++i)
+        {
+            for (int j = 0; j < 3; ++j)
+            {
+                Rmat.at<double>(i, j) = result(i, j); 
+            }
+        }
+
+		cv::Mat tvec = cv::Mat_<double>(3, 1);
+        tvec.at<double>(0, 0) = targetFrame.translation().x();
+        tvec.at<double>(1, 0) = targetFrame.translation().y();
+        tvec.at<double>(2, 0) = targetFrame.translation().z();
+
+        std::cout << "result:\n" << result << std::endl;
+        std::cout << "Rmat:\n" << Rmat << std::endl;
+        std::cout << "tvec:\n" << tvec << std::endl;
+
+        CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
+    }
 
     return { result.cast<float>(), matches };
 }

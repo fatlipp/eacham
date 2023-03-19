@@ -23,6 +23,7 @@ set(SOURCE
     src/modules/odometry/map/LocalMap.cpp
 
     src/modules/odometry/VisualOdometry.cpp
+    src/modules/odometry/motion_estimator/MotionEstimatorBase.cpp
     src/modules/odometry/motion_estimator/MotionEstimatorPnP.cpp
     src/modules/odometry/motion_estimator/MotionEstimatorOpt.cpp
     

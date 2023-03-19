@@ -8,15 +8,11 @@
 namespace eacham
 {
 
-MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtractor)
+MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMatInp, const cv::Mat &distCoeffsInp)
     : MotionEstimatorBase(featureExtractor)
 {
-}
+    this->distCoeffs = distCoeffsInp;
 
-MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMatInp, const cv::Mat &distCoeffs)
-    : MotionEstimatorBase(featureExtractor)
-    , distCoeffs(distCoeffs)
-{
     if (cameraMatInp.rows == 1)
     {
         cameraMat = cv::Mat::eye(3, 3, CV_32FC1);
@@ -41,7 +37,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
     const auto [pts1, pts2] = FindMatches(frame1, frame2);
     const auto matches = pts1.size();
 
-    std::vector<cv::Point3f> pts3d1; 
+    std::vector<cv::Point3f> pts3d1;
     std::vector<cv::Point2f> pts2d2; 
 
     //draw
@@ -87,7 +83,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
 		cv::Mat tvec = cv::Mat_<double>(3, 1);
 
         std::vector<int> inliers;
-        cv::solvePnPRansac(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, false, 1000, 8.0f, 0.99f, inliers, cv::SOLVEPNP_EPNP);
+        cv::solvePnPRansac(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, false, 1000, 4.0f, 0.99f, inliers, cv::SOLVEPNP_EPNP);
     
         std::cout << "inliers: " << inliers.size() << " (" << (inliers.size() / static_cast<float>(matches)) << ")" << std::endl;
 
@@ -95,75 +91,16 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
 		{
             inliersCount = inliers.size();
 
-            cv::Mat R;
-			cv::Rodrigues(rvec, R);
-            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> R_Eigen(R.ptr<double>(), R.rows, R.cols);
+            cv::Mat Rmat;
+			cv::Rodrigues(rvec, Rmat);
+            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> R_Eigen(Rmat.ptr<double>(), Rmat.rows, Rmat.cols);
             Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> T_Eigen(tvec.ptr<double>(), tvec.rows, tvec.cols);
 
             motion.linear() = R_Eigen.cast<float>();
             motion.translation() = T_Eigen.cast<float>();
             motion = motion.inverse();
 
-            {
-                cv::Mat reprIm = frame2.GetImage();
-                cv::Mat reprIm2;
-                cv::cvtColor(reprIm, reprIm2, cv::COLOR_BGR2RGB);
-
-				std::vector<cv::Point2f> imagePointsReproj;
-				cv::projectPoints(pts3d1, rvec, tvec, this->cameraMat, this->distCoeffs, imagePointsReproj);
-                
-				float err = 0.0f;
-                float minErr = 999999;
-                float maxErr = -10000;
-
-                // reprojection error check
-				for (int i = 0; i < pts3d1.size(); ++i)
-				{
-                    const int id = i;//inliers[i];
-
-                    auto pt = pts3d1.at(id);
-                    auto pp1 = transformPointD(pt, R, tvec);
-                    const auto pp = project3dPoint(pp1, this->cameraMatOneDim);
-
-                    
-                    // real points
-                    cv::circle(reprIm2, pts2d2.at(id), 6, {0, 255, 0}, 3);
-                    cv::circle(reprIm2, pp, 4, {0, 255, 255}, 3);
-                    cv::line(reprIm2, pts2d2.at(id), pp, {0, 255, 255});
-
-                    // reprojected
-                    cv::circle(reprIm2, imagePointsReproj.at(id), 2, {255, 0, 255}, 3);
-                    cv::line(reprIm2, pts2d2.at(id), imagePointsReproj.at(id), {255, 0, 0});
-
-					const float err1 = std::pow(pts2d2.at(id).x - pp.x, 2) + std::pow(pts2d2.at(id).y - pp.y, 2);
-
-                    err += err1;
-                    if (err1 < minErr)
-                    {
-                        minErr = err1;
-                    }
-                    if (maxErr < err1)
-                    {
-                        maxErr = err1;
-                    }
-
-                    // add observations
-                    // pts3d2[id].point3d.SetMapPointId(pts3d1_data[id].mapPointId);
-				}
-                
-                // frame2.SetPointsData(pts3d2);
-
-                err = err / inliers.size();
-                err = std::sqrt(err);
-
-                cv::imshow("ME: ProjectedPoints", reprIm2);
-
-                std::cout << "===========================================" << std::endl;
-                std::cout << "repr err: " << err << std::endl;
-                std::cout << "repr minErr: " << std::sqrt(minErr) << std::endl;
-                std::cout << "repr maxErr: " << std::sqrt(maxErr) << std::endl;
-                std::cout << "===========================================" << std::endl;
-            }
+            CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
 		}
 
     }

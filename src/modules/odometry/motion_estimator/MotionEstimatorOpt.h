@@ -25,8 +25,6 @@ class MotionEstimatorOpt : public MotionEstimatorBase
 {
 
 public:
-    MotionEstimatorOpt(const FeatureExtractorType &featureExtractor);
-
     MotionEstimatorOpt(const FeatureExtractorType &featureExtractor, const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
 
     std::tuple<Eigen::Matrix4f, unsigned> Estimate(const Frame& frame1, Frame& frame2) override;

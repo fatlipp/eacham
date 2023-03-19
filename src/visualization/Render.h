@@ -143,8 +143,6 @@ public:
                     }
                     else if (i == this->frames.size() - 1)
                     {
-                        glColor3f(0.0, 1.0, 1.0);
-
                         glEnd();
 
                         glBegin(GL_LINES);
