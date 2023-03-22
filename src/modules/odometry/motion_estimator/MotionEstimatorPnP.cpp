@@ -39,6 +39,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
 
     std::vector<cv::Point3f> pts3d1;
     std::vector<cv::Point2f> pts2d2; 
+    std::vector<int> iddds; 
 
     //draw
     std::vector<cv::KeyPoint> kp1;
@@ -50,8 +51,9 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
     {
         pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
         pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
-
         frame2.GetPointData(pts2[i]).associatedMapPointId = frame1.GetPointData(pts1[i]).associatedMapPointId;
+
+        iddds.push_back(pts2[i]);
 
         //draw
         kp1.push_back(frame1.GetPointData(pts1[i]).keypoint);
@@ -101,6 +103,11 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
             motion = motion.inverse();
 
             CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
+
+            for (int i = 0; i < inliers.size(); ++i)
+            {
+                frame2.GetPointData(iddds[inliers[i]]).uncertatinty = 1.0f;
+            }
 		}
 
     }

@@ -104,7 +104,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
     
     ++frameId;
-    const auto noise2 = CreateNoise6_2(3.0, 15.0);
+    const auto noise2 = CreateNoise6_2(5.0, 25.0);
     graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise2);
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
 
@@ -137,8 +137,8 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     const gtsam::Values optimizationResult = optimizer->optimize();
 
     std::cout << "frames: " << frameId << ", mapPoints: " << landmarkId << std::endl;
-    std::cout << "++initial error = " << graph.error(initialMeasurements) << std::endl;
-    std::cout << "++final error = " << graph.error(optimizationResult) << std::endl << std::endl;
+    std::cout << "Optimization Initial error = " << graph.error(initialMeasurements) << std::endl;
+    std::cout << "Optimization Final error = " << graph.error(optimizationResult) << std::endl << std::endl;
 
     const gtsam::Pose3 targetFrame = optimizationResult.at<gtsam::Pose3>(gtsam::Symbol('x', 1));
     Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
@@ -155,26 +155,24 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
             pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
         }
 
-		cv::Mat Rmat = cv::Mat_<double>(3, 3);
-
-        for (int i = 0; i < 3; ++i)
+        // reprojection error stat
         {
-            for (int j = 0; j < 3; ++j)
+            cv::Mat Rmat = cv::Mat_<double>(3, 3);
+
+            for (int i = 0; i < 3; ++i)
             {
-                Rmat.at<double>(i, j) = result(i, j); 
+                for (int j = 0; j < 3; ++j)
+                {
+                    Rmat.at<double>(i, j) = result(i, j); 
+                }
             }
+
+            cv::Mat tvec = cv::Mat_<double>(3, 1);
+            tvec.at<double>(0, 0) = targetFrame.translation().x();
+            tvec.at<double>(1, 0) = targetFrame.translation().y();
+            tvec.at<double>(2, 0) = targetFrame.translation().z();
+            CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
         }
-
-		cv::Mat tvec = cv::Mat_<double>(3, 1);
-        tvec.at<double>(0, 0) = targetFrame.translation().x();
-        tvec.at<double>(1, 0) = targetFrame.translation().y();
-        tvec.at<double>(2, 0) = targetFrame.translation().z();
-
-        std::cout << "result:\n" << result << std::endl;
-        std::cout << "Rmat:\n" << Rmat << std::endl;
-        std::cout << "tvec:\n" << tvec << std::endl;
-
-        CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
     }
 
     return { result.cast<float>(), matches };

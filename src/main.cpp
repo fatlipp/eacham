@@ -66,6 +66,9 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    // for (int i = 0; i < 17; ++i)
+    //     dataset->ReadNext();
+
     int frameId = 0;
 
     while (!close)

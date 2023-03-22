@@ -21,7 +21,7 @@ namespace eacham
 
         for (const auto& m : matches)
         {
-            if (m[0].distance < 0.6f * m[1].distance)
+            if (m[0].distance < 0.65f * m[1].distance)
             {
                 pts1.push_back(m[0].queryIdx);
                 pts2.push_back(m[0].trainIdx);
@@ -34,6 +34,11 @@ namespace eacham
     void MotionEstimatorBase::CalcReprojectionError(const cv::Mat &image, const std::vector<cv::Point3f> &pts3d1, 
             const std::vector<cv::Point2f> &pts2d2, const cv::Mat &R, const cv::Mat &t)
     {
+        if (pts3d1.size() < 1)
+        {
+            return;
+        }
+
         cv::Mat reprIm2;
         cv::cvtColor(image, reprIm2, cv::COLOR_BGR2RGB);
 
@@ -46,6 +51,8 @@ namespace eacham
 
         std::vector<cv::Point2f> imagePointsReproj;
         cv::projectPoints(pts3d1, rvec, t, this->cameraMat, this->distCoeffs, imagePointsReproj);
+
+        std::vector<float> reprojectionErrors;
 
         for (int i = 0; i < pts3d1.size(); ++i)
         {
@@ -64,9 +71,8 @@ namespace eacham
             cv::circle(reprIm2, imagePointsReproj.at(id), 2, {255, 0, 255}, 3);
             cv::line(reprIm2, pts2d2.at(id), imagePointsReproj.at(id), {255, 0, 0});
 
-            const float err1 = std::pow(pts2d2.at(id).x - pp.x, 2) + std::pow(pts2d2.at(id).y - pp.y, 2);
+            const float err1 = std::sqrt(std::pow(pts2d2.at(id).x - pp.x, 2) + std::pow(pts2d2.at(id).y - pp.y, 2));
 
-            err += err1;
             if (err1 < minErr)
             {
                 minErr = err1;
@@ -75,17 +81,35 @@ namespace eacham
             {
                 maxErr = err1;
             }
+
+            reprojectionErrors.push_back(err1);
+
+            err += err1;
         }
-                
+
+        std::sort(reprojectionErrors.begin(), reprojectionErrors.end());
+
+        float median = reprojectionErrors[reprojectionErrors.size() / 2];
+
         err = err / pts3d1.size();
-        err = std::sqrt(err);
 
         cv::imshow("ME: ProjectedPoints", reprIm2);
 
+        int worstCount = 0;
+        for (int i = 0; i < reprojectionErrors.size(); ++i)
+        {
+            if (reprojectionErrors[i] > median * 3)
+            {
+                worstCount++;
+            }
+        }
+
         std::cout << "===========================================" << std::endl;
-        std::cout << "repr err: " << err << std::endl;
-        std::cout << "repr minErr: " << std::sqrt(minErr) << std::endl;
-        std::cout << "repr maxErr: " << std::sqrt(maxErr) << std::endl;
+        std::cout << "mean repr err: " << err << std::endl;
+        std::cout << "median repr err: " << median << std::endl;
+        std::cout << "Worst count " << (static_cast<float>(worstCount) / reprojectionErrors.size()) << std::endl;
+        std::cout << "repr minErr: " << minErr << std::endl;
+        std::cout << "repr maxErr: " << maxErr << std::endl;
         std::cout << "===========================================" << std::endl;
     }
 }

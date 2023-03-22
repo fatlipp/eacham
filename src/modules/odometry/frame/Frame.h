@@ -27,6 +27,7 @@ struct PointData
 {
     unsigned id = 0;
     unsigned associatedMapPointId = 0;
+    float uncertatinty;
 
     cv::KeyPoint keypoint;
     cv::Point3f position3d;
@@ -34,6 +35,7 @@ struct PointData
 
     PointData(const cv::KeyPoint &keypoint, const cv::Point3f &position3d, const cv::Mat &descriptor)
         : id(0)
+        , uncertatinty(1000.0f)
         , associatedMapPointId(0)
         , keypoint(keypoint)
         , position3d(position3d)

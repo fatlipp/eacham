@@ -86,9 +86,9 @@ public:
             {
                 displayCam.Activate(cameraState);
 
-                const float &w = 1;
-                const float h = w*0.75;
-                const float z = w*0.6;
+                const float w = 0.5;
+                const float h = 0.5;
+                const float z = 1;
 
                 glPushMatrix();
                 glMultMatrixd(Twc.m);

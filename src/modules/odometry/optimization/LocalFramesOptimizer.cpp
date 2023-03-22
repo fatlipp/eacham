@@ -97,7 +97,8 @@ namespace eacham
                 //     "], 3: [" << measurement2.x() << ", " << measurement2.y() << 
                 //     "], map: [" << mapPointGTSAM.x() << ", " << mapPointGTSAM.y() << ", " << mapPointGTSAM.z() << "] " << std::endl;
 
-                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 2.1);
+                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, point.uncertatinty);
+                
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
                     measurement2, measurementNoise, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->K);
 
