@@ -121,8 +121,9 @@ bool VisualOdometry<T>::Proceed(const T &data)
         if (this->isLocalOptimizerEnabled)
         {
             static int cc = 0;
+            cc++;
 
-            if (++cc % 3 == 0)
+            if (cc % 3 == 0)
             {
                 cc = 0;
                 localOptimizer->Optimize(localMap.get());

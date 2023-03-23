@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
 
     while (renderer.IsActive())
     {
-
+        cv::waitKey(10);
     }
 
     return 0;

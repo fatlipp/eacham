@@ -110,7 +110,7 @@ public:
         pangolin::OpenGlMatrix Twc, Twr;
         Twc.SetIdentity();
 
-        while ( this->isRunning && !pangolin::ShouldQuit() )
+        while (this->isRunning && !pangolin::ShouldQuit())
         {
             // Clear screen and activate view to render into
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -245,10 +245,10 @@ public:
     {
         this->isRunning = false;
 
-        if (fut.valid())
-        {
-            fut.get();
-        }
+        // if (fut.valid())
+        // {
+        //     fut.get();
+        // }
     }
 
     void SetOnPlayClick(std::function<void()> onPlayClick)
