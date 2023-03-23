@@ -45,9 +45,9 @@ namespace eacham
 
     bool LocalFramesOptimizer::Optimize(LocalMap *map)
     {
-        std::cout << "LocalFramesOptimizer() map.size() = " << map->size() << std::endl;
+        std::cout << "LocalFramesOptimizer() map.size = " << map->GetSize() << std::endl;
 
-        if (map->size() < 5)
+        if (map->GetSize() < map->GetCapacity())
         {
             return false;
         }
@@ -56,6 +56,8 @@ namespace eacham
         gtsam::Values initialMeasurements;
 
         int frameId = 0;
+
+        std::set<int> mapIds;
 
         for (auto &frame : map->GetFrames())
         {
@@ -85,6 +87,8 @@ namespace eacham
                 if (point.associatedMapPointId == 0 || map->GetPoint(point.associatedMapPointId).observers < 2)
                     continue;
 
+                mapIds.insert(point.associatedMapPointId);
+
                 // const auto mapPoint = map.GetPoint(point.point3d.mapPointId).position;
                 // const auto mapPointGTSAM = gtsam::Point3( mapPoint.x, mapPoint.y, mapPoint.z );
                 // gtsam::PinholeCamera<gtsam::Cal3_S2> camera(gtsam::Pose3(position), *K);
@@ -97,10 +101,13 @@ namespace eacham
                 //     "], 3: [" << measurement2.x() << ", " << measurement2.y() << 
                 //     "], map: [" << mapPointGTSAM.x() << ", " << mapPointGTSAM.y() << ", " << mapPointGTSAM.z() << "] " << std::endl;
 
-                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, point.uncertatinty);
+                // const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, point.uncertatinty);
+                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.5f);
+                const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(1.1), 
+                    measurementNoise);
                 
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
-                    measurement2, measurementNoise, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->K);
+                    measurement2, huber, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->K);
 
             }
 
@@ -109,20 +116,15 @@ namespace eacham
         
         // map
         unsigned mapPoints = 0;
-        std::vector<unsigned> mapPointIds;
-        for (auto &point : map->GetPoints())
+        for (const auto pointId : mapIds)
         {
-            if (point.id == 0 || point.observers < 2)
-                continue;
-
+            const auto point = map->GetPoint(pointId);
             const auto mapPointGTSAM = gtsam::Point3( point.position.x, point.position.y, point.position.z );
-            initialMeasurements.insert(gtsam::Symbol('l', point.id), mapPointGTSAM);
+            initialMeasurements.insert(gtsam::Symbol('l', pointId), mapPointGTSAM);
 
             // add uncertatinty to the map points
-            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.05);
-            graph.addPrior(gtsam::Symbol('l', point.id), mapPointGTSAM, priorNoise);
-
-            mapPointIds.push_back(point.id);
+            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.25);
+            graph.addPrior(gtsam::Symbol('l', pointId), mapPointGTSAM, priorNoise);
 
             ++mapPoints;
         }
@@ -155,7 +157,7 @@ namespace eacham
             // std::cout << "AFTER:\n" << map->GetFrame(i).GetPosition() << std::endl;
         }
 
-        for (const auto id : mapPointIds)
+        for (const auto id : mapIds)
         {
             const gtsam::Point3 mapPoint = optimizationResult.at<gtsam::Point3>(gtsam::Symbol('l', id));
             cv::Point3f result { mapPoint.x(), mapPoint.y(), mapPoint.z() };

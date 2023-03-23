@@ -42,7 +42,7 @@ public:
         }
 
         this->localOptimizer = std::make_unique<LocalFramesOptimizer>(camera->GetParameters(), camera->GetDistortion());
-        this->localMap = std::make_unique<LocalMap>(5U);
+        this->localMap = std::make_unique<LocalMap>(3U);
     }
 
     void SetCameraMatrix()
@@ -120,7 +120,13 @@ bool VisualOdometry<T>::Proceed(const T &data)
 
         if (this->isLocalOptimizerEnabled)
         {
-            localOptimizer->Optimize(localMap.get());
+            static int cc = 0;
+
+            if (++cc % 3 == 0)
+            {
+                cc = 0;
+                localOptimizer->Optimize(localMap.get());
+            }
         }
 
         this->lastFrame = localMap->GetLatest();

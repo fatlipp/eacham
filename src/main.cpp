@@ -49,6 +49,8 @@ int main(int argc, char* argv[])
     renderer.SetOnCloseClick([&]()
         {
             close = true;
+
+            renderer.Stop();
         });
 
     // TODO: Config
@@ -79,7 +81,7 @@ int main(int argc, char* argv[])
 
             // dataset (camera should use concurrent thread to get the next frame)
             dataset->ReadNext();
-            const auto gtPose = dataset->GetGtPose();
+            const auto gtPos = dataset->GetGtPose();
 
             const auto images = dataSource->Get();
 
@@ -88,32 +90,46 @@ int main(int argc, char* argv[])
                 std::cout << "+++++++++++++++++++++++++++++[" << frameId << "]+++++++++++++++++++++++++++++" << std::endl;
                 std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
-                BlockTimer timer;
-                if (visualOdometry->Proceed(images))
+                Eigen::Matrix4f currentPos;
                 {
-                    const auto odom = visualOdometry->GetOdometry();
-                    // renderer.AddFramePoint(odom);
-                    renderer.AddFGTPoint(gtPose);
-                    renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
+                    BlockTimer timer;
+                    if (visualOdometry->Proceed(images))
+                    {
+                        currentPos = visualOdometry->GetOdometry();
+                    }
+                    else
+                    {
+                        std::cout << "Odometry error." << std::endl;
+                        break;
+                    }
+                }
 
-                    std::cout << "ODOM:\n" << odom << std::endl;
-                    std::cout << "GT:\n" << gtPose << std::endl;
-                    std::cout << "DIFF:\n" << (odom - gtPose) << std::endl;
-                }
-                else
-                {
-                    std::cout << "Odometry error." << std::endl;
-                    break;
-                }
+                const Eigen::Matrix4f diff = (currentPos - gtPos);
+                const float diffLen = std::sqrt(diff(0, 3) * diff(0, 3) + 
+                                                diff(1, 3) * diff(1, 3) + 
+                                                diff(2, 3) * diff(2, 3));
+                renderer.AddFGTPoint(gtPos);
+                renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
+                // renderer.DrawMapPoints(visualOdometry->GetLocalMapPoints());
+
+                std::cout << "Current pos:\n" << currentPos << std::endl;
+                std::cout << "GT pos:\n" << gtPos << std::endl;
+                std::cout << "Diff:\n" << diffLen << "\n" << diff << std::endl;
             }
 
             ++frameId;
+
+            if (frameId > 300)
+                break;
         }
 
         cv::waitKey(1);
     }
 
-    renderer.Stop();
+    while (renderer.IsActive())
+    {
+
+    }
 
     return 0;
 }

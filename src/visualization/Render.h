@@ -32,6 +32,53 @@ public:
         // destructor will wait for get()
     }
 
+    bool IsActive()
+    {
+        return this->isRunning;
+    }
+
+    void DrawCamera(const Eigen::Matrix4f &Twc, const Eigen::Vector3f &color = Eigen::Vector3f(0, 0, 1.0f))
+    {
+        const float w = 0.2f;
+        const float h = 0.1f;
+        const float z = 0.1f;
+
+        glPushMatrix();
+
+        glMultMatrixf((GLfloat*)Twc.data());
+
+        glLineWidth(3);
+        glColor3f(color.x(), color.y(), color.z());
+        glBegin(GL_LINES);
+        glVertex3f(0, 0, 0);
+        glVertex3f(w, h, z);
+        glVertex3f(0, 0, 0);
+        glVertex3f(w,-h,z);
+        glVertex3f(0, 0, 0);
+        glVertex3f(-w,-h,z);
+        glVertex3f(0, 0, 0);
+        glVertex3f(-w,h,z);
+
+        glVertex3f(w,h,z);
+        glVertex3f(w,-h,z);
+        glVertex3f(-w,h,z);
+        glVertex3f(-w,-h,z);
+        glVertex3f(-w,h,z);
+        glVertex3f(w,h,z);
+        glVertex3f(-w,-h,z);
+        glVertex3f(w,-h,z);
+        glEnd();
+
+        glPointSize(10);
+        glBegin(GL_POINTS);
+        glVertex3f(0, 0, 0);
+        glEnd();
+
+        glPopMatrix();
+
+        glEnd();
+    }
+
     void Start()
     {
         const int WIDTH = 1280;
@@ -51,7 +98,7 @@ public:
         // Define Projection and initial ModelView matrix
         pangolin::OpenGlRenderState cameraState(
             pangolin::ProjectionMatrix(WIDTH, HEIGHT, 420, 420, static_cast<float>(WIDTH) / 2.0f, static_cast<float>(HEIGHT) / 2.0f ,0.01, 10000),
-            pangolin::ModelViewLookAt(-2, 2, -2, 0,0,0, pangolin::AxisY)
+            pangolin::ModelViewLookAt(-2, 2, -2, 0, 0, 0, pangolin::AxisY)
         );
 
         // Create Interactive View in window
@@ -86,36 +133,7 @@ public:
             {
                 displayCam.Activate(cameraState);
 
-                const float w = 0.5;
-                const float h = 0.5;
-                const float z = 1;
-
-                glPushMatrix();
-                glMultMatrixd(Twc.m);
-
-                glLineWidth(1);
-                glColor3f(0.0f,1.0f,0.0f);
-
-                glBegin(GL_LINES);
-                glVertex3f(0,0,0);
-                glVertex3f(w,h,z);
-                glVertex3f(0,0,0);
-                glVertex3f(w,-h,z);
-                glVertex3f(0,0,0);
-                glVertex3f(-w,-h,z);
-                glVertex3f(0,0,0);
-                glVertex3f(-w,h,z);
-                glVertex3f(w,h,z);
-                glVertex3f(w,-h,z);
-                glVertex3f(-w,h,z);
-                glVertex3f(-w,-h,z);
-                glVertex3f(-w,h,z);
-                glVertex3f(w,h,z);
-                glVertex3f(-w,-h,z);
-                glVertex3f(w,-h,z);
-                glEnd();
-
-                glPopMatrix();
+                DrawCamera(Eigen::Matrix4f::Identity());
             }
 
             {
@@ -130,60 +148,44 @@ public:
                 }
                 glEnd();
 
-                glPointSize(15);
-                glBegin(GL_POINTS);
-
                 for (int i = 0; i < this->frames.size(); ++i)
                 {
-                    auto point = this->frames[i];
+                    const Eigen::Vector3f color = (i == this->frames.size() - 1) ? Eigen::Vector3f{1, 0, 0} : Eigen::Vector3f{1, 1, 0};
+                    const auto framePos = this->frames[i];
+                    DrawCamera(framePos, color);
 
-                    if (i == 0)
+                    if (i > 0)
                     {
-                        glColor3f(1.0, 1.0, 0.0);
-                    }
-                    else if (i == this->frames.size() - 1)
-                    {
-                        glEnd();
+                        const auto framePosPrev = this->frames[i - 1];
 
                         glBegin(GL_LINES);
+                        glColor3f(color.x(), color.y(), color.z());
                         glLineWidth(3);
-                        auto point2 = this->frames[i - 1];
-                        glVertex3f(point.x(), point.y(), point.z());
-                        glVertex3f(point2.x(), point2.y(), point2.z());
+                        glVertex3f(framePos(0, 3), framePos(1, 3), framePos(2, 3));
+                        glVertex3f(framePosPrev(0, 3), framePosPrev(1, 3), framePosPrev(2, 3));
                         glEnd();
-
-                        glPointSize(15);
-                        glBegin(GL_POINTS);
-                        glColor3f(0.0, 1.0, 1.0);
                     }
-                    else
-                    {
-                        glEnd();
-
-                        glBegin(GL_LINES);
-                        glLineWidth(3);
-                        auto point2 = this->frames[i - 1];
-                        glVertex3f(point.x(), point.y(), point.z());
-                        glVertex3f(point2.x(), point2.y(), point2.z());
-                        glEnd();
-
-                        glPointSize(15);
-                        glBegin(GL_POINTS);
-                        glColor3f(1.0, 0.0, 0.0);
-                    }
-                    glVertex3f(point.x(), point.y(), point.z());
                 }
-                glEnd();
 
-                glPointSize(12);
-                glBegin(GL_POINTS);
-                glColor3f(0.0, 0.0, 1.0);
-                
-                for (const auto& point : this->framesGT)
+                for (int i = 0; i < this->framesGT.size(); ++i)
                 {
-                    glVertex3f(point.x(), point.y(), point.z());
+                    const Eigen::Vector3f color = {0, 1, 0};
+                    const auto framePos = this->framesGT[i];
+
+                    DrawCamera(framePos, color);
+
+                    if (i > 0)
+                    {
+                        const auto framePosPrev = this->framesGT[i - 1];
+
+                        glBegin(GL_LINES);
+                        glColor3f(color.x(), color.y(), color.z());
+                        glLineWidth(3);
+                        glVertex3f(framePos(0, 3), framePos(1, 3), framePos(2, 3));
+                        glVertex3f(framePosPrev(0, 3), framePosPrev(1, 3), framePosPrev(2, 3));
+                        glEnd();
+                    }
                 }
-                glEnd();
 
                 // Swap frames and Process Events
                 pangolin::FinishFrame();
@@ -200,18 +202,11 @@ public:
 
     }
 
-    void AddFramePoint(const Eigen::Matrix4f &pos)
-    {
-        std::lock_guard<std::mutex> lock(mute);
-
-        this->frames.push_back({pos(0, 3), pos(1, 3), pos(2, 3)});
-    }
-
     void AddFGTPoint(const Eigen::Matrix4f &pos)
     {
         std::lock_guard<std::mutex> lock(mute);
 
-        this->framesGT.push_back({pos(0, 3), pos(1, 3), pos(2, 3)});
+        this->framesGT.push_back(pos);
     }
 
     void AddPoint(const Eigen::Vector3f &pos)
@@ -242,8 +237,7 @@ public:
 
         for (auto &frame : framesInp)
         {
-            const auto pos = frame.GetPosition();
-            frames.push_back({pos(0, 3), pos(1, 3), pos(2, 3)});
+            frames.push_back(frame.GetPosition());
         }
     }
 
@@ -279,8 +273,8 @@ private:
 
     Eigen::Matrix4f cameraPos;
     std::vector<Eigen::Vector3f> points;
-    std::vector<Eigen::Vector3f> frames;
-    std::vector<Eigen::Vector3f> framesGT;
+    std::vector<Eigen::Matrix4f> frames;
+    std::vector<Eigen::Matrix4f> framesGT;
 
     std::function<void()> onPlayClick;
     std::function<void()> onStepClick;

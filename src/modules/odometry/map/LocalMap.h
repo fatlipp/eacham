@@ -43,9 +43,14 @@ public:
         return frames.back();
     }
 
-    size_t size() const
+    size_t GetSize() const
     {
         return frames.size();
+    }
+
+    int GetCapacity() const
+    {
+        return capaticy;
     }
 
     std::list<Frame>& GetFrames() 

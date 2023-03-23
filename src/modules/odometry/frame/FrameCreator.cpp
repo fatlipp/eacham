@@ -41,7 +41,7 @@ Frame FrameCreator::Create(const stereodata_t& data, const cv::Mat &camera)
 
     for (const auto& m : matches)
     {
-        if (m[0].distance < 0.5f * m[1].distance)
+        if (m[0].distance < 0.7f * m[1].distance)
         {
             const int id1 = m[0].queryIdx;
             const int id2 = m[0].trainIdx;
