@@ -3,11 +3,11 @@ project(eacham)
 
 set (CMAKE_CXX_STANDARD 17)
 
-find_package(OpenCV 4.7 REQUIRED PATHS /home/blackdyce/Apps/opencv4)
+find_package(OpenCV 4.7 REQUIRED)
 message("OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
 message("OpenCV_LIBRARIES = ${OpenCV_LIBRARIES}")
 
-find_package(Pangolin REQUIRED PATHS /home/blackdyce/Apps/pangolin)
+find_package(Pangolin REQUIRED)
 message("Pangolin_INCLUDE_DIRS = ${Pangolin_INCLUDE_DIRECTORIES}")
 message("Pangolin_LIBRARIES = ${Pangolin_LIBRARIES}")
 
@@ -17,7 +17,7 @@ message("EIGEN3_INCLUDE_DIR = ${EIGEN3_INCLUDE_DIR}")
 find_package(PCL REQUIRED)
 message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
-find_package(GTSAM REQUIRED PATHS /home/blackdyce/Apps/gtsam)
+find_package(GTSAM REQUIRED)
 
 set(SOURCE
     src/modules/odometry/map/LocalMap.cpp
