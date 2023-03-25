@@ -1,6 +1,5 @@
 #include "MotionEstimatorOpt.h"
 #include "tools/Tools3d.h"
-#include "odometry/features/FeatureExtractor.h"
 
 #include <opencv2/calib3d.hpp>
 #include <eigen3/Eigen/Geometry>
@@ -171,7 +170,11 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
             tvec.at<double>(0, 0) = targetFrame.translation().x();
             tvec.at<double>(1, 0) = targetFrame.translation().y();
             tvec.at<double>(2, 0) = targetFrame.translation().z();
-            CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
+            // CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
+            std::vector<int> reprojectedInliers;
+            const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec, 8.0f, reprojectedInliers);
+            std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
+
         }
     }
 

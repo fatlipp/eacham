@@ -20,8 +20,8 @@ public:
 public:
     std::tuple<std::vector<int>, std::vector<int>> FindMatches(const Frame& frame1, const Frame& frame2);
 
-    void CalcReprojectionError(const cv::Mat &image, const std::vector<cv::Point3f> &pts3d1, const std::vector<cv::Point2f> &pts2d2,
-        const cv::Mat &R, const cv::Mat &t);
+    std::tuple<float, float> CalcReprojectionError(const cv::Mat &image, const std::vector<cv::Point3f> &pts3d1, const std::vector<cv::Point2f> &pts2d2,
+        const cv::Mat &R, const cv::Mat &t, const float errorThreshold, std::vector<int> &inliers);
 
 protected:
     cv::Mat cameraMat;

@@ -12,7 +12,6 @@
 #include "odometry/map/LocalMap.h"
 #include "data_source/IDataSourceCamera.h"
 #include "odometry/frame/FrameCreator.h"
-#include "odometry/frame/KeyFrame.h"
 #include "odometry/optimization/LocalFramesOptimizer.h"
 #include "motion_estimator/MotionEstimatorPnP.h"
 #include "motion_estimator/MotionEstimatorOpt.h"
@@ -57,6 +56,11 @@ public:
     std::list<Frame> GetLocalMapFrames() 
     {
         return localMap->GetFrames();
+    }
+
+    const Frame& GetCurrentFrame() const 
+    {
+        return this->lastFrame;
     }
 
     void SetLocalOptimizerState(const bool state)

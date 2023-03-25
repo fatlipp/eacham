@@ -57,6 +57,9 @@ int main(int argc, char* argv[])
     const auto sourceType = DataSourceType::DATASET;
     const std::string folder = "/home/blackdyce/Datasets/KITTI";
     
+    auto dataSourceLidar = CreateLidar<lidardata_t>(sourceType, folder);
+    auto datasetLidar = dynamic_cast<IDataset<lidardata_t>*>(dataSourceLidar.get());
+
     auto dataSource = CreateStereo<stereodata_t>(sourceType, folder);
     auto dataset = dynamic_cast<IDataset<stereodata_t>*>(dataSource.get());
     auto visualOdometry = std::make_unique<VisualOdometry<stereodata_t>>(extractorType, motionEstimatorType, dataSource.get());
@@ -81,6 +84,7 @@ int main(int argc, char* argv[])
 
             // dataset (camera should use concurrent thread to get the next frame)
             dataset->ReadNext();
+            datasetLidar->ReadNext();
             const auto gtPos = dataset->GetGtPose();
 
             const auto images = dataSource->Get();
@@ -90,9 +94,10 @@ int main(int argc, char* argv[])
                 std::cout << "+++++++++++++++++++++++++++++[" << frameId << "]+++++++++++++++++++++++++++++" << std::endl;
                 std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
+                BlockTimer timer { "Overall Loop" };
                 Eigen::Matrix4f currentPos;
                 {
-                    BlockTimer timer;
+                    BlockTimer timer { "Odom" };
                     if (visualOdometry->Proceed(images))
                     {
                         currentPos = visualOdometry->GetOdometry();
@@ -110,6 +115,17 @@ int main(int argc, char* argv[])
                                                 diff(2, 3) * diff(2, 3));
                 renderer.AddFGTPoint(gtPos);
                 renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
+
+                auto lidarData = dataSourceLidar->Get();
+
+                for (auto &point : lidarData)
+                {
+                    const Eigen::Vector4f pointTrans = currentPos * Eigen::Vector4f{point.x(), point.y(), point.z(), 1.0f };
+                    point = Eigen::Vector3f {pointTrans.x(), pointTrans.y(), pointTrans.z() };
+                }
+
+                renderer.DrawLidarData(lidarData);
+                renderer.DrawFrame(visualOdometry->GetCurrentFrame());
                 // renderer.DrawMapPoints(visualOdometry->GetLocalMapPoints());
 
                 std::cout << "Current pos:\n" << currentPos << std::endl;

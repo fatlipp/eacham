@@ -23,7 +23,6 @@ namespace eacham
 
                 continue;
             }
-            // point.point3d.SetMapPointId(ID++);
 
             MapPoint3d mapPoint { ID++, transformPoint3d(point.position3d, framePos) };
             mapPoint.observers = 1;

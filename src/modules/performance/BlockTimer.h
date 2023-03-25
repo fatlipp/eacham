@@ -10,7 +10,8 @@ namespace eacham
 class BlockTimer
 {
 public:
-    BlockTimer()
+    BlockTimer(const std::string &caption)
+        : caption(caption)
     {
         this->startTime = std::chrono::high_resolution_clock::now();
     }
@@ -21,10 +22,12 @@ public:
 
         const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - this->startTime).count();
 
-        std::cout << "duration = " << duration << std::endl;
+        std::cout << "[" << caption << "] time: " << duration << std::endl;
     }
 
 private:
+    const std::string caption;
+
     std::chrono::high_resolution_clock::time_point startTime;
 
 };

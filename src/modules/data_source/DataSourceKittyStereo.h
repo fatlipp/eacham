@@ -76,7 +76,7 @@ public:
             this->cameraMatrix.at<float>(0, 4) = (-projMat.at<float>(0, 3));
             // this->cameraMatrix.at<float>(0, 4) = (trans.at<float>(0));
 
-            std::cout << "this->cameraMatrix: " << this->cameraMatrix << std::endl;
+            std::cout << "KITTI Stereo cameraMatrix:\n" << this->cameraMatrix << std::endl;
 
             file.close();
         }

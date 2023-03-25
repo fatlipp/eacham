@@ -21,7 +21,7 @@ public:
         switch (type)
         {
         case FeatureExtractorType::ORB:
-            this->detector = cv::ORB::create(1000, 1.6f, 6, 19);
+            this->detector = cv::ORB::create(2000, 1.5f, 10, 19);
             break;
         case FeatureExtractorType::SIFT:
             this->detector = cv::SIFT::create(1000);

@@ -1,7 +1,4 @@
-#pragma once
-
 #include "MotionEstimatorBase.h"
-#include "odometry/features/FeatureExtractor.h"
 #include "tools/Tools3d.h"
 
 #include <opencv2/calib3d.hpp>
@@ -31,18 +28,19 @@ namespace eacham
         return { pts1, pts2 };
     }
 
-    void MotionEstimatorBase::CalcReprojectionError(const cv::Mat &image, const std::vector<cv::Point3f> &pts3d1, 
-            const std::vector<cv::Point2f> &pts2d2, const cv::Mat &R, const cv::Mat &t)
+    std::tuple<float, float> MotionEstimatorBase::CalcReprojectionError(const cv::Mat &image, const std::vector<cv::Point3f> &pts3d1, 
+            const std::vector<cv::Point2f> &pts2d2, const cv::Mat &R, const cv::Mat &t, const float errorThreshold, std::vector<int> &inliers)
     {
-        if (pts3d1.size() < 1)
+        if (pts3d1.size() < 2)
         {
-            return;
+            return {-1, -1};
         }
+        inliers.clear();
 
         cv::Mat reprIm2;
         cv::cvtColor(image, reprIm2, cv::COLOR_BGR2RGB);
 
-        float err = 0.0f;
+        float errMean = 0.0f;
         float minErr = 999999;
         float maxErr = -10000;
 
@@ -82,34 +80,43 @@ namespace eacham
                 maxErr = err1;
             }
 
-            reprojectionErrors.push_back(err1);
+            if (err1 < errorThreshold)
+            {
+                reprojectionErrors.push_back(err1);
+                inliers.push_back(i);
 
-            err += err1;
+                errMean += err1;
+            }
         }
 
         std::sort(reprojectionErrors.begin(), reprojectionErrors.end());
 
         float median = reprojectionErrors[reprojectionErrors.size() / 2];
 
-        err = err / pts3d1.size();
+        errMean = errMean / pts3d1.size();
 
         cv::imshow("ME: ProjectedPoints", reprIm2);
 
-        int worstCount = 0;
+        float errVar = 0;
+		float errSum = 0;
+
         for (int i = 0; i < reprojectionErrors.size(); ++i)
         {
-            if (reprojectionErrors[i] > median * 3)
-            {
-                worstCount++;
-            }
+			errSum += (reprojectionErrors[i] - errMean) * (reprojectionErrors[i] - errMean);
+        }
+
+        if (reprojectionErrors.size() > 0)
+        {
+		    errVar = errSum / (reprojectionErrors.size() - 1);
         }
 
         std::cout << "===========================================" << std::endl;
-        std::cout << "mean repr err: " << err << std::endl;
+        std::cout << "mean repr err: " << errMean << ", variance: " << errVar << std::endl;
         std::cout << "median repr err: " << median << std::endl;
-        std::cout << "Worst count " << (static_cast<float>(worstCount) / reprojectionErrors.size()) << std::endl;
         std::cout << "repr minErr: " << minErr << std::endl;
         std::cout << "repr maxErr: " << maxErr << std::endl;
         std::cout << "===========================================" << std::endl;
+
+        return {errMean, errVar};
     }
 }
