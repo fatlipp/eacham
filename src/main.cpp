@@ -83,17 +83,20 @@ int main(int argc, char* argv[])
             nextStep = false;
 
             // dataset (camera should use concurrent thread to get the next frame)
-            dataset->ReadNext();
-            datasetLidar->ReadNext();
-            const auto gtPos = dataset->GetGtPose();
-
-            const auto images = dataSource->Get();
-
             {
                 std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
                 std::cout << "+++++++++++++++++++++++++++++[" << frameId << "]+++++++++++++++++++++++++++++" << std::endl;
                 std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
+                BlockTimer timer { "Read dataset" };
+                dataset->ReadNext();
+                // datasetLidar->ReadNext();
+            }
+            const auto gtPos = dataset->GetGtPose();
+
+            const auto images = dataSource->Get();
+
+            {
                 BlockTimer timer { "Overall Loop" };
                 Eigen::Matrix4f currentPos;
                 {
@@ -116,15 +119,15 @@ int main(int argc, char* argv[])
                 renderer.AddFGTPoint(gtPos);
                 renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
 
-                auto lidarData = dataSourceLidar->Get();
+                // auto lidarData = dataSourceLidar->Get();
 
-                for (auto &point : lidarData)
-                {
-                    const Eigen::Vector4f pointTrans = currentPos * Eigen::Vector4f{point.x(), point.y(), point.z(), 1.0f };
-                    point = Eigen::Vector3f {pointTrans.x(), pointTrans.y(), pointTrans.z() };
-                }
+                // for (auto &point : lidarData)
+                // {
+                //     const Eigen::Vector4f pointTrans = currentPos * Eigen::Vector4f{point.x(), point.y(), point.z(), 1.0f };
+                //     point = Eigen::Vector3f {pointTrans.x(), pointTrans.y(), pointTrans.z() };
+                // }
 
-                renderer.DrawLidarData(lidarData);
+                // renderer.DrawLidarData(lidarData);
                 renderer.DrawFrame(visualOdometry->GetCurrentFrame());
                 // renderer.DrawMapPoints(visualOdometry->GetLocalMapPoints());
 

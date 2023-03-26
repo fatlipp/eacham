@@ -57,7 +57,10 @@ gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2(const float posNoise, con
 void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& pointsIds, const unsigned id, 
     gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &K)
 {
-    const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
+    // const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
+    const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.5f);
+    const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(1.5f), 
+        measurementNoise);
 
     unsigned landmarkId = 0;
     for (auto &pointId : pointsIds)
@@ -66,7 +69,7 @@ void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& points
         const gtsam::Point2 measurement2 = {point.x, point.y};
 
         graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
-            measurement2, measurementNoise, gtsam::Symbol('x', id), gtsam::Symbol('l', landmarkId), K);
+            measurement2, huber, gtsam::Symbol('x', id), gtsam::Symbol('l', landmarkId), K);
 
         ++landmarkId;
     }
@@ -103,7 +106,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
     
     ++frameId;
-    const auto noise2 = CreateNoise6_2(5.0, 25.0);
+    const auto noise2 = CreateNoise6_2(0.5, 5.0);
     graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise2);
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
 
@@ -129,8 +132,8 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
 
     gtsam::LevenbergMarquardtParams params;
-    params.maxIterations = 1000;
-    params.absoluteErrorTol = 0.000001;
+    params.maxIterations = 100;
+    params.absoluteErrorTol = 0.001;
     optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
 
     const gtsam::Values optimizationResult = optimizer->optimize();
@@ -170,9 +173,28 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
             tvec.at<double>(0, 0) = targetFrame.translation().x();
             tvec.at<double>(1, 0) = targetFrame.translation().y();
             tvec.at<double>(2, 0) = targetFrame.translation().z();
+
+		    cv::Mat rvec = cv::Mat_<double>(3, 1);
+			cv::Rodrigues(Rmat, rvec);
+
+            {
+                std::cout << "1 tvec: " << tvec << std::endl;
+
+                std::vector<int> reprojectedInliers;
+                const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec, 4.0f, reprojectedInliers);
+                
+                if (reprojectedInliers.size() > 0)
+                    std::cout << "1 inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
+            }
+
+            // cv::solvePnP(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, true, cv::SOLVEPNP_EPNP);
+
+            std::cout << "2 tvec: " << tvec << std::endl;
+
+			cv::Rodrigues(rvec, Rmat);
             // CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec);
             std::vector<int> reprojectedInliers;
-            const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec, 8.0f, reprojectedInliers);
+            const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, Rmat, tvec, 4.0f, reprojectedInliers);
             std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
 
         }

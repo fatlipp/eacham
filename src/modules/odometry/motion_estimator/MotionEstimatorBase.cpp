@@ -89,33 +89,46 @@ namespace eacham
             }
         }
 
-        std::sort(reprojectionErrors.begin(), reprojectionErrors.end());
-
-        float median = reprojectionErrors[reprojectionErrors.size() / 2];
-
-        errMean = errMean / pts3d1.size();
-
-        cv::imshow("ME: ProjectedPoints", reprIm2);
-
         float errVar = 0;
-		float errSum = 0;
-
-        for (int i = 0; i < reprojectionErrors.size(); ++i)
-        {
-			errSum += (reprojectionErrors[i] - errMean) * (reprojectionErrors[i] - errMean);
-        }
-
+        
         if (reprojectionErrors.size() > 0)
         {
-		    errVar = errSum / (reprojectionErrors.size() - 1);
-        }
+            std::sort(reprojectionErrors.begin(), reprojectionErrors.end());
 
-        std::cout << "===========================================" << std::endl;
-        std::cout << "mean repr err: " << errMean << ", variance: " << errVar << std::endl;
-        std::cout << "median repr err: " << median << std::endl;
-        std::cout << "repr minErr: " << minErr << std::endl;
-        std::cout << "repr maxErr: " << maxErr << std::endl;
-        std::cout << "===========================================" << std::endl;
+            float median = reprojectionErrors[reprojectionErrors.size() / 2];
+
+            errMean = errMean / pts3d1.size();
+
+            cv::imshow("ME: ProjectedPoints", reprIm2);
+
+            float errSum = 0;
+
+            for (int i = 0; i < reprojectionErrors.size(); ++i)
+            {
+                errSum += (reprojectionErrors[i] - errMean) * (reprojectionErrors[i] - errMean);
+            }
+
+            if (reprojectionErrors.size() > 0)
+            {
+                errVar = errSum / (reprojectionErrors.size() - 1);
+            }
+
+            std::cout << "===========================================" << std::endl;
+            std::cout << "mean repr err: " << errMean << ", variance: " << errVar << std::endl;
+            std::cout << "median repr err: " << median << std::endl;
+            std::cout << "repr minErr: " << minErr << std::endl;
+            std::cout << "repr maxErr: " << maxErr << std::endl;
+            std::cout << "===========================================" << std::endl;
+        }
+        else
+        {
+            std::cout << "===========================================" << std::endl;
+            std::cout << "mean repr err: " << errMean << ", variance: " << errVar << std::endl;
+            std::cout << "NO INLIERS" << std::endl;
+            std::cout << "NO INLIERS" << std::endl;
+            std::cout << "NO INLIERS" << std::endl;
+            std::cout << "===========================================" << std::endl;
+        }
 
         return {errMean, errVar};
     }
