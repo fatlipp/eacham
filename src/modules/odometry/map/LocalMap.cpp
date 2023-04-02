@@ -7,7 +7,7 @@ namespace eacham
 {
     void LocalMap::AddFrame(Frame &frame)
     {
-        if (GetSize() > capaticy)
+        if (GetSize() >= capaticy)
         {
             frames.pop_front();
         }

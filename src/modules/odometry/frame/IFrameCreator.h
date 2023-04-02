@@ -7,18 +7,20 @@
 namespace eacham
 {
 
-class FrameCreator
+class IFrameCreator
 {
 public:
-    FrameCreator(const FeatureExtractorType& featureExtractor)
+    IFrameCreator(const FeatureExtractorType& featureExtractor)
     {
         this->extractor = std::make_unique<FeatureExtractor>(featureExtractor);
         this->mather = this->extractor->CreateMatcher();
     }
 
-    Frame Create(const stereodata_t& data, const cv::Mat &camera);
+    virtual Frame Create(const stereodata_t& data, const cv::Mat &camera) = 0;
+    
+protected:
 
-private:
+protected:
     std::unique_ptr<FeatureExtractor> extractor;
     matcher_t mather;
 };

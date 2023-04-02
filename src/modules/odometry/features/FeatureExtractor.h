@@ -15,22 +15,7 @@ namespace eacham
 class FeatureExtractor
 {
 public:
-    FeatureExtractor(const FeatureExtractorType &typeInp)
-        : type(typeInp)
-    {
-        switch (type)
-        {
-        case FeatureExtractorType::ORB:
-            this->detector = cv::ORB::create(2000, 1.5f, 10, 19);
-            break;
-        case FeatureExtractorType::SIFT:
-            this->detector = cv::SIFT::create(1000);
-            break;
-        case FeatureExtractorType::SURF:
-            this->detector = cv::xfeatures2d::SURF::create(1000);
-            break;
-        }
-    }
+    FeatureExtractor(const FeatureExtractorType &typeInp);
 
     std::tuple<std::vector<cv::KeyPoint>, cv::Mat> GetFeatures(const cv::Mat &image);
 

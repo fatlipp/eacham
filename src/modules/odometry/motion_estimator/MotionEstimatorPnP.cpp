@@ -31,7 +31,7 @@ MotionEstimatorPnP::MotionEstimatorPnP(const FeatureExtractorType &featureExtrac
     }
 }
 
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& frame1, Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(Frame& frame1, Frame& frame2)
 {
     const auto [pts1, pts2] = FindMatches(frame1, frame2);
     const auto matches = pts1.size();
@@ -40,10 +40,12 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
     std::vector<cv::Point2f> pts2d2; 
 
     //draw
-    // std::vector<cv::KeyPoint> kp1;
-    // std::vector<cv::KeyPoint> kp2;
-    // std::vector<std::vector<cv::DMatch>> matchesGood;
-    // int pointId = 0;
+    std::vector<cv::KeyPoint> kp1;
+    std::vector<cv::KeyPoint> kp2;
+    std::vector<std::vector<cv::DMatch>> matchesGood;
+    int pointId = 0;
+
+    std::vector<std::pair<int, int>> normIds;
 
     for (size_t i = 0; i < matches; ++i)
     {
@@ -51,29 +53,31 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
         pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
         frame2.GetPointData(pts2[i]).associatedMapPointId = frame1.GetPointData(pts1[i]).associatedMapPointId;
 
+        normIds.push_back(std::make_pair(pts1[i], pts2[i]));
+
         //draw
-        // kp1.push_back(frame1.GetPointData(pts1[i]).keypoint);
-        // kp2.push_back(frame2.GetPointData(pts2[i]).keypoint);
-        // cv::DMatch mm2 = cv::DMatch(pointId, pointId, 0);
-        // matchesGood.push_back({mm2});
-        // ++pointId;
+        kp1.push_back(frame1.GetPointData(pts1[i]).keypoint);
+        kp2.push_back(frame2.GetPointData(pts2[i]).keypoint);
+        cv::DMatch mm2 = cv::DMatch(pointId, pointId, 0);
+        matchesGood.push_back({mm2});
+        ++pointId;
     }
 
     //draw
-    // if (kp1.size() > 0)
-    // {
-    //     cv::Mat img_match;
-    //     cv::drawMatches(frame1.GetImage(), kp1, frame2.GetImage(), kp2, matchesGood, img_match);
-    //     cv::resize(img_match, img_match, {img_match.cols * 0.7f, img_match.rows * 0.7f});
-    //     cv::imshow("ME: Matches", img_match);
-    // }
+    if (kp1.size() > 0)
+    {
+        cv::Mat img_match;
+        cv::drawMatches(frame1.GetImage(), kp1, frame2.GetImage(), kp2, matchesGood, img_match);
+        cv::resize(img_match, img_match, {img_match.cols * 0.7f, img_match.rows * 0.7f});
+        cv::imshow("ME: Matches", img_match);
+    }
 
     std::cout << "matches: " << matches << std::endl;
 
     Eigen::Affine3f motion = Eigen::Affine3f::Identity();
     unsigned inliersCount = 0;
 
-    const int MIN_INLIERS = 20;
+    const int MIN_INLIERS = 5;
 
     if (matches> MIN_INLIERS)
     {
@@ -94,6 +98,16 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
             std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
 
             inliersCount = reprojectedInliers.size();
+
+            for(unsigned int i = 0; i < inliersPnP.size(); ++i)
+            {
+                const auto pair = normIds[inliersPnP[i]];
+                const int id1 = std::get<0>(pair);
+                const int id2 = std::get<1>(pair);
+
+                frame1.GetPointData(id1).isInlier = true;
+                frame2.GetPointData(id2).isInlier = true;
+            }
 
             const bool needRefine = false;
 

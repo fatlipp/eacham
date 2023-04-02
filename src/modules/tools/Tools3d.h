@@ -25,6 +25,24 @@ namespace eacham
 		return cv::Point3f(((left.x - camera.at<float>(0, 2)) * z) / fx, ((left.y - camera.at<float>(0, 3)) * z) / fx, z);
   	}
 
+	static cv::Point3f Get3dPointByDepthMap(const cv::Point2f& point, const cv::Mat &depthMap, const cv::Mat &camera)
+	{
+		const float fx = camera.at<float>(0, 0);
+		const float fy = camera.at<float>(0, 1);
+		const float cx = camera.at<float>(0, 2);
+		const float cy = camera.at<float>(0, 3);
+		const float scale = camera.at<float>(0, 4);
+
+		const int u = point.x;
+		const int v = point.y;
+
+		const float z = depthMap.at<ushort>(v, u) * scale;
+		const float x = (u - cx) * z / fx;
+		const float y = (v - cy) * z / fy;
+
+		return cv::Point3f(x, y, z);
+  	}
+
 	// http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
     static int BinaryDescriptorDist(const cv::Mat &a, const cv::Mat &b)
     {
@@ -89,5 +107,14 @@ namespace eacham
 	{
         return cv::Point2f(((camera.at<float>(0, 0) * point.x) / point.z) + camera.at<float>(0, 2),
                            ((camera.at<float>(0, 1) * point.y) / point.z) + camera.at<float>(0, 3));
+	}
+
+	static float GetDistance(const cv::Point3f &point1, const cv::Point3f &point2)
+	{
+		const float d1 = (point1.x - point2.x);
+		const float d2 = (point1.y - point2.y);
+		const float d3 = (point1.z - point2.z);
+
+		return std::sqrt(d1 * d1 + d2 * d2 + d3 * d3);
 	}
 }

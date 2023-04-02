@@ -83,7 +83,7 @@ public:
     void Start()
     {
         const int WIDTH = 1280;
-        const int HEIGHT = 500;
+        const int HEIGHT = 800;
 
         const int UI_WIDTH = 120;
 
@@ -160,14 +160,29 @@ public:
                         glEnd();
                     }
 
-                    glPointSize(8);
+                    glPointSize(7);
                     glBegin(GL_POINTS);
                     glColor3f(color.x(), color.y(), color.z());
+                    int cc = 0;
                     for (const auto& point : this->frames[i].GetPointsData())
                     {   
-                        const auto poss = transformPoint3d(point.position3d, framePos);
+                        // auto poss = point.position3d;//transformPoint3d(point.position3d, framePos);
+                        auto poss = transformPoint3d(point.position3d, framePos);
 
+                        // if (i == 0)
+                        //     poss.z -= 0.7f;
+
+                        // if (point.isInlier && (cc % 2 == 0))
+                        //     glVertex3f(poss.x, poss.y, poss.z);
+                        // if (!point.isInlier && (cc % 2 != 0))
+                        //     glVertex3f(poss.x, poss.y, poss.z);
+                        if (point.isInlier)
+                            glColor3f(color.x(), color.y(), color.z());
+                        else
+                            glColor3f(color.x() * 0.5f, color.y() * 0.5f, color.z() * 0.5f);
                         glVertex3f(poss.x, poss.y, poss.z);
+
+                        cc++;
                     }
                     glEnd();
                 }
@@ -192,7 +207,7 @@ public:
                     }
                 }
 
-                glPointSize(8);
+                glPointSize(5);
                 glBegin(GL_POINTS);
                 glColor3f(0.0, 1.0, 0.0);
                 for (const auto& point : this->points)

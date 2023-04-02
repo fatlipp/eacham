@@ -1,5 +1,7 @@
 #include <iostream>
 #include "modules/data_source/DataInputSourceFactory.h"
+#include "modules/odometry/frame/FrameCreatorRgbd.h"
+#include "modules/odometry/frame/FrameCreatorStereo.h"
 #include "modules/odometry/VisualOdometry.h"
 
 #include "modules/performance/BlockTimer.h"
@@ -12,6 +14,7 @@ int main(int argc, char* argv[])
     FeatureExtractorType extractorType = FeatureExtractorType::ORB;
     MotionEstimatorType motionEstimatorType = MotionEstimatorType::OPT;
     bool localOptimizerState = false;
+    int maxFrames = -1;
 
     if (argc > 1)
     {
@@ -27,6 +30,11 @@ int main(int argc, char* argv[])
     if (argc > 3)
     {
         localOptimizerState = std::stoi(std::string(argv[3])) == 1 ? true : false;
+    }
+
+    if (argc > 4)
+    {
+        maxFrames = std::stoi(argv[4]);
     }
 
     std::cout << "extractorType: " << static_cast<int>(extractorType) << std::endl; 
@@ -55,15 +63,18 @@ int main(int argc, char* argv[])
 
     // TODO: Config
     const auto sourceType = DataSourceType::DATASET;
-    const std::string folder = "/home/blackdyce/Datasets/KITTI";
+    // const std::string folder = "/home/blackdyce/Datasets/KITTI";
+    const std::string folder = "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_cabinet";
     
     auto dataSourceLidar = CreateLidar<lidardata_t>(sourceType, folder);
     auto datasetLidar = dynamic_cast<IDataset<lidardata_t>*>(dataSourceLidar.get());
 
-    auto dataSource = CreateStereo<stereodata_t>(sourceType, folder);
+    auto dataSource = CreateRgbdTum<stereodata_t>(sourceType, folder);
     auto dataset = dynamic_cast<IDataset<stereodata_t>*>(dataSource.get());
-    auto visualOdometry = std::make_unique<VisualOdometry<stereodata_t>>(extractorType, motionEstimatorType, dataSource.get());
 
+    std::unique_ptr<IFrameCreator> frameCreator = std::make_unique<FrameCreatorRgbd>(extractorType);
+    auto visualOdometry = std::make_unique<VisualOdometry<stereodata_t>>(std::move(frameCreator), extractorType, 
+                                                                               motionEstimatorType, dataSource.get());
     visualOdometry->SetLocalOptimizerState(localOptimizerState);
 
     if (dataset == nullptr)
@@ -71,10 +82,10 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // for (int i = 0; i < 17; ++i)
-    //     dataset->ReadNext();
-
     int frameId = 0;
+
+    Eigen::Matrix4f prevPos = Eigen::Matrix4f::Identity();
+    float drivenDistTotal = 0.0;
 
     while (!close)
     {
@@ -107,7 +118,6 @@ int main(int argc, char* argv[])
                     }
                     else
                     {
-                        std::cout << "Odometry error." << std::endl;
                         break;
                     }
                 }
@@ -128,17 +138,27 @@ int main(int argc, char* argv[])
                 // }
 
                 // renderer.DrawLidarData(lidarData);
-                renderer.DrawFrame(visualOdometry->GetCurrentFrame());
                 // renderer.DrawMapPoints(visualOdometry->GetLocalMapPoints());
 
                 std::cout << "Current pos:\n" << currentPos << std::endl;
                 std::cout << "GT pos:\n" << gtPos << std::endl;
                 std::cout << "Diff:\n" << diffLen << "\n" << diff << std::endl;
+
+                {
+                    const Eigen::Matrix4f drivenDistMat = (currentPos - prevPos);
+                    const float drivenDist =  std::sqrt(drivenDistMat(0, 3) * drivenDistMat(0, 3) + 
+                                                        drivenDistMat(1, 3) * drivenDistMat(1, 3) + 
+                                                        drivenDistMat(2, 3) * drivenDistMat(2, 3));
+                    drivenDistTotal += drivenDist;
+                    std::cout << "Driven distance: " << drivenDistTotal << std::endl;
+                }
+
+                prevPos = currentPos;
             }
 
             ++frameId;
 
-            if (frameId > 300)
+            if (maxFrames > -1 && frameId > maxFrames)
                 break;
         }
 

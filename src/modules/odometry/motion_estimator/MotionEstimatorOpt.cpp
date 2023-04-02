@@ -58,8 +58,8 @@ void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& points
     gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &K)
 {
     // const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
-    const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.5f);
-    const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(1.5f), 
+    const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 4.0f);
+    const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(5.0f), 
         measurementNoise);
 
     unsigned landmarkId = 0;
@@ -75,15 +75,19 @@ void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& points
     }
 }
 
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& frame1, Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(Frame& frame1, Frame& frame2)
 {
     const auto [pts1, pts2] = FindMatches(frame1, frame2); 
 
     const unsigned matches = pts1.size();
 
+    std::vector<std::pair<int, int>> normIds;
+
     for (size_t i = 0; i < matches; ++i)
     {
         frame2.GetPointData(pts2[i]).associatedMapPointId = frame1.GetPointData(pts1[i]).associatedMapPointId;
+
+        normIds.push_back(std::make_pair(pts1[i], pts2[i]));
     }
 
     std::cout << "MotionEstimationOpt() Good matches: " << matches << std::endl;
@@ -101,9 +105,13 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     const int INITIAL_ID = 0;
     int frameId = INITIAL_ID;
 
-    const Eigen::Matrix4d position = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d position = Eigen::Matrix4d::Identity();
     graph.emplace_shared<gtsam::NonlinearEquality<gtsam::Pose3> >(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
+
+    // position(0, 3) = -0.0469029;
+    // position(1, 3) = -0.0283993;
+    // position(2, 3) = 0.858694;
     
     ++frameId;
     const auto noise2 = CreateNoise6_2(0.5, 5.0);
@@ -123,7 +131,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
         initialMeasurements.insert(gtsam::Symbol('l', landmarkId), mapPointGTSAM);
 
         // add uncertatinty to the map points
-        const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.15);
+        const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.1);
         graph.addPrior(gtsam::Symbol('l', landmarkId), mapPointGTSAM, priorNoise);
 
         ++landmarkId;
@@ -132,8 +140,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
 
     gtsam::LevenbergMarquardtParams params;
-    params.maxIterations = 100;
-    params.absoluteErrorTol = 0.001;
+    gtsam::LevenbergMarquardtParams::SetCeresDefaults(&params);
     optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
 
     const gtsam::Values optimizationResult = optimizer->optimize();
@@ -155,6 +162,17 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
         {
             pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
             pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
+
+
+            const auto pair = normIds[i];
+            const int id1 = std::get<0>(pair);
+            const int id2 = std::get<1>(pair);
+
+            if (GetDistance(frame1.GetPointData(id1).position3d, frame2.GetPointData(id2).position3d) < 0.5f)
+            {
+                frame1.GetPointData(id1).isInlier = true;
+                frame2.GetPointData(id2).isInlier = true;
+            }
         }
 
         // reprojection error stat

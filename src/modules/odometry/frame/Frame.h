@@ -28,6 +28,7 @@ struct PointData
     unsigned id = 0;
     unsigned associatedMapPointId = 0;
     float uncertatinty;
+    bool isInlier;
 
     cv::KeyPoint keypoint;
     cv::Point3f position3d;
@@ -35,6 +36,7 @@ struct PointData
 
     PointData(const cv::KeyPoint &keypoint, const cv::Point3f &position3d, const cv::Mat &descriptor)
         : id(0)
+        , isInlier(false)
         , uncertatinty(1000.0f)
         , associatedMapPointId(0)
         , keypoint(keypoint)
@@ -55,10 +57,16 @@ public:
     {
         imageInp.copyTo(image);
     }
-
-    cv::Mat GetImage() const
+    
+    Frame(const double timestamp, const cv::Mat &imageInp, const cv::Mat &imageDepthInp)
+        : Frame(timestamp, imageInp)
     {
-        return image.clone();
+        imageDepthInp.copyTo(imageDepth);
+    }
+
+    const cv::Mat& GetImage() const
+    {
+        return image;
     }
 
     cv::KeyPoint GetFeature(const int id) const
@@ -146,6 +154,7 @@ protected:
     Eigen::Matrix4f position;
     Eigen::Matrix4f odometry;
     cv::Mat image;
+    cv::Mat imageDepth;
     std::vector<PointData> pointsData;
 
 };

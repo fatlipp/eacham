@@ -18,7 +18,8 @@ namespace eacham
 
         for (const auto& m : matches)
         {
-            if (m[0].distance < 0.65f * m[1].distance)
+            if (m[0].distance < 0.65f * m[1].distance 
+                && GetDistance(frame1.GetPoint3d(m[0].queryIdx), frame2.GetPoint3d(m[0].trainIdx)) < 1.0f)
             {
                 pts1.push_back(m[0].queryIdx);
                 pts2.push_back(m[0].trainIdx);
