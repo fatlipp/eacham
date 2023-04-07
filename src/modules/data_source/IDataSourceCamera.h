@@ -18,6 +18,8 @@ public:
 
     virtual T Get() const = 0;
 
+    virtual bool isStereo() const = 0;
+    virtual bool isRgbd() const = 0;
     virtual cv::Mat GetParameters() const = 0;
     virtual cv::Mat GetDistortion() const = 0;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odometry/frame/Frame.h"
+#include "frame/Frame.h"
 
 namespace eacham
 {

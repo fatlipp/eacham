@@ -18,7 +18,7 @@
 #include <pangolin/display/default_font.h>
 #include <pangolin/handler/handler.h>
 
-#include "../modules/odometry/frame/Frame.h"
+#include "../modules/frame/Frame.h"
 #include "../modules/tools/Tools3d.h"
 
 namespace eacham

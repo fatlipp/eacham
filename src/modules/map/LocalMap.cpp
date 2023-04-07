@@ -1,4 +1,4 @@
-#include "odometry/map/LocalMap.h"
+#include "map/LocalMap.h"
 #include "tools/Tools3d.h"
 
 #include <eigen3/Eigen/Geometry>

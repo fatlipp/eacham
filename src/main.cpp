@@ -1,8 +1,6 @@
 #include <iostream>
 #include "modules/data_source/DataInputSourceFactory.h"
-#include "modules/odometry/frame/FrameCreatorRgbd.h"
-#include "modules/odometry/frame/FrameCreatorStereo.h"
-#include "modules/odometry/VisualOdometry.h"
+#include "modules/odometry/VisualOdometryDirector.h"
 
 #include "modules/performance/BlockTimer.h"
 #include "visualization/Render.h"
@@ -64,7 +62,7 @@ int main(int argc, char* argv[])
     // TODO: Config
     const auto sourceType = DataSourceType::DATASET;
     // const std::string folder = "/home/blackdyce/Datasets/KITTI";
-    const std::string folder = "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_cabinet";
+    const std::string folder = "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household";
     
     auto dataSourceLidar = CreateLidar<lidardata_t>(sourceType, folder);
     auto datasetLidar = dynamic_cast<IDataset<lidardata_t>*>(dataSourceLidar.get());
@@ -72,10 +70,8 @@ int main(int argc, char* argv[])
     auto dataSource = CreateRgbdTum<stereodata_t>(sourceType, folder);
     auto dataset = dynamic_cast<IDataset<stereodata_t>*>(dataSource.get());
 
-    std::unique_ptr<IFrameCreator> frameCreator = std::make_unique<FrameCreatorRgbd>(extractorType);
-    auto visualOdometry = std::make_unique<VisualOdometry<stereodata_t>>(std::move(frameCreator), extractorType, 
-                                                                               motionEstimatorType, dataSource.get());
-    visualOdometry->SetLocalOptimizerState(localOptimizerState);
+    VisualOdometryDirector visualOdometryDirector;
+    auto visualOdometry = visualOdometryDirector.Build(dataSource.get(), extractorType, motionEstimatorType);
 
     if (dataset == nullptr)
     {
@@ -105,6 +101,11 @@ int main(int argc, char* argv[])
             }
             const auto gtPos = dataset->GetGtPose();
 
+            if (frameId == 0)
+            {
+                // visualOdometry->SetDefaultPos(gtPos);
+            }
+
             const auto images = dataSource->Get();
 
             {
@@ -127,7 +128,7 @@ int main(int argc, char* argv[])
                                                 diff(1, 3) * diff(1, 3) + 
                                                 diff(2, 3) * diff(2, 3));
                 renderer.AddFGTPoint(gtPos);
-                renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
+                // renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
 
                 // auto lidarData = dataSourceLidar->Get();
 

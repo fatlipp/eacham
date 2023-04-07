@@ -100,6 +100,16 @@ public:
     void ReadNext() override;
     Eigen::Matrix4f GetGtPose() const override;
 
+    bool isStereo() const override
+    {
+        return true;
+    }
+
+    bool isRgbd() const override
+    {
+        return false;
+    }
+
     cv::Mat GetParameters() const override;
     cv::Mat GetDistortion() const override;
 

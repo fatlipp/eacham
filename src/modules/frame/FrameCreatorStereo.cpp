@@ -8,7 +8,7 @@
 namespace eacham
 {
 
-Frame FrameCreatorStereo::Create(const stereodata_t& data, const cv::Mat &camera)
+Frame FrameCreatorStereo::Create(const stereodata_t& data)
 {
     const auto [features1, descriptor1] = extractor->GetFeatures(std::get<1>(data));
     
@@ -25,7 +25,7 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data, const cv::Mat &camera
     }
 
     std::vector<std::vector<cv::DMatch>> matches;
-    this->mather->knnMatch(descriptor1, descriptor2, matches, 2);
+    this->matcher->knnMatch(descriptor1, descriptor2, matches, 2);
 
     if (matches.size() < 40)
     {
@@ -43,7 +43,7 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data, const cv::Mat &camera
             const int id1 = m[0].queryIdx;
             const int id2 = m[0].trainIdx;
 
-            const cv::Point3f pos3d = Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, camera);
+            const cv::Point3f pos3d = Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, this->cameraData);
 
             if (pos3d.z > 0.10f && pos3d.z < 70.0f)
             {

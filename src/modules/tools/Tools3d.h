@@ -117,4 +117,5 @@ namespace eacham
 
 		return std::sqrt(d1 * d1 + d2 * d2 + d3 * d3);
 	}
+	
 }

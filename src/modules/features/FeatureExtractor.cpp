@@ -3,10 +3,9 @@
 
 namespace eacham
 {
-FeatureExtractor::FeatureExtractor(const FeatureExtractorType &typeInp)
-        : type(typeInp)
+FeatureExtractor::FeatureExtractor(const FeatureExtractorType &type)
 {
-    const int winSize = 41;
+    const int winSize = 31;
     switch (type)
     {
     case FeatureExtractorType::ORB:
@@ -20,7 +19,7 @@ FeatureExtractor::FeatureExtractor(const FeatureExtractorType &typeInp)
             // int  	patchSize = 31, - windows size to BRIEF
             // int  	fastThreshold = 20  - if abs pixel difference larger than this value - potentially corner
             // decrease to get more features
-        this->detector = cv::ORB::create(1500, 1.2f, 6, winSize, 0, 2, cv::ORB::HARRIS_SCORE, winSize, 15);
+        this->detector = cv::ORB::create(1500, 1.2f, 8, winSize, 0, 2, cv::ORB::HARRIS_SCORE, winSize, 25);
         break;
     case FeatureExtractorType::SIFT:
     // (int nfeatures=0, int nOctaveLayers=3, double contrastThreshold=0.04, double edgeThreshold=10, double sigma=1.6)

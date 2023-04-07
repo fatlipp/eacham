@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odometry/map/LocalMap.h"
+#include "map/LocalMap.h"
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>

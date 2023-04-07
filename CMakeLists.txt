@@ -20,17 +20,17 @@ message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 find_package(GTSAM REQUIRED)
 
 set(SOURCE
-    src/modules/odometry/map/LocalMap.cpp
+    src/modules/map/LocalMap.cpp
 
-    src/modules/odometry/motion_estimator/MotionEstimatorBase.cpp
-    src/modules/odometry/motion_estimator/MotionEstimatorPnP.cpp
-    src/modules/odometry/motion_estimator/MotionEstimatorOpt.cpp
+    src/modules/motion_estimator/MotionEstimatorBase.cpp
+    src/modules/motion_estimator/MotionEstimatorPnP.cpp
+    src/modules/motion_estimator/MotionEstimatorOpt.cpp
     
-    src/modules/odometry/features/FeatureExtractor.cpp
-    src/modules/odometry/frame/FrameCreatorStereo.cpp
-    src/modules/odometry/frame/FrameCreatorRgbd.cpp
+    src/modules/features/FeatureExtractor.cpp
+    src/modules/frame/FrameCreatorStereo.cpp
+    src/modules/frame/FrameCreatorRgbd.cpp
     
-    src/modules/odometry/optimization/LocalFramesOptimizer.cpp
+    src/modules/optimization/LocalFramesOptimizer.cpp
 )
 
 # add_library(eacham_lib INTERFACE)
