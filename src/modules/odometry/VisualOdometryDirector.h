@@ -6,7 +6,7 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
 
-#include "odometry/IOdometry.h"
+#include "odometry/IFrameToMapOdometry.h"
 #include "tools/Tools3d.h"
 #include "types/DataTypes.h"
 #include "map/LocalMap.h"
@@ -23,10 +23,12 @@
 
 namespace eacham
 {
+
+// template<typename T>
 class VisualOdometryDirector
 {
 public:
-    std::unique_ptr<IOdometry<stereodata_t>> Build(const camera_t* const camera, 
+    std::unique_ptr<IFrameToMapOdometry<stereodata_t>> Build(const camera_t* const camera, 
         const FeatureExtractorType& featureExtractorType, const MotionEstimatorType& motionEstimatorType)
     {
         auto featureMatcher = BuildFeatureMatcher(featureExtractorType);
@@ -34,7 +36,7 @@ public:
         auto odometry = std::make_unique<VisualOdometry<stereodata_t>>();
         odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, featureExtractorType));
         odometry->SetMotionEstimator(BuildMotionEstimator(camera, motionEstimatorType, featureMatcher));
-        odometry->SetLocalOptimizer(BuildLocalOptimizer(camera));
+        // odometry->SetLocalOptimizer(BuildLocalOptimizer(camera));
 
         return odometry;
     }
@@ -88,6 +90,7 @@ public:
         {
         case MotionEstimatorType::OPT:
             motionEstimator = std::make_unique<MotionEstimatorOpt>(camera->GetParameters(), camera->GetDistortion());
+            break;
 
         default:
             motionEstimator = std::make_unique<MotionEstimatorPnP>(camera->GetParameters(), camera->GetDistortion());

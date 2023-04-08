@@ -234,13 +234,6 @@ public:
         }
     }
 
-    void SetCameraPosition(const Eigen::Matrix4f &pos)
-    {
-        std::lock_guard<std::mutex> lock(mute);
-        this->cameraPos = pos;
-
-    }
-
     void AddFGTPoint(const Eigen::Matrix4f &pos)
     {
         std::lock_guard<std::mutex> lock(mute);
@@ -321,7 +314,6 @@ private:
     std::atomic<bool> isRunning;
     std::mutex mute;
 
-    Eigen::Matrix4f cameraPos;
     std::vector<Eigen::Vector3f> points;
     std::vector<Frame> frames;
     std::vector<Eigen::Matrix4f> framesGT;

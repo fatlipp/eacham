@@ -66,6 +66,10 @@
         "*.ipp": "cpp",
         "future": "cpp",
         "geometry": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "any": "cpp",
+        "codecvt": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     }
 }

@@ -79,7 +79,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(Frame& frame1
 
     const int MIN_INLIERS = 5;
 
-    if (matches> MIN_INLIERS)
+    if (matches > MIN_INLIERS)
     {
 		cv::Mat rvec = cv::Mat_<double>(3, 1);
 		cv::Mat tvec = cv::Mat_<double>(3, 1);

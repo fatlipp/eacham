@@ -63,6 +63,7 @@ target_include_directories(read_dataset
     PUBLIC
         ${EIGEN3_INCLUDE_DIR}
         ${OpenCV_INCLUDE_DIRS}
+        thirdparty/nlohmann
 )
 target_link_libraries(read_dataset 
     ${OpenCV_LIBRARIES}

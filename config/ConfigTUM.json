@@ -1,0 +1,15 @@
+{
+    "general": {
+        "maxFrames": 100
+    },
+
+    "source": {
+        "type": "DATASET",
+        "path": "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
+    },
+
+    "odometry": {
+        "featureExtractorType": "ORB",
+        "motionEstimatorType": "PNP"
+    }
+}

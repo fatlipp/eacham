@@ -4,40 +4,12 @@
 
 #include "modules/performance/BlockTimer.h"
 #include "visualization/Render.h"
+#include "config/Config.h"
 
 using namespace eacham;
 
 int main(int argc, char* argv[])
 {
-    FeatureExtractorType extractorType = FeatureExtractorType::ORB;
-    MotionEstimatorType motionEstimatorType = MotionEstimatorType::OPT;
-    bool localOptimizerState = false;
-    int maxFrames = -1;
-
-    if (argc > 1)
-    {
-        extractorType = (std::string(argv[1]) == "ORB" ? FeatureExtractorType::ORB : 
-                        (std::string(argv[1]) == "SIFT" ? FeatureExtractorType::SIFT : FeatureExtractorType::SURF));
-    }
-
-    if (argc > 2)
-    {
-        motionEstimatorType = (std::string(argv[2]) == "OPT" ? MotionEstimatorType::OPT : MotionEstimatorType::PNP);
-    }
-
-    if (argc > 3)
-    {
-        localOptimizerState = std::stoi(std::string(argv[3])) == 1 ? true : false;
-    }
-
-    if (argc > 4)
-    {
-        maxFrames = std::stoi(argv[4]);
-    }
-
-    std::cout << "extractorType: " << static_cast<int>(extractorType) << std::endl; 
-    std::cout << "motionEstimatorType: " << static_cast<int>(motionEstimatorType) << std::endl; 
-
     bool play = false;
     bool nextStep = true;
     bool close = false;
@@ -59,10 +31,14 @@ int main(int argc, char* argv[])
             renderer.Stop();
         });
 
-    // TODO: Config
-    const auto sourceType = DataSourceType::DATASET;
-    // const std::string folder = "/home/blackdyce/Datasets/KITTI";
-    const std::string folder = "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household";
+    Config config;
+    config.Read();
+
+    const auto maxFrames = config.GetGeneral().maxFrames;
+    const auto extractorType = config.GetOdometry().featureExtractorType;
+    const auto motionEstimatorType = config.GetOdometry().motionEstimatorType;
+    const auto sourceType = config.GetSource().type;
+    const auto folder = config.GetSource().path;
     
     auto dataSourceLidar = CreateLidar<lidardata_t>(sourceType, folder);
     auto datasetLidar = dynamic_cast<IDataset<lidardata_t>*>(dataSourceLidar.get());
@@ -70,19 +46,20 @@ int main(int argc, char* argv[])
     auto dataSource = CreateRgbdTum<stereodata_t>(sourceType, folder);
     auto dataset = dynamic_cast<IDataset<stereodata_t>*>(dataSource.get());
 
-    VisualOdometryDirector visualOdometryDirector;
-    auto visualOdometry = visualOdometryDirector.Build(dataSource.get(), extractorType, motionEstimatorType);
-
     if (dataset == nullptr)
     {
         return -1;
     }
+
+    VisualOdometryDirector visualOdometryDirector;
+    auto odometry = visualOdometryDirector.Build(dataSource.get(), extractorType, motionEstimatorType);
 
     int frameId = 0;
 
     Eigen::Matrix4f prevPos = Eigen::Matrix4f::Identity();
     float drivenDistTotal = 0.0;
 
+    Eigen::Matrix4f defaultPos = Eigen::Matrix4f::Identity();
     while (!close)
     {
         if (nextStep || play)
@@ -99,12 +76,14 @@ int main(int argc, char* argv[])
                 dataset->ReadNext();
                 // datasetLidar->ReadNext();
             }
-            const auto gtPos = dataset->GetGtPose();
+            auto gtPos = dataset->GetGtPose();
 
             if (frameId == 0)
             {
-                // visualOdometry->SetDefaultPos(gtPos);
+                defaultPos = gtPos.inverse();
             }
+
+            gtPos = defaultPos * gtPos;
 
             const auto images = dataSource->Get();
 
@@ -113,9 +92,9 @@ int main(int argc, char* argv[])
                 Eigen::Matrix4f currentPos;
                 {
                     BlockTimer timer { "Odom" };
-                    if (visualOdometry->Proceed(images))
+                    if (odometry->Proceed(images))
                     {
-                        currentPos = visualOdometry->GetOdometry();
+                        currentPos = odometry->GetOdometry();
                     }
                     else
                     {
@@ -128,7 +107,7 @@ int main(int argc, char* argv[])
                                                 diff(1, 3) * diff(1, 3) + 
                                                 diff(2, 3) * diff(2, 3));
                 renderer.AddFGTPoint(gtPos);
-                // renderer.DrawMapFrames(visualOdometry->GetLocalMapFrames());
+                renderer.DrawMapFrames(odometry->GetLocalMap()->GetFrames());
 
                 // auto lidarData = dataSourceLidar->Get();
 
@@ -139,7 +118,7 @@ int main(int argc, char* argv[])
                 // }
 
                 // renderer.DrawLidarData(lidarData);
-                // renderer.DrawMapPoints(visualOdometry->GetLocalMapPoints());
+                // renderer.DrawMapPoints(odometry->GetLocalMapPoints());
 
                 std::cout << "Current pos:\n" << currentPos << std::endl;
                 std::cout << "GT pos:\n" << gtPos << std::endl;

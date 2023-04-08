@@ -58,6 +58,11 @@ public:
         return frames;
     }
 
+    const std::list<Frame>& GetFrames() const
+    {
+        return frames;
+    }
+
     Frame& GetFrame(const size_t id) 
     {
         auto firstItem = frames.begin();

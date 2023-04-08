@@ -6,25 +6,17 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
 
-#include "IOdometry.h"
-#include "types/DataTypes.h"
-#include "data_source/IDataSourceCamera.h"
+#include "odometry/IFrameToMapOdometry.h"
 #include "frame/IFrameCreator.h"
 #include "motion_estimator/IMotionEstimator.h"
 #include "optimization/LocalFramesOptimizer.h"
-#include "map/LocalMap.h"
+#include "types/DataTypes.h"
 
 namespace eacham
 {
 template<typename T>
-class VisualOdometry : public IOdometry<T>
+class VisualOdometry : public IFrameToMapOdometry<T>
 {
-public:
-    VisualOdometry()
-    {
-        this->localMap = std::make_unique<LocalMap>(10U);
-    }
-
 public:
     bool Proceed(const T &data) override;
 
@@ -46,30 +38,11 @@ public:
         this->localOptimizer = std::move(optimizerInp);
     }
 
-    void SetDefaultPos(const Eigen::Matrix4f& pos)
-    {
-        this->defaultPos = pos;
-    }
-
-public:
-    std::vector<MapPoint3d> GetLocalMapPoints() 
-    {
-        return localMap->GetPoints();
-    }
-
-    std::list<Frame> GetLocalMapFrames() 
-    {
-        return localMap->GetFrames();
-    }
-
 private:
     std::unique_ptr<IFrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
     std::unique_ptr<LocalFramesOptimizer> localOptimizer;
 
-    std::unique_ptr<LocalMap> localMap;
-
-    Eigen::Matrix4f defaultPos;
     Frame lastFrame;
 };
 
@@ -103,17 +76,17 @@ bool VisualOdometry<T>::Proceed(const T &data)
         else
         {
             frame.SetOdometry(Eigen::Matrix4f::Identity());
-            frame.SetPosition(defaultPos);
+            frame.SetPosition(Eigen::Matrix4f::Identity());
         }
 
-        localMap->AddFrame(frame);
+        this->localMap->AddFrame(frame);
 
         if (localOptimizer != nullptr)
         {
-            localOptimizer->Optimize(localMap.get());
+            localOptimizer->Optimize(this->localMap.get());
         }
 
-        this->lastFrame = localMap->GetLatest();
+        this->lastFrame = this->localMap->GetLatest();
     }
     else
     {
