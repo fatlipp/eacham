@@ -8,7 +8,7 @@
 
         "dataset": {
             "type": "KITTI_STEREO",
-            "path": "/home/blackdyce/Datasets/KITTI"
+            "path": "/home/Datasets/KITTI"
         },
 
         "sensor": {
