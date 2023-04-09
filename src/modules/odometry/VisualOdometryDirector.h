@@ -7,6 +7,7 @@
 #include <pcl/common/common.h>
 
 #include "odometry/IFrameToMapOdometry.h"
+#include "config/Config.h"
 #include "tools/Tools3d.h"
 #include "types/DataTypes.h"
 #include "map/LocalMap.h"
@@ -28,14 +29,13 @@ namespace eacham
 class VisualOdometryDirector
 {
 public:
-    std::unique_ptr<IFrameToMapOdometry<stereodata_t>> Build(const camera_t* const camera, 
-        const FeatureExtractorType& featureExtractorType, const MotionEstimatorType& motionEstimatorType)
+    std::unique_ptr<IFrameToMapOdometry<stereodata_t>> Build(const camera_t* const camera, const ConfigOdometry& config)
     {
-        auto featureMatcher = BuildFeatureMatcher(featureExtractorType);
+        auto featureMatcher = BuildFeatureMatcher(config.featureExtractorType);
 
         auto odometry = std::make_unique<VisualOdometry<stereodata_t>>();
-        odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, featureExtractorType));
-        odometry->SetMotionEstimator(BuildMotionEstimator(camera, motionEstimatorType, featureMatcher));
+        odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.featureExtractorType));
+        odometry->SetMotionEstimator(BuildMotionEstimator(camera, config.motionEstimatorType, featureMatcher));
         // odometry->SetLocalOptimizer(BuildLocalOptimizer(camera));
 
         return odometry;
@@ -73,14 +73,14 @@ public:
         return BuildFrameCreatorRgbd(camera->GetParameters(), std::move(featureExtractor));
     }
 
-    std::unique_ptr<IFrameCreator> BuildFrameCreatorRgbd(const cv::Mat &cameraData, extractor_t&& extractor)
+    std::unique_ptr<IFrameCreator> BuildFrameCreatorRgbd(const cv::Mat &cameraParameters, extractor_t&& extractor)
     {
-        return std::make_unique<FrameCreatorRgbd>(cameraData, std::move(extractor));
+        return std::make_unique<FrameCreatorRgbd>(cameraParameters, std::move(extractor));
     }
 
-    std::unique_ptr<IFrameCreator> BuildFrameCreatorStereo(const cv::Mat &cameraData, extractor_t&& extractor, const matcher_t& matcher)
+    std::unique_ptr<IFrameCreator> BuildFrameCreatorStereo(const cv::Mat &cameraParameters, extractor_t&& extractor, const matcher_t& matcher)
     {
-        return std::make_unique<FrameCreatorStereo>(cameraData, std::move(extractor), matcher);
+        return std::make_unique<FrameCreatorStereo>(cameraParameters, std::move(extractor), matcher);
     }
 
     std::unique_ptr<IMotionEstimator> BuildMotionEstimator(const camera_t* const camera, const MotionEstimatorType &type, const matcher_t& matcher)

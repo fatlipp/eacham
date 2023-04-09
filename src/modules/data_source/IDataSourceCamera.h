@@ -4,20 +4,17 @@
 #include <tuple>
 #include <opencv2/opencv.hpp>
 
+#include "data_source/IDataSource.h"
+
 
 namespace eacham
 {
 
 template<typename T>
-class IDataSourceCamera
+class IDataSourceCamera : public IDataSource<T>
 {
+
 public:
-    IDataSourceCamera() = default;
-
-    virtual ~IDataSourceCamera() = default;
-
-    virtual T Get() const = 0;
-
     virtual bool isStereo() const = 0;
     virtual bool isRgbd() const = 0;
     virtual cv::Mat GetParameters() const = 0;

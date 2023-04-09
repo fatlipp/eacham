@@ -50,13 +50,13 @@ set(SOURCE
 
 
 # // exe
-add_executable(read_dataset)
-target_sources(read_dataset
+add_executable(dataset_reader)
+target_sources(dataset_reader
     PRIVATE
         ${SOURCE}
-        src/main.cpp
+        src/dataset_reader.cpp
 )
-target_include_directories(read_dataset
+target_include_directories(dataset_reader
     PRIVATE
         src/modules
         src/visualization
@@ -65,7 +65,7 @@ target_include_directories(read_dataset
         ${OpenCV_INCLUDE_DIRS}
         thirdparty/nlohmann
 )
-target_link_libraries(read_dataset 
+target_link_libraries(dataset_reader 
     ${OpenCV_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${PCL_LIBRARIES}

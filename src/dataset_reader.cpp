@@ -1,8 +1,8 @@
 #include <iostream>
-#include "modules/data_source/DataInputSourceFactory.h"
-#include "modules/odometry/VisualOdometryDirector.h"
-
-#include "modules/performance/BlockTimer.h"
+#include "data_source/DataSourceDirector.h"
+#include "data_source/dataset/IDataset.h"
+#include "odometry/VisualOdometryDirector.h"
+#include "performance/BlockTimer.h"
 #include "visualization/Render.h"
 #include "config/Config.h"
 
@@ -10,6 +10,12 @@ using namespace eacham;
 
 int main(int argc, char* argv[])
 {
+    if (argc == 1)
+    {
+        std::cout << "Usage: `dataset_reader 'dataset folder'`" << std::endl;
+        return 1;
+    }
+
     bool play = false;
     bool nextStep = true;
     bool close = false;
@@ -31,29 +37,25 @@ int main(int argc, char* argv[])
             renderer.Stop();
         });
 
-    Config config;
-    config.Read();
+    Config config { argv[1] };
+    if (!config.Read())
+    {
+        return 2;
+    }
 
-    const auto maxFrames = config.GetGeneral().maxFrames;
-    const auto extractorType = config.GetOdometry().featureExtractorType;
-    const auto motionEstimatorType = config.GetOdometry().motionEstimatorType;
-    const auto sourceType = config.GetSource().type;
-    const auto folder = config.GetSource().path;
-    
-    auto dataSourceLidar = CreateLidar<lidardata_t>(sourceType, folder);
-    auto datasetLidar = dynamic_cast<IDataset<lidardata_t>*>(dataSourceLidar.get());
-
-    auto dataSource = CreateRgbdTum<stereodata_t>(sourceType, folder);
+    DataSourceDirector<stereodata_t> dataSourceDirector;
+    auto dataSource = dataSourceDirector.Build(config.GetSource());
     auto dataset = dynamic_cast<IDataset<stereodata_t>*>(dataSource.get());
 
     if (dataset == nullptr)
     {
-        return -1;
+        return 3;
     }
 
     VisualOdometryDirector visualOdometryDirector;
-    auto odometry = visualOdometryDirector.Build(dataSource.get(), extractorType, motionEstimatorType);
+    auto odometry = visualOdometryDirector.Build(dynamic_cast<IDataSourceCamera<stereodata_t>*>(dataSource.get()), config.GetOdometry());
 
+    const auto maxFrames = config.GetGeneral().maxFrames;
     int frameId = 0;
 
     Eigen::Matrix4f prevPos = Eigen::Matrix4f::Identity();

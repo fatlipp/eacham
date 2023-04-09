@@ -8,8 +8,8 @@
 #include <istream>
 #include <fstream>
 
-#include "IDataset.h"
-#include "IDataSourceCamera.h"
+#include "data_source/IDataSourceCamera.h"
+#include "data_source/dataset/IDataset.h"
 
 namespace eacham
 {
@@ -19,13 +19,12 @@ class DataSourceKittyStereo : public IDataSourceCamera<T>, public IDataset<T>
 {
 public:
     DataSourceKittyStereo(const std::string &sourcePath) 
-        : folderLeft(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_0/")
+        : IDataset<T>(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
+        , folderLeft(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_0/")
         , folderRight(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_1/")
         , timestampFolder(sourcePath + "/data_odometry_gray/dataset/sequences/00/times.txt")
-        , gtPoses(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
     {
         timeFileStream.open(timestampFolder, std::ios::in);
-        gtFileStream.open(gtPoses, std::ios::in);
 
         std::ifstream file;
         file.open(sourcePath + "/data_odometry_gray/dataset/sequences/00/calib.txt", std::ios::in);
@@ -82,23 +81,17 @@ public:
         }
     }
 
-    ~DataSourceKittyStereo()
+    ~DataSourceKittyStereo() override
     {
         if (timeFileStream.is_open())
         {
             timeFileStream.close();
-        }
-
-        if (gtFileStream.is_open())
-        {
-            gtFileStream.close();
         }
     }
 
     T Get() const override;
 
     void ReadNext() override;
-    Eigen::Matrix4f GetGtPose() const override;
 
     bool isStereo() const override
     {
@@ -117,12 +110,9 @@ private:
     const std::string folderLeft;
     const std::string folderRight;
     const std::string timestampFolder;
-    const std::string gtPoses;
     mutable std::ifstream timeFileStream;
-    mutable std::ifstream gtFileStream;
 
     T currentData;
-    Eigen::Matrix4f currentPose;
 
     cv::Mat_<float> cameraMatrix;
 
@@ -172,22 +162,18 @@ void DataSourceKittyStereo<T>::ReadNext()
 
     currentData = {timestamp, im1.clone(), im2.clone()};
     
-    currentPose = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f redPos = Eigen::Matrix4f::Identity();
 
-    if (gtFileStream.is_open())
+    if (this->gtFileStream.is_open())
     {
-        gtFileStream >> currentPose(0, 0) >> currentPose(0, 1) >> currentPose(0, 2) >> currentPose(0, 3);
-        gtFileStream >> currentPose(1, 0) >> currentPose(1, 1) >> currentPose(1, 2) >> currentPose(1, 3);
-        gtFileStream >> currentPose(2, 0) >> currentPose(2, 1) >> currentPose(2, 2) >> currentPose(2, 3);
+        this->gtFileStream >> redPos(0, 0) >> redPos(0, 1) >> redPos(0, 2) >> redPos(0, 3);
+        this->gtFileStream >> redPos(1, 0) >> redPos(1, 1) >> redPos(1, 2) >> redPos(1, 3);
+        this->gtFileStream >> redPos(2, 0) >> redPos(2, 1) >> redPos(2, 2) >> redPos(2, 3);
     }
 
-    ++id;
-}
+    this->currentPose = redPos;
 
-template<typename T>
-Eigen::Matrix4f DataSourceKittyStereo<T>::GetGtPose() const
-{
-    return currentPose;
+    ++id;
 }
 
 template<typename T>

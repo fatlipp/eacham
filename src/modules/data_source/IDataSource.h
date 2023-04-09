@@ -9,12 +9,12 @@ namespace eacham
 {
 
 template<typename T>
-class IDataSourceLidar
+class IDataSource
 {
 public:
-    IDataSourceLidar() = default;
+    IDataSource() = default;
 
-    virtual ~IDataSourceLidar() = default;
+    virtual ~IDataSource() = default;
 
     virtual T Get() const = 0;
 };

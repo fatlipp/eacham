@@ -7,8 +7,8 @@
         "type": "DATASET",
 
         "dataset": {
-            "type": "TUM_RGBD",
-            "path": "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
+            "type": "KITTI_STEREO",
+            "path": "/home/blackdyce/Datasets/KITTI"
         },
 
         "sensor": {

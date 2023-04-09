@@ -14,7 +14,18 @@ namespace eacham
 
 NLOHMANN_JSON_SERIALIZE_ENUM(DataSourceType, {
     {DataSourceType::DATASET, "DATASET"},
-    {DataSourceType::REALSENSE, "REALSENSE"},
+    {DataSourceType::SENSOR, "SENSOR"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(DatasetType, {
+    {DatasetType::TUM_RGBD, "TUM_RGBD"},
+    {DatasetType::KITTI_STEREO, "KITTI_STEREO"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(SensorType, {
+    {SensorType::REALSENSE_RGBD, "REALSENSE_RGBD"},
+    {SensorType::REALSENSE_STEREO, "REALSENSE_STEREO"},
+    {SensorType::REALSENSE_MONO, "REALSENSE_MONO"},
 })
 
 NLOHMANN_JSON_SERIALIZE_ENUM(FeatureExtractorType, {
@@ -43,15 +54,46 @@ struct ConfigGeneral
     }
 };
 
+struct ConfigDataset
+{
+    DatasetType type;
+    std::string path;
+
+    friend void from_json(const nlohmann::json& j, ConfigDataset& value)
+    {
+        j.at("path").get_to(value.path);
+        j.at("type").get_to<DatasetType>(value.type);
+    }
+};
+
+struct ConfigSensor
+{
+    SensorType type;
+
+    friend void from_json(const nlohmann::json& j, ConfigSensor& value)
+    {
+        j.at("type").get_to<SensorType>(value.type);
+    }
+};
+
 struct ConfigSource
 {
     DataSourceType type;
-    std::string path;
+    ConfigDataset configDataset;
+    ConfigSensor configSensor;
 
     friend void from_json(const nlohmann::json& j, ConfigSource& value)
     {
         j.at("type").get_to<DataSourceType>(value.type);
-        j.at("path").get_to(value.path);
+
+        if (value.type == DataSourceType::DATASET)
+        {
+            j.at("dataset").get_to<ConfigDataset>(value.configDataset);
+        }
+        else if (value.type == DataSourceType::SENSOR)
+        {
+            j.at("sensor").get_to<ConfigSensor>(value.configSensor);
+        }
     }
 };
 
@@ -70,31 +112,47 @@ struct ConfigOdometry
 class Config
 {
 public:
-    Config()
+    Config(const std::string &confidPath)
+        : confidPath(confidPath)
     {
     }
 
 public:
-    void Read()
+    bool Read()
     {
-        std::ifstream f("/home/blackdyce/Projects/eacham/config/ConfigTUM.json");
+        std::ifstream configStream(this->confidPath);
 
-        nlohmann::json data = nlohmann::json::parse(f);
-        this->general = data["general"].get<ConfigGeneral>();
-        this->source = data["source"].get<ConfigSource>();
-        this->odometry = data["odometry"].get<ConfigOdometry>();
+        if (configStream.is_open())
+        {
+            nlohmann::json data = nlohmann::json::parse(configStream);
+            this->general = data["general"].get<ConfigGeneral>();
+            this->source = data["source"].get<ConfigSource>();
+            this->odometry = data["odometry"].get<ConfigOdometry>();
 
-        // Print the values
-        std::cout << "general: " << std::endl;
-        std::cout << "-maxFrames: " << general.maxFrames << std::endl;
-        
-        std::cout << "source: " << std::endl;
-        std::cout << "-path: " << source.path << std::endl;
-        std::cout << "-type: " << static_cast<int>(source.type) << std::endl;
-        
-        std::cout << "odometry: " << std::endl;
-        std::cout << "-featureExtractorType: " << static_cast<int>(odometry.featureExtractorType) << std::endl;
-        std::cout << "-motionEstimatorType: " << static_cast<int>(odometry.motionEstimatorType) << std::endl;
+            // Print the values
+            std::cout << "general: " << std::endl;
+            std::cout << "-maxFrames: " << general.maxFrames << std::endl;
+            
+            std::cout << "source: " << std::endl;
+            std::cout << "-type: " << static_cast<int>(source.type) << std::endl;
+            std::cout << "dataset: " << std::endl;
+            std::cout << "-type: " << static_cast<int>(this->source.configDataset.type) << std::endl;
+            std::cout << "-path: " << this->source.configDataset.path << std::endl;
+            
+            std::cout << "odometry: " << std::endl;
+            std::cout << "-featureExtractorType: " << static_cast<int>(odometry.featureExtractorType) << std::endl;
+            std::cout << "-motionEstimatorType: " << static_cast<int>(odometry.motionEstimatorType) << std::endl;
+
+            configStream.close();
+        }
+        else
+        {
+            std::cout << "Error. Config file is not found: " << this->confidPath << std::endl;
+
+            return false;
+        }
+
+        return true;
     }
 
     const ConfigGeneral& GetGeneral() const
@@ -113,6 +171,8 @@ public:
     }
 
 private:
+    const std::string confidPath;
+
     ConfigGeneral general;
     ConfigSource source;
     ConfigOdometry odometry;

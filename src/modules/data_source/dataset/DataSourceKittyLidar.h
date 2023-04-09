@@ -8,14 +8,13 @@
 #include <istream>
 #include <fstream>
 
-#include "IDataset.h"
-#include "IDataSourceLidar.h"
+#include "data_source/IDataSource.h"
 
 namespace eacham
 {
 
 template<typename T>
-class DataSourceKittyLidar : public IDataSourceLidar<T>, public IDataset<T>
+class DataSourceKittyLidar : public IDataSource<T>
 {
 public:
     DataSourceKittyLidar(const std::string &sourcePath) 
@@ -63,18 +62,9 @@ public:
         }
     }
 
-    ~DataSourceKittyLidar()
-    {
-    }
-
     T Get() const override;
 
-    void ReadNext() override;
-    
-    Eigen::Matrix4f GetGtPose() const override
-    {
-        return Eigen::Matrix4f::Identity();
-    }
+    // void ReadNext() override;
 
 private:
     const std::string folder;
@@ -113,49 +103,49 @@ std::string format2(const unsigned number)
     return prefix + std::to_string(number);
 }
 
-template<typename T>
-void DataSourceKittyLidar<T>::ReadNext()
-{
-    const auto fileName = this->folder + format2(id) + ".bin";
+// template<typename T>
+// void DataSourceKittyLidar<T>::ReadNext()
+// {
+//     const auto fileName = this->folder + format2(id) + ".bin";
 
-    std::ifstream file(fileName, std::ios::in | std::ios::binary);
+//     std::ifstream file(fileName, std::ios::in | std::ios::binary);
 
-    currentData.clear();
+//     currentData.clear();
     
-    Eigen::Vector4f point;
-    int count = 0;
-    float item;
+//     Eigen::Vector4f point;
+//     int count = 0;
+//     float item;
 
-    while (file.read((char*)&item, 4))
-    {
-        count++;
-        if (count == 1)
-        {
-            point.x() = item;
-        }
-        else if (count == 2)
-        {
-            point.y() = item;
-        }
-        else if (count == 3)
-        {
-            point.z() = item;
-        }
-        else if (count == 4)
-        {
-            // point.w() = item;
-            count = 0;
-            point.w() = 1.0f;
-            point = this->calibrationMatrix * point;
+//     while (file.read((char*)&item, 4))
+//     {
+//         count++;
+//         if (count == 1)
+//         {
+//             point.x() = item;
+//         }
+//         else if (count == 2)
+//         {
+//             point.y() = item;
+//         }
+//         else if (count == 3)
+//         {
+//             point.z() = item;
+//         }
+//         else if (count == 4)
+//         {
+//             // point.w() = item;
+//             count = 0;
+//             point.w() = 1.0f;
+//             point = this->calibrationMatrix * point;
 
-            currentData.push_back(Eigen::Vector3f { point.x(), point.y(), point.z() } );
-        }
-    }
+//             currentData.push_back(Eigen::Vector3f { point.x(), point.y(), point.z() } );
+//         }
+//     }
 
-    std::cout << "currentData = " << currentData.size() << ", fileName: " << fileName << std::endl;
+//     std::cout << "currentData = " << currentData.size() << ", fileName: " << fileName << std::endl;
 
-    ++id;
-}
+//     ++id;
+// }
 
 template<typename T>
 T DataSourceKittyLidar<T>::Get() const
