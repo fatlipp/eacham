@@ -6,79 +6,44 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
 
-#include "IOdometry.h"
-#include "tools/Tools3d.h"
-#include "types/DataTypes.h"
-#include "odometry/map/LocalMap.h"
-#include "data_source/IDataSourceCamera.h"
-#include "odometry/frame/FrameCreator.h"
-#include "odometry/frame/KeyFrame.h"
-#include "odometry/optimization/LocalFramesOptimizer.h"
-#include "motion_estimator/MotionEstimatorPnP.h"
-#include "motion_estimator/MotionEstimatorOpt.h"
+#include "odometry/IFrameToMapOdometry.h"
+#include "frame/IFrameCreator.h"
 #include "motion_estimator/IMotionEstimator.h"
-#include "odometry/motion_estimator/MotionEstimatorType.h"
+#include "optimization/LocalFramesOptimizer.h"
+#include "types/DataTypes.h"
 
 namespace eacham
 {
 template<typename T>
-class VisualOdometry : public IOdometry<T>
+class VisualOdometry : public IFrameToMapOdometry<T>
 {
 public:
-    VisualOdometry(const FeatureExtractorType &featureExtractor, const MotionEstimatorType &type, const IDataSourceCamera<T>* camera)
-        : camera(camera)
-    {
-        this->frameCreator = std::make_unique<FrameCreator>(featureExtractor);
-
-        switch (type)
-        {
-        case MotionEstimatorType::OPT:
-            this->motionEstimator = std::make_unique<MotionEstimatorOpt>(featureExtractor, camera->GetParameters(), camera->GetDistortion());
-            break;
-        
-        default:
-            this->motionEstimator = std::make_unique<MotionEstimatorPnP>(featureExtractor, camera->GetParameters(), camera->GetDistortion());
-            break;
-        }
-
-        this->localOptimizer = std::make_unique<LocalFramesOptimizer>(camera->GetParameters(), camera->GetDistortion());
-        this->localMap = std::make_unique<LocalMap>(3U);
-    }
-
-    void SetCameraMatrix()
-    {
-    }
-
-    std::vector<MapPoint3d> GetLocalMapPoints() 
-    {
-        return localMap->GetPoints();
-    }
-
-    std::list<Frame> GetLocalMapFrames() 
-    {
-        return localMap->GetFrames();
-    }
-
-    void SetLocalOptimizerState(const bool state)
-    {
-        this->isLocalOptimizerEnabled = state;
-    }
-
     bool Proceed(const T &data) override;
 
     Eigen::Matrix4f GetOdometry() override;
 
+public:
+    void SetFrameCreator(std::unique_ptr<IFrameCreator> frameCreatorInp)
+    {
+        this->frameCreator = std::move(frameCreatorInp);
+    }
+
+    void SetMotionEstimator(std::unique_ptr<IMotionEstimator> motionEstimatorInp)
+    {
+        this->motionEstimator = std::move(motionEstimatorInp);
+    }
+
+    void SetLocalOptimizer(std::unique_ptr<LocalFramesOptimizer> optimizerInp)
+    {
+        this->localOptimizer = std::move(optimizerInp);
+    }
+
 private:
-    const IDataSourceCamera<T>* camera;
-
-    bool isLocalOptimizerEnabled;
-
-    Frame lastFrame;
-
-    std::unique_ptr<LocalMap> localMap;
-    std::unique_ptr<FrameCreator> frameCreator;
+    std::unique_ptr<IFrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
     std::unique_ptr<LocalFramesOptimizer> localOptimizer;
+
+    Frame lastFrame;
 };
 
 } // namespace eacham
@@ -90,9 +55,7 @@ namespace eacham
 template<typename T>
 bool VisualOdometry<T>::Proceed(const T &data)
 {
-    std::cout << "----------------------------------------------------------------------------------------" << std::endl;
-
-    Frame frame = frameCreator->Create(data, camera->GetParameters());
+    Frame frame = frameCreator->Create(data);
 
     if (frame.isValid())
     {
@@ -106,7 +69,6 @@ bool VisualOdometry<T>::Proceed(const T &data)
 
                 return false;
             }
-            
             frame.SetOdometry(odom);
             frame.SetPosition(lastFrame.GetPosition() * odom);
         }
@@ -116,21 +78,20 @@ bool VisualOdometry<T>::Proceed(const T &data)
             frame.SetPosition(Eigen::Matrix4f::Identity());
         }
 
-        localMap->AddFrame(frame);
+        this->localMap->AddFrame(frame);
 
-        if (this->isLocalOptimizerEnabled)
+        if (localOptimizer != nullptr)
         {
-            static int cc = 0;
-            cc++;
-
-            if (cc % 3 == 0)
-            {
-                cc = 0;
-                localOptimizer->Optimize(localMap.get());
-            }
+            localOptimizer->Optimize(this->localMap.get());
         }
 
-        this->lastFrame = localMap->GetLatest();
+        this->lastFrame = this->localMap->GetLatest();
+    }
+    else
+    {
+        std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
+
+        return false;
     }
 
     return true;

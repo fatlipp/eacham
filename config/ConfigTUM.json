@@ -1,0 +1,23 @@
+{
+    "general": {
+        "maxFrames": 100
+    },
+
+    "source": {
+        "type": "DATASET",
+
+        "dataset": {
+            "type": "TUM_RGBD",
+            "path": "/home/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
+        },
+
+        "sensor": {
+            "type": "REALSENSE_RGBD"
+        }
+    },
+
+    "odometry": {
+        "featureExtractorType": "ORB",
+        "motionEstimatorType": "PNP"
+    }
+}

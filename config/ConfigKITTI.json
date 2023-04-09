@@ -1,0 +1,23 @@
+{
+    "general": {
+        "maxFrames": 100
+    },
+
+    "source": {
+        "type": "DATASET",
+
+        "dataset": {
+            "type": "KITTI_STEREO",
+            "path": "/home/Datasets/KITTI"
+        },
+
+        "sensor": {
+            "type": "REALSENSE_RGBD"
+        }
+    },
+
+    "odometry": {
+        "featureExtractorType": "ORB",
+        "motionEstimatorType": "PNP"
+    }
+}

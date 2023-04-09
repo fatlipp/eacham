@@ -20,17 +20,17 @@ message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 find_package(GTSAM REQUIRED)
 
 set(SOURCE
-    src/modules/odometry/map/LocalMap.cpp
+    src/modules/map/LocalMap.cpp
 
-    src/modules/odometry/VisualOdometry.cpp
-    src/modules/odometry/motion_estimator/MotionEstimatorBase.cpp
-    src/modules/odometry/motion_estimator/MotionEstimatorPnP.cpp
-    src/modules/odometry/motion_estimator/MotionEstimatorOpt.cpp
+    src/modules/motion_estimator/MotionEstimatorBase.cpp
+    src/modules/motion_estimator/MotionEstimatorPnP.cpp
+    src/modules/motion_estimator/MotionEstimatorOpt.cpp
     
-    src/modules/odometry/features/FeatureExtractor.cpp
-    src/modules/odometry/frame/FrameCreator.cpp
-
-    src/modules/odometry/optimization/LocalFramesOptimizer.cpp
+    src/modules/features/FeatureExtractor.cpp
+    src/modules/frame/FrameCreatorStereo.cpp
+    src/modules/frame/FrameCreatorRgbd.cpp
+    
+    src/modules/optimization/LocalFramesOptimizer.cpp
 )
 
 # add_library(eacham_lib INTERFACE)
@@ -50,21 +50,22 @@ set(SOURCE
 
 
 # // exe
-add_executable(read_dataset)
-target_sources(read_dataset
+add_executable(dataset_reader)
+target_sources(dataset_reader
     PRIVATE
         ${SOURCE}
-        src/main.cpp
+        src/dataset_reader.cpp
 )
-target_include_directories(read_dataset
+target_include_directories(dataset_reader
     PRIVATE
         src/modules
         src/visualization
     PUBLIC
         ${EIGEN3_INCLUDE_DIR}
         ${OpenCV_INCLUDE_DIRS}
+        thirdparty/nlohmann
 )
-target_link_libraries(read_dataset 
+target_link_libraries(dataset_reader 
     ${OpenCV_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${PCL_LIBRARIES}
