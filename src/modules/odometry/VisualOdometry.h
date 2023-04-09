@@ -69,7 +69,6 @@ bool VisualOdometry<T>::Proceed(const T &data)
 
                 return false;
             }
-
             frame.SetOdometry(odom);
             frame.SetPosition(lastFrame.GetPosition() * odom);
         }
