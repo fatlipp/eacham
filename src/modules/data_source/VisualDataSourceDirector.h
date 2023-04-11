@@ -6,7 +6,7 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
 
-#include "data_source/IDataSource.h"
+#include "data_source/IDataSourceCamera.h"
 #include "data_source/dataset/DataSourceRgbdTum.h"
 #include "data_source/dataset/DataSourceKittyStereo.h"
 #include "data_source/dataset/DataSourceKittyLidar.h"
@@ -19,10 +19,10 @@ namespace eacham
 {
 
 template<typename T>
-class DataSourceDirector
+class VisualDataSourceDirector
 {
 public:
-    std::unique_ptr<IDataSource<stereodata_t>> Build(const ConfigSource& config)
+    std::unique_ptr<IDataSourceCamera<T>> Build(const ConfigSource& config)
     {
         if (config.type == DataSourceType::DATASET)
         {
@@ -34,7 +34,7 @@ public:
                     return std::make_unique<DataSourceKittyStereo<T>>(config.configDataset.path);
             }
             
-            return std::make_unique<DataSourceKittyLidar<T>>(config.configDataset.path);
+            // return std::make_unique<DataSourceKittyLidar<T>>(config.configDataset.path);
         }
 
         return nullptr;

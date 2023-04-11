@@ -31,7 +31,7 @@ MotionEstimatorPnP::MotionEstimatorPnP(const cv::Mat &cameraMatInp, const cv::Ma
     }
 }
 
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(Frame& frame1, Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& frame1, Frame& frame2)
 {
     const auto [pts1, pts2] = FindMatches(frame1, frame2);
     const auto matches = pts1.size();
@@ -104,9 +104,6 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(Frame& frame1
                 const auto pair = normIds[inliersPnP[i]];
                 const int id1 = std::get<0>(pair);
                 const int id2 = std::get<1>(pair);
-
-                frame1.GetPointData(id1).isInlier = true;
-                frame2.GetPointData(id2).isInlier = true;
             }
 
             const bool needRefine = false;

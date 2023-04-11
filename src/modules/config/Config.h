@@ -8,6 +8,8 @@
 #include "data_source/DataSourceTypes.h"
 #include "motion_estimator/MotionEstimatorType.h"
 #include "features/FeatureExtractorType.h"
+#include "odometry/OdometryType.h"
+
 
 namespace eacham
 {
@@ -37,6 +39,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(FeatureExtractorType, {
 NLOHMANN_JSON_SERIALIZE_ENUM(MotionEstimatorType, {
     {MotionEstimatorType::OPT, "OPT"},
     {MotionEstimatorType::PNP, "PNP"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(OdometryType, {
+    {OdometryType::FRAME_TO_FRAME, "F2F"},
+    {OdometryType::FRAME_TO_MAP, "F2M"},
+    {OdometryType::OPT, "OPT"}
 })
 
 }
@@ -101,11 +109,13 @@ struct ConfigOdometry
 {
     FeatureExtractorType featureExtractorType;
     MotionEstimatorType motionEstimatorType;
+    OdometryType odometryType;
 
     friend void from_json(const nlohmann::json& j, ConfigOdometry& value)
     {
         j.at("featureExtractorType").get_to<FeatureExtractorType>(value.featureExtractorType);
         j.at("motionEstimatorType").get_to<MotionEstimatorType>(value.motionEstimatorType);
+        j.at("odometryType").get_to<OdometryType>(value.odometryType);
     }
 };
 

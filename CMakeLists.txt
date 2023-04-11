@@ -31,6 +31,8 @@ set(SOURCE
     src/modules/frame/FrameCreatorRgbd.cpp
     
     src/modules/optimization/LocalFramesOptimizer.cpp
+
+    src/modules/visualization/Render.cpp
 )
 
 # add_library(eacham_lib INTERFACE)

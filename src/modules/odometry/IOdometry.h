@@ -12,9 +12,23 @@ class IOdometry
 public:
     ~IOdometry() = default;
 
-    virtual bool Proceed(const T &data) = 0;
+public:
+    virtual bool Process(const T &data) = 0;
     
-    virtual Eigen::Matrix4f GetOdometry() = 0;
+    virtual Eigen::Matrix4f GetOdometry() const
+    {
+        return this->odometry;
+    }
+
+    const Eigen::Matrix4f& GetPosition() const
+    {
+        return this->position;
+    }
+
+protected:
+    Eigen::Matrix4f odometry;
+    Eigen::Matrix4f position;
+
 };
 
 } // namespace eacham

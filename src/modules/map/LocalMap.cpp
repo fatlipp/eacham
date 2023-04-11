@@ -5,35 +5,32 @@
 
 namespace eacham
 {
-    void LocalMap::AddFrame(Frame &frame)
+    void LocalMap::AddFrame(const Frame &frame)
     {
-        if (GetSize() >= capaticy)
-        {
-            frames.pop_front();
-        }
+        // static unsigned ID = 1;
+        // const Eigen::Matrix4f framePos = frame.GetPosition();
 
-        static unsigned ID = 1;
-        const Eigen::Matrix4f framePos = frame.GetPosition();
+        // for (const auto &point : frame.GetPointsData())
+        // {
+        //     if (point.associatedMapPointId > 0)
+        //     {
+        //         GetPoint(point.associatedMapPointId).AddObserver();
 
-        for (auto &point : frame.GetPointsData())
-        {
-            if (point.associatedMapPointId > 0)
-            {
-                GetPoint(point.associatedMapPointId).AddObserver();
+        //         continue;
+        //     }
 
-                continue;
-            }
+        //     MapPoint mapPoint { ID++, transformPoint3d(point.position3d, framePos) };
+        //     mapPoint.observers = 1;
+        //     this->points.push_back(mapPoint);
 
-            MapPoint3d mapPoint { ID++, transformPoint3d(point.position3d, framePos) };
-            mapPoint.observers = 1;
-            points3d.push_back(mapPoint);
+        //     // point.associatedMapPointId = mapPoint.id;
+        // }
 
-            point.associatedMapPointId = mapPoint.id;
-        }
+        // this->frames.push_back(frame);
 
-        static unsigned FRAME_ID = 1;
-        frame.id = FRAME_ID++;
-        
-        frames.push_back(frame);
+        // if (this->GetSize() == this->capaticy)
+        // {
+        //     this->frames.pop_front();
+        // }
     }
 }

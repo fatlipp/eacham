@@ -75,7 +75,7 @@ void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& points
     }
 }
 
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(Frame& frame1, Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& frame1, Frame& frame2)
 {
     const auto [pts1, pts2] = FindMatches(frame1, frame2); 
 
@@ -162,17 +162,6 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(Frame& frame1
         {
             pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
             pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
-
-
-            const auto pair = normIds[i];
-            const int id1 = std::get<0>(pair);
-            const int id2 = std::get<1>(pair);
-
-            if (GetDistance(frame1.GetPointData(id1).position3d, frame2.GetPointData(id2).position3d) < 0.5f)
-            {
-                frame1.GetPointData(id1).isInlier = true;
-                frame2.GetPointData(id2).isInlier = true;
-            }
         }
 
         // reprojection error stat

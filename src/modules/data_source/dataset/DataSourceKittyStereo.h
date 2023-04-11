@@ -15,11 +15,11 @@ namespace eacham
 {
 
 template<typename T>
-class DataSourceKittyStereo : public IDataSourceCamera<T>, public IDataset<T>
+class DataSourceKittyStereo : public IDataSourceCamera<T>, public IDataset
 {
 public:
     DataSourceKittyStereo(const std::string &sourcePath) 
-        : IDataset<T>(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
+        : IDataset(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
         , folderLeft(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_0/")
         , folderRight(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_1/")
         , timestampFolder(sourcePath + "/data_odometry_gray/dataset/sequences/00/times.txt")

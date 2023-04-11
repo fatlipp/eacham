@@ -19,10 +19,6 @@ Frame FrameCreatorRgbd::Create(const stereodata_t& data)
         return {};
     }
 
-    // cv::Mat kpImage;
-    // cv::drawKeypoints(std::get<1>(data), features, kpImage);
-    // cv::imshow("kpImage", kpImage);
-
     Frame frame {std::get<0>(data), std::get<1>(data)};
 
     int pointId = 0;

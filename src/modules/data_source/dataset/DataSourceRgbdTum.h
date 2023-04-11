@@ -15,11 +15,11 @@ namespace eacham
 {
 
 template<typename T>
-class DataSourceRgbdTum : public IDataSourceCamera<T>, public IDataset<T>
+class DataSourceRgbdTum : public IDataSourceCamera<T>, public IDataset
 {
 public:
     DataSourceRgbdTum(const std::string &sourcePath)
-        : IDataset<T>(sourcePath + "/groundtruth.txt")
+        : IDataset(sourcePath + "/groundtruth.txt")
         , sourcePath(sourcePath + "/")
     {
         const std::string folderRgb = (this->sourcePath + "rgb.txt");

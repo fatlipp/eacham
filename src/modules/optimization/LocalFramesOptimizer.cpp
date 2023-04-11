@@ -47,7 +47,7 @@ namespace eacham
     {
         std::cout << "LocalFramesOptimizer() map.size = " << map->GetSize() << std::endl;
 
-        if (map->GetSize() < map->GetCapacity())
+        if (map->GetSize() < 3)
         {
             return false;
         }
@@ -59,14 +59,14 @@ namespace eacham
 
         std::set<int> mapIds;
 
-        for (auto &frame : map->GetFrames())
+        for (const auto &frame : map->GetFrames())
         {
             const Eigen::Matrix4d position = frame.GetPosition().cast<double>();
             initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
             
             // std::cout << frameId << "] ==================================================================================================================\n";
 
-            if (frame.id > 1)
+            // if (frame.id > 1)
             {
                 const auto noise = CreateNoise6(0.2, 1.5);  
 
@@ -75,14 +75,14 @@ namespace eacham
                 //     gtsam::Pose3(odom), noise);
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
-            else
-            {
-                const auto noise = CreateNoise6(0.000001, 0.0000001); 
+            // else
+            // {
+            //     const auto noise = CreateNoise6(0.000001, 0.0000001); 
 
-                graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
-            }
+            //     graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
+            // }
 
-            for (auto &point : frame.GetPointsData())
+            for (const auto &point : frame.GetPointsData())
             {
                 if (point.associatedMapPointId == 0 || map->GetPoint(point.associatedMapPointId).observers < 2)
                     continue;
@@ -153,7 +153,7 @@ namespace eacham
             result.block<3, 1>(0, 3) = targetFrame.translation();
 
             // std::cout << "ID: " << i << ", BEFORE:\n" << map->GetFrame(i).GetPosition() << std::endl;
-            map->GetFrame(i).SetPosition(result.cast<float>());
+            // map->GetFrame(i).SetPosition(result.cast<float>());// TODO!!!!!!!!
             // std::cout << "AFTER:\n" << map->GetFrame(i).GetPosition() << std::endl;
         }
 
@@ -163,7 +163,7 @@ namespace eacham
             cv::Point3f result { mapPoint.x(), mapPoint.y(), mapPoint.z() };
 
             // std::cout << "ID: " << id << ", BEFORE: " << map->GetPoint(id).position;
-            map->GetPoint(id).position = result;
+            // map->GetPoint(id).position = result; // TODO!!!!!!!!
             // std::cout << ", AFTER: " << map->GetPoint(id).position << std::endl;
         }
 

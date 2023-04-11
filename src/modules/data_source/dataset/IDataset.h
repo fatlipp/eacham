@@ -10,7 +10,6 @@
 namespace eacham
 {
 
-template<typename T>
 class IDataset
 {
 public:
