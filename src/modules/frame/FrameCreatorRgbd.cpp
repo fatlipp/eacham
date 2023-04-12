@@ -25,7 +25,7 @@ Frame FrameCreatorRgbd::Create(const stereodata_t& data)
 
     for (const auto& feature : features)
     {
-        const cv::Point3f pos3d = Get3dPointByDepthMap(feature.pt, std::get<2>(data), this->cameraData);
+        const cv::Point3f pos3d = tools::Get3dPointByDepthMap(feature.pt, std::get<2>(data), this->cameraData);
 
         if (pos3d.z > 0.10f && pos3d.z < 70.0f)
         {

@@ -6,6 +6,8 @@
 #include "config/Config.h"
 #include "performance/BlockTimer.h"
 
+#include <thread>
+
 namespace eacham
 {
 
@@ -44,10 +46,13 @@ public:
 public:
     void Start()
     {
+        this->render->Start();
+
         this->isStarted = true;
 
-        while (this->isStarted)
+        while (this->render->IsActive())
         {
+            Loop();
         }
     }
 
@@ -59,38 +64,52 @@ public:
     void Play()
     {
         this->isPlay = true;
-
-        while (this->isPlay && Process())
-        {
-            // loop
-        }
+        this->isStep = false;
     }
 
     void Pause()
     {
         this->isPlay = false;
+        this->isStep = false;
     }
 
     void Step()
     {
-        Pause();
-        Process();
+        this->isPlay = true;
+        this->isStep = true;
     }
 
 protected:
     virtual bool Process()
     {
-        if (this->frameId < this->maxFrames)
+        if (this->frameId >= this->maxFrames)
         {
             return false;
         }
 
+        std::cout << "this->frameId: " << this->frameId << std::endl;
+
         this->odometry->Process(this->dataSource->Get());
-        this->render->Draw();
 
         ++this->frameId;
 
         return true;
+    }
+
+private:
+    void Loop()
+    {
+        if (this->isPlay)
+        {
+            Process();
+            
+            if (this->isStep)
+            {
+                Pause();
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
     }
 
 protected:
@@ -103,6 +122,7 @@ protected:
 
     std::atomic<bool> isStarted;
     std::atomic<bool> isPlay;
+    std::atomic<bool> isStep;
 
     std::function<void()> onProcessComplete;
 };

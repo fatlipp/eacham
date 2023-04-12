@@ -25,11 +25,14 @@ public:
 public:
     const IMap* const GetLocalMap() const
     {
+        std::lock_guard<std::mutex> lock(this->syncMutex);
         return localMap.get();
     }
 
 protected:
     std::unique_ptr<IMap> localMap;
+
+    mutable std::mutex syncMutex;
 };
 
 } // namespace eacham

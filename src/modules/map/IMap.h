@@ -33,7 +33,12 @@ public:
         return *firstItem;
     }
 
-    const std::list<Frame>& GetFrames() const
+    // const std::list<Frame>& GetFrames() const
+    // {
+    //     return frames;
+    // }
+
+    std::list<Frame> GetFrames() const
     {
         return frames;
     }
@@ -43,7 +48,7 @@ public:
         return points;
     }
 
-    const MapPoint& GetPoint(const size_t id) const
+    MapPoint& GetPoint(const size_t id)
     {
         if (id == 0)
         {

@@ -12,8 +12,6 @@ namespace eacham
 
 class Render : public IRender
 {
-public:
-    Render();
 
 public:
     void Start() override;
@@ -40,6 +38,9 @@ public:
     {
         this->onCloseClick = onCloseClick;
     }
+
+private:
+    void Loop();
 
 private:
     std::future<void> drawThread;

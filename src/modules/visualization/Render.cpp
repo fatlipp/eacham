@@ -20,14 +20,14 @@
 namespace eacham
 {
 
-Render::Render()
+void Render::Start()
 {
     this->isRunning = true;
-    this->drawThread = std::async(std::launch::async, &Render::Start, this);
+    this->drawThread = std::async(std::launch::async, &Render::Loop, this);
     // destructor will wait for get()
 }
 
-void Render::Start()
+void Render::Loop()
 {
     const int WIDTH = 1280;
     const int HEIGHT = 800;
@@ -84,6 +84,7 @@ void Render::Start()
         Draw();
 
         pangolin::FinishFrame();
+
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }

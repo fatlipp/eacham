@@ -3,7 +3,7 @@
 #include <opencv2/core.hpp>
 #include <eigen3/Eigen/Core>
 
-namespace eacham
+namespace eacham::tools
 {
 	/// @brief 
 	/// @z = f * b / d
@@ -99,9 +99,6 @@ namespace eacham
 		ret.z = transform(2, 0) * point.x + transform(2, 1) * point.y + transform(2, 2) * point.z + transform(2, 3);
 		return ret;
 	}
-
-
-	
 
 	static cv::Point2f project3dPoint(const cv::Point3f & point, const cv::Mat &camera)
 	{

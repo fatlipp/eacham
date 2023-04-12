@@ -3,10 +3,11 @@
 #include "data_source/dataset/IDataset.h"
 #include "odometry/VisualOdometryDirector.h"
 #include "performance/BlockTimer.h"
-#include "visualization/Render.h"
 #include "config/Config.h"
 #include "pipeline/Pipeline.h"
 #include "pipeline/PipelineDataset.h"
+#include "visualization/Render.h"
+#include "visualization/view/VisualOdometryView.h"
 
 using namespace eacham;
 
@@ -40,6 +41,12 @@ int main(int argc, char* argv[])
     render->SetOnPlayClick([&pipeline]() { pipeline.Play(); });
     render->SetOnStepClick([&pipeline]() { pipeline.Step(); });
     render->SetOnCloseClick([&pipeline]() { pipeline.Stop(); });
+
+    auto vo = dynamic_cast<IFrameToMapOdometry<T>*>(odometry.get()) ;
+    if (vo!= nullptr)
+    {
+        render->Add(std::make_unique<VisualOdometryView<T>>(vo));
+    }
     
     pipeline.SetDataSource(std::move(dataSource));
     pipeline.SetOdometry(std::move(odometry));
