@@ -25,7 +25,35 @@ public:
 protected:
     bool Process() override
     {
-        return PrepareNextFrame() && Pipeline<T>::Process();
+        bool isProcessed = PrepareNextFrame();
+
+        if (this->frameId == 0)
+        {
+            this->odometry->SetPosition(this->dataset->GetGtPose());
+        }
+        
+        isProcessed = Pipeline<T>::Process();
+
+        if (isProcessed)
+        {
+            std::cout << "[=== DATASET SUMMARY ===]" << std::endl;
+            {   
+                const auto currentPos = this->odometry->GetPosition();
+                const auto gtPos = this->dataset->GetGtPose();
+
+                const Eigen::Matrix4f diff = (currentPos - gtPos);
+                const float diffLen = std::sqrt(diff(0, 3) * diff(0, 3) + 
+                                                diff(1, 3) * diff(1, 3) + 
+                                                diff(2, 3) * diff(2, 3));
+
+                std::cout << "Current pos:\n" << currentPos << std::endl;
+                std::cout << "GT pos:\n" << gtPos << std::endl;
+                std::cout << "Diff:\n" << diffLen << "\n" << diff << std::endl;
+            }
+            std::cout << "[=== =============== ===]" << std::endl;
+        }
+
+        return isProcessed;
     }
 
 private:

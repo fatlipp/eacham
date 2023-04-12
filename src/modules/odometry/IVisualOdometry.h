@@ -21,9 +21,6 @@ template<typename T>
 class IVisualOdometry : public IOdometry<T>
 {
 public:
-    IVisualOdometry() = default;
-
-public:
     void SetFrameCreator(std::unique_ptr<IFrameCreator> frameCreatorInp)
     {
         this->frameCreator = std::move(frameCreatorInp);

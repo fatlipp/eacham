@@ -43,20 +43,12 @@ bool FrameToMapOdometry<T>::Process(const T &data)
                 return false;
             }
             this->odometry = odom;
-            this->position = latestFrame.GetPosition() * this->odometry;
 
-            frame.SetOdometry(this->odometry);
-            frame.SetPosition(this->position);
-
+            this->SetPosition(latestFrame.GetPosition() * this->odometry);
         }
-        else
-        {
-            frame.SetOdometry(Eigen::Matrix4f::Identity());
-            frame.SetPosition(Eigen::Matrix4f::Identity());
 
-            this->odometry = Eigen::Matrix4f::Identity();
-            this->position = Eigen::Matrix4f::Identity();
-        }
+        frame.SetOdometry(this->odometry);
+        frame.SetPosition(this->position);
 
         this->localMap->AddFrame(frame);
 
@@ -64,7 +56,7 @@ bool FrameToMapOdometry<T>::Process(const T &data)
         {
             // this->localOptimizer->Optimize(this->localMap.get());
 
-            this->position = this->localMap->GetLatestFrame().GetPosition();
+            this->SetPosition(this->localMap->GetLatestFrame().GetPosition());
         }
     }
     else
