@@ -19,7 +19,16 @@ public:
         : frameId(0)
         , maxFrames(config.maxFrames)
         , isPlay(false)
+        , isStep(false)
+        , isRunning(false)
     {
+    }
+
+    virtual ~Pipeline() = default;
+public:
+    bool IsActive() const
+    {
+        return this->isRunning;
     }
 
 public:
@@ -43,24 +52,26 @@ public:
         this->onProcessComplete = onProcessComplete;
     }
 
+// pipe
 public:
     void Start()
     {
         this->render->Start();
 
-        this->isStarted = true;
+        this->isRunning = true;
+        this->pipelineThread = std::async(std::launch::async, &Pipeline::Loop, this);
 
-        while (this->render->IsActive())
-        {
-            Loop();
-        }
     }
 
-    void Stop()
+    void Kill()
     {
-        this->isStarted = false;
+        this->isRunning = false;
+
+        this->render->Stop();
     }
 
+// actions
+public:
     void Play()
     {
         this->isPlay = true;
@@ -82,12 +93,7 @@ public:
 protected:
     virtual bool Process()
     {
-        if (this->frameId >= this->maxFrames)
-        {
-            return false;
-        }
-
-        std::cout << "this->frameId: " << this->frameId << std::endl;
+        std::cout << "frameId: " << this->frameId << std::endl;
 
         this->odometry->Process(this->dataSource->Get());
 
@@ -99,16 +105,20 @@ protected:
 private:
     void Loop()
     {
-        if (this->isPlay)
+        while (this->isRunning)
         {
-            Process();
-            
-            if (this->isStep)
+            if (this->frameId < this->maxFrames)
             {
-                Pause();
+                if (this->isPlay)
+                {
+                    Process();
+                }
+                
+                if (this->isStep)
+                {
+                    Pause();
+                }
             }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
 
@@ -117,10 +127,12 @@ protected:
     std::unique_ptr<IOdometry<T>> odometry;
     std::unique_ptr<IRender> render;
 
+    std::future<void> pipelineThread;
+    std::atomic<bool> isRunning;
+
     unsigned frameId;
     unsigned maxFrames;
 
-    std::atomic<bool> isStarted;
     std::atomic<bool> isPlay;
     std::atomic<bool> isStep;
 

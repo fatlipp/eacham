@@ -12,8 +12,9 @@ Frame FrameCreatorRgbd::Create(const stereodata_t& data)
 {
     const auto [features, descriptors] = extractor->GetFeatures(std::get<1>(data));
 
+    std::cout << "data.size() = " << std::get<1>(data).size() << std::endl;
     std::cout << "features.size() = " << features.size() << std::endl;
-    
+
     if (features.size() < 10)
     {
         return {};

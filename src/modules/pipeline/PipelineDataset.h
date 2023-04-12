@@ -25,14 +25,20 @@ public:
 protected:
     bool Process() override
     {
-        PrepareNextFrame();
-        return Pipeline<T>::Process();
+        return PrepareNextFrame() && Pipeline<T>::Process();
     }
 
 private:
-    void PrepareNextFrame()
+    bool PrepareNextFrame()
     {
-        this->dataset->ReadNext();
+        if (this->dataset != nullptr)
+        {
+            this->dataset->ReadNext();
+            
+            return true;
+        }
+
+        return false;
     }
 
 private:
