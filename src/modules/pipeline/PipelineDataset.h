@@ -3,6 +3,8 @@
 #include "pipeline/Pipeline.h"
 #include "data_source/dataset/IDataset.h"
 
+#include "performance/BlockTimer.h"
+
 namespace eacham
 {
 
@@ -25,14 +27,19 @@ public:
 protected:
     bool Process() override
     {
+        std::cout << "Process() frameId: " << this->frameId << std::endl;
+
         bool isProcessed = PrepareNextFrame();
 
         if (this->frameId == 0)
         {
             this->odometry->SetPosition(this->dataset->GetGtPose());
         }
-        
-        isProcessed = Pipeline<T>::Process();
+
+        {   
+            BlockTimer timer("Pipeline::Process()");
+            isProcessed = Pipeline<T>::Process();
+        }
 
         if (isProcessed)
         {
@@ -50,7 +57,7 @@ protected:
                 std::cout << "GT pos:\n" << gtPos << std::endl;
                 std::cout << "Diff:\n" << diffLen << "\n" << diff << std::endl;
             }
-            std::cout << "[=== =============== ===]" << std::endl;
+            std::cout << "[===+===============+===]" << std::endl;
         }
 
         return isProcessed;

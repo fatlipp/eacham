@@ -18,6 +18,7 @@ find_package(PCL REQUIRED)
 message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
 find_package(GTSAM REQUIRED)
+find_package(realsense2 REQUIRED PATHS /home/blackdyce/Apps/librealsense)
 
 set(SOURCE
     src/modules/map/LocalMap.cpp
@@ -73,4 +74,30 @@ target_link_libraries(dataset_reader
     ${PCL_LIBRARIES}
     gtsam
     metis-gtsam
-    )
+    realsense2::realsense2
+)
+
+
+add_executable(realsense_player)
+target_sources(realsense_player
+    PRIVATE
+        ${SOURCE}
+        src/realsense_player.cpp
+)
+target_include_directories(realsense_player
+    PRIVATE
+        src/modules
+        src/visualization
+    PUBLIC
+        ${EIGEN3_INCLUDE_DIR}
+        ${OpenCV_INCLUDE_DIRS}
+        thirdparty/nlohmann
+)
+target_link_libraries(realsense_player 
+    ${OpenCV_LIBRARIES}
+    ${Pangolin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    gtsam
+    metis-gtsam
+    realsense2::realsense2
+)

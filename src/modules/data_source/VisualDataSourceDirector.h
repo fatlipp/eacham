@@ -11,6 +11,8 @@
 #include "data_source/dataset/DataSourceKittyStereo.h"
 #include "data_source/dataset/DataSourceKittyLidar.h"
 
+#include "data_source/sensor/CameraRealsenseD435.h"
+
 #include "config/Config.h"
 #include "types/DataTypes.h"
 #include "tools/Tools3d.h"
@@ -33,8 +35,11 @@ public:
                 case DatasetType::KITTI_STEREO:
                     return std::make_unique<DataSourceKittyStereo<T>>(config.configDataset.path);
             }
-            
             // return std::make_unique<DataSourceKittyLidar<T>>(config.configDataset.path);
+        }
+        else
+        {
+            return std::make_unique<CameraRealsenseD435<T>>();
         }
 
         return nullptr;

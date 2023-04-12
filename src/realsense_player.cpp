@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 {
     if (argc == 1)
     {
-        std::cout << "Usage: `dataset_reader 'config folder'`" << std::endl;
+        std::cout << "Usage: `realsense_player 'config folder'`" << std::endl;
         return 1;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     auto odometry = visualOdometryDirector.Build(dataSource.get(), config.GetOdometry());
 
     // general implementation
-    PipelineDataset<T> pipeline { config.GetGeneral() };
+    Pipeline<T> pipeline { config.GetGeneral() };
 
     auto render = std::make_unique<Render>();
     render->SetOnPlayClick([&pipeline]() { pipeline.Play(); });
@@ -47,11 +47,6 @@ int main(int argc, char* argv[])
     if (vo != nullptr)
     {
         render->Add(std::make_unique<VisualOdometryView<T>>(vo));
-    }
-    auto dataset = dynamic_cast<IDataset*>(dataSource.get()) ;
-    if (dataset != nullptr)
-    {
-        render->Add(std::make_unique<DatasetView<T>>(dataset));
     }
     
     pipeline.SetDataSource(std::move(dataSource));

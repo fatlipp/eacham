@@ -93,9 +93,16 @@ public:
 protected:
     virtual bool Process()
     {
-        std::cout << "frameId: " << this->frameId << std::endl;
-
         this->odometry->Process(this->dataSource->Get());
+
+        {
+            std::cout << "[=== PIPELINE SUMMARY ===]" << std::endl;
+            std::cout << "frameId: " << this->frameId << std::endl;
+            {   
+                std::cout << "Current pos:\n" << this->odometry->GetPosition() << std::endl;
+            }
+            std::cout << "[===+===============+===]" << std::endl;
+        }
 
         ++this->frameId;
 
@@ -107,7 +114,7 @@ private:
     {
         while (this->isRunning)
         {
-            if (this->frameId < this->maxFrames)
+            if (this->maxFrames == 0 || this->frameId < this->maxFrames)
             {
                 if (this->isPlay)
                 {

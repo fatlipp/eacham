@@ -1,0 +1,24 @@
+{
+    "general": {
+        "maxFrames": 0
+    },
+
+    "source": {
+        "type": "SENSOR",
+
+        "dataset": {
+            "type": "TUM_RGBD",
+            "path": ""
+        },
+
+        "sensor": {
+            "type": "REALSENSE_RGBD"
+        }
+    },
+
+    "odometry": {
+        "featureExtractorType": "ORB",
+        "motionEstimatorType": "OPT",
+        "odometryType": "F2M"
+    }
+}
