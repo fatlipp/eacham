@@ -47,8 +47,8 @@ static std::tuple<float, float> CalcReprojectionError(const cv::Mat &image, cons
         const int id = i;//inliers[i];
 
         auto pt = pts3d1.at(id);
-        auto pp1 = transformPointD(pt, R, t);
-        const auto pp = project3dPoint(pp1, cameraMatOneDim);
+        auto pp1 = tools::transformPointD(pt, R, t);
+        const auto pp = tools::project3dPoint(pp1, cameraMatOneDim);
 
         // real points
         cv::circle(reprIm2, pts2d2.at(id), 6, {0, 255, 0}, 3);

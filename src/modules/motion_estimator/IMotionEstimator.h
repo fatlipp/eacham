@@ -10,7 +10,7 @@ class IMotionEstimator
 public:
     ~IMotionEstimator() = default;
 
-    virtual std::tuple<Eigen::Matrix4f, unsigned> Estimate(Frame& frame1, Frame& frame2) = 0;
+    virtual std::tuple<Eigen::Matrix4f, unsigned> Estimate(const Frame& frame1, Frame& frame2) = 0;
 };
 
 }

@@ -1,14 +1,14 @@
 {
     "general": {
-        "maxFrames": 100
+        "maxFrames": 0
     },
 
     "source": {
-        "type": "DATASET",
+        "type": "SENSOR",
 
         "dataset": {
-            "type": "KITTI_STEREO",
-            "path": "/home/Datasets/KITTI"
+            "type": "TUM_RGBD",
+            "path": ""
         },
 
         "sensor": {
@@ -18,7 +18,7 @@
 
     "odometry": {
         "featureExtractorType": "ORB",
-        "motionEstimatorType": "PNP",
+        "motionEstimatorType": "OPT",
         "odometryType": "F2M"
     }
 }

@@ -18,6 +18,7 @@ find_package(PCL REQUIRED)
 message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
 find_package(GTSAM REQUIRED)
+find_package(realsense2 REQUIRED)
 
 set(SOURCE
     src/modules/map/LocalMap.cpp
@@ -31,32 +32,17 @@ set(SOURCE
     src/modules/frame/FrameCreatorRgbd.cpp
     
     src/modules/optimization/LocalFramesOptimizer.cpp
+
+    src/modules/visualization/Render.cpp
 )
 
-# add_library(eacham_lib INTERFACE)
-# target_sources(eacham_lib
-#     INTERFACE
-#         ${HEADER}
-# )
-# target_include_directories(eacham_lib
-#     PRIVATE
-#         # where the library itself will look for its internal headers
-#         ${HEADER}
-#     PUBLIC
-#         # where top-level project will look for the library's public headers
-#         ${OpenCV_INCLUDE_DIRS}
-# )
-# target_link_libraries(eacham_lib ${OpenCV_LIBRARIES})
-
-
-# // exe
-add_executable(dataset_reader)
-target_sources(dataset_reader
+add_executable(main)
+target_sources(main
     PRIVATE
         ${SOURCE}
-        src/dataset_reader.cpp
+        src/main.cpp
 )
-target_include_directories(dataset_reader
+target_include_directories(main
     PRIVATE
         src/modules
         src/visualization
@@ -65,10 +51,11 @@ target_include_directories(dataset_reader
         ${OpenCV_INCLUDE_DIRS}
         thirdparty/nlohmann
 )
-target_link_libraries(dataset_reader 
+target_link_libraries(main 
     ${OpenCV_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${PCL_LIBRARIES}
     gtsam
     metis-gtsam
-    )
+    realsense2::realsense2
+)

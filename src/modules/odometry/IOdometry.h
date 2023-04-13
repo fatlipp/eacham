@@ -10,11 +10,37 @@ template<typename T>
 class IOdometry
 {
 public:
-    ~IOdometry() = default;
+    IOdometry()
+        : odometry(Eigen::Matrix4f::Identity())
+        , position(Eigen::Matrix4f::Identity())
+    {
+        std::cout << "CALL.. IOdometry()" << std::endl;
 
-    virtual bool Proceed(const T &data) = 0;
+    }
+    virtual ~IOdometry() = default;
+
+public:
+    virtual bool Process(const T &data) = 0;
     
-    virtual Eigen::Matrix4f GetOdometry() = 0;
+    virtual Eigen::Matrix4f GetOdometry() const
+    {
+        return this->odometry;
+    }
+
+    const Eigen::Matrix4f& GetPosition() const
+    {
+        return this->position;
+    }
+
+    void SetPosition(const Eigen::Matrix4f& pos)
+    {
+        this->position = pos;
+    }
+
+protected:
+    Eigen::Matrix4f odometry;
+    Eigen::Matrix4f position;
+
 };
 
 } // namespace eacham

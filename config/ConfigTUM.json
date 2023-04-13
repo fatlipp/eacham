@@ -18,6 +18,7 @@
 
     "odometry": {
         "featureExtractorType": "ORB",
-        "motionEstimatorType": "PNP"
+        "motionEstimatorType": "PNP",
+        "odometryType": "F2M"
     }
 }

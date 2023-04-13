@@ -8,27 +8,11 @@
 namespace eacham
 {
 
-// struct FramePoint3d
-// {
-//     unsigned mapPointId = 0;
-
-//     FramePoint3d(const unsigned mapPointId, const cv::Point3f &position)
-//         : mapPointId(mapPointId)
-//         , position(position)
-//         {}
-
-//     void SetMapPointId(const unsigned mapPointId)
-//     {
-//         this->mapPointId = mapPointId;
-//     }
-// };
-
 struct PointData
 {
     unsigned id = 0;
     unsigned associatedMapPointId = 0;
     float uncertatinty;
-    bool isInlier;
 
     cv::KeyPoint keypoint;
     cv::Point3f position3d;
@@ -36,7 +20,6 @@ struct PointData
 
     PointData(const cv::KeyPoint &keypoint, const cv::Point3f &position3d, const cv::Mat &descriptor)
         : id(0)
-        , isInlier(false)
         , uncertatinty(1000.0f)
         , associatedMapPointId(0)
         , keypoint(keypoint)
@@ -79,7 +62,7 @@ public:
         return pointsData[id].position3d;
     }
 
-    std::vector<PointData>& GetPointsData()
+    const std::vector<PointData>& GetPointsData() const
     {
         return pointsData;
     }
@@ -145,8 +128,6 @@ public:
     {
         return pointsData[id];
     }
-
-    unsigned id;
 
 protected:
     double timestamp;

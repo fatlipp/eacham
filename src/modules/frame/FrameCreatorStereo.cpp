@@ -43,7 +43,7 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
             const int id1 = m[0].queryIdx;
             const int id2 = m[0].trainIdx;
 
-            const cv::Point3f pos3d = Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, this->cameraData);
+            const cv::Point3f pos3d = tools::Get3dPointByStereoPair(features1[id1].pt, features2[id2].pt, this->cameraData);
 
             if (pos3d.z > 0.10f && pos3d.z < 70.0f)
             {

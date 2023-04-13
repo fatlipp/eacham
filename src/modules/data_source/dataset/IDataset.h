@@ -10,15 +10,12 @@
 namespace eacham
 {
 
-template<typename T>
 class IDataset
 {
 public:
     IDataset(const std::string& gtPosePath)
         : gtPosePath(gtPosePath)
     {
-        std::cout << "gtPosePath: " << gtPosePath << std::endl;
-
         gtFileStream.open(gtPosePath, std::ios::in);
     }
 

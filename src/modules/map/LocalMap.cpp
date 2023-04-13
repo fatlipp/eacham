@@ -3,19 +3,16 @@
 
 #include <eigen3/Eigen/Geometry>
 
+#include <mutex>
+
 namespace eacham
 {
-    void LocalMap::AddFrame(Frame &frame)
+    void LocalMap::AddFrame(const Frame &frame)
     {
-        if (GetSize() >= capaticy)
-        {
-            frames.pop_front();
-        }
-
         static unsigned ID = 1;
         const Eigen::Matrix4f framePos = frame.GetPosition();
 
-        for (auto &point : frame.GetPointsData())
+        for (const auto &point : frame.GetPointsData())
         {
             if (point.associatedMapPointId > 0)
             {
@@ -24,16 +21,18 @@ namespace eacham
                 continue;
             }
 
-            MapPoint3d mapPoint { ID++, transformPoint3d(point.position3d, framePos) };
+            MapPoint mapPoint { ID++, tools::transformPoint3d(point.position3d, framePos) };
             mapPoint.observers = 1;
-            points3d.push_back(mapPoint);
+            this->points.push_back(mapPoint);
 
-            point.associatedMapPointId = mapPoint.id;
+            // point.associatedMapPointId = mapPoint.id;
         }
 
-        static unsigned FRAME_ID = 1;
-        frame.id = FRAME_ID++;
-        
-        frames.push_back(frame);
+        this->frames.push_back(frame);
+
+        if (this->GetSize() == this->capaticy)
+        {
+            this->frames.pop_front();
+        }
     }
 }
