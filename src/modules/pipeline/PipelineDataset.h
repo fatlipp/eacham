@@ -27,8 +27,6 @@ public:
 protected:
     bool Process() override
     {
-        std::cout << "Process() frameId: " << this->frameId << std::endl;
-
         bool isProcessed = PrepareNextFrame();
 
         if (this->frameId == 0)
@@ -43,8 +41,9 @@ protected:
 
         if (isProcessed)
         {
-            std::cout << "[=== DATASET SUMMARY ===]" << std::endl;
+            std::cout << std::endl << "[=== DATASET SUMMARY ===]" << std::endl;
             {   
+                BlockTimer timer("Pipeline::Dataset()");
                 const auto currentPos = this->odometry->GetPosition();
                 const auto gtPos = this->dataset->GetGtPose();
 
@@ -57,7 +56,6 @@ protected:
                 std::cout << "GT pos:\n" << gtPos << std::endl;
                 std::cout << "Diff:\n" << diffLen << "\n" << diff << std::endl;
             }
-            std::cout << "[===+===============+===]" << std::endl;
         }
 
         return isProcessed;

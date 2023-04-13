@@ -53,13 +53,13 @@ set(SOURCE
 
 
 # // exe
-add_executable(dataset_reader)
-target_sources(dataset_reader
+add_executable(main)
+target_sources(main
     PRIVATE
         ${SOURCE}
-        src/dataset_reader.cpp
+        src/main.cpp
 )
-target_include_directories(dataset_reader
+target_include_directories(main
     PRIVATE
         src/modules
         src/visualization
@@ -68,32 +68,7 @@ target_include_directories(dataset_reader
         ${OpenCV_INCLUDE_DIRS}
         thirdparty/nlohmann
 )
-target_link_libraries(dataset_reader 
-    ${OpenCV_LIBRARIES}
-    ${Pangolin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    gtsam
-    metis-gtsam
-    realsense2::realsense2
-)
-
-
-add_executable(realsense_player)
-target_sources(realsense_player
-    PRIVATE
-        ${SOURCE}
-        src/realsense_player.cpp
-)
-target_include_directories(realsense_player
-    PRIVATE
-        src/modules
-        src/visualization
-    PUBLIC
-        ${EIGEN3_INCLUDE_DIR}
-        ${OpenCV_INCLUDE_DIRS}
-        thirdparty/nlohmann
-)
-target_link_libraries(realsense_player 
+target_link_libraries(main 
     ${OpenCV_LIBRARIES}
     ${Pangolin_LIBRARIES}
     ${PCL_LIBRARIES}

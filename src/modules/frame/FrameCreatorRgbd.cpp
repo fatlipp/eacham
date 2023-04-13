@@ -20,9 +20,6 @@ Frame FrameCreatorRgbd::Create(const stereodata_t& data)
         return {};
     }
 
-    cv::imshow("ir", std::get<1>(data));
-    cv::waitKey(10);
-
     Frame frame {std::get<0>(data), std::get<1>(data)};
 
     int pointId = 0;

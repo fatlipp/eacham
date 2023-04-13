@@ -93,15 +93,12 @@ public:
 protected:
     virtual bool Process()
     {
-        this->odometry->Process(this->dataSource->Get());
-
         {
-            std::cout << "[=== PIPELINE SUMMARY ===]" << std::endl;
             std::cout << "frameId: " << this->frameId << std::endl;
-            {   
-                std::cout << "Current pos:\n" << this->odometry->GetPosition() << std::endl;
-            }
-            std::cout << "[===+===============+===]" << std::endl;
+
+            this->odometry->Process(this->dataSource->Get());
+
+            std::cout << "Current pos:\n" << this->odometry->GetPosition() << std::endl;
         }
 
         ++this->frameId;
@@ -118,7 +115,9 @@ private:
             {
                 if (this->isPlay)
                 {
+                    std::cout << "[=============== PIPELINE PROCESS =============== ]" << std::endl;
                     Process();
+                    std::cout << "[===============+================+=============== ]" << std::endl << std::endl;
                 }
                 
                 if (this->isStep)

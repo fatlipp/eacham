@@ -12,11 +12,15 @@
 
 using namespace eacham;
 
+void MakeDataset()
+{
+}
+
 int main(int argc, char* argv[])
 {
     if (argc == 1)
     {
-        std::cout << "Usage: `dataset_reader 'config folder'`" << std::endl;
+        std::cout << "Usage: `main 'config folder'`" << std::endl;
         return 1;
     }
 
@@ -36,30 +40,35 @@ int main(int argc, char* argv[])
     auto odometry = visualOdometryDirector.Build(dataSource.get(), config.GetOdometry());
 
     // general implementation
-    PipelineDataset<T> pipeline { config.GetGeneral() };
+    std::unique_ptr<Pipeline<T>> pipeline;
+    std::unique_ptr<Render> render = std::make_unique<Render>();
+    render->SetOnPlayClick([&pipeline]() { pipeline->Play(); });
+    render->SetOnStepClick([&pipeline]() { pipeline->Step(); });
+    render->SetOnCloseClick([&pipeline]() { pipeline->Kill(); });
 
-    auto render = std::make_unique<Render>();
-    render->SetOnPlayClick([&pipeline]() { pipeline.Play(); });
-    render->SetOnStepClick([&pipeline]() { pipeline.Step(); });
-    render->SetOnCloseClick([&pipeline]() { pipeline.Kill(); });
+    if (dynamic_cast<IDataset*>(dataSource.get()) != nullptr)
+    {
+        pipeline = std::make_unique<PipelineDataset<T>>(config.GetGeneral());
+        
+        render->Add(std::make_unique<DatasetView<T>>(dynamic_cast<IDataset*>(dataSource.get())));
+    }
+    else
+    {
+        pipeline = std::make_unique<Pipeline<T>>(config.GetGeneral());
+    }
 
     auto vo = dynamic_cast<IFrameToMapOdometry<T>*>(odometry.get()) ;
     if (vo != nullptr)
     {
         render->Add(std::make_unique<VisualOdometryView<T>>(vo));
     }
-    auto dataset = dynamic_cast<IDataset*>(dataSource.get()) ;
-    if (dataset != nullptr)
-    {
-        render->Add(std::make_unique<DatasetView<T>>(dataset));
-    }
     
-    pipeline.SetDataSource(std::move(dataSource));
-    pipeline.SetOdometry(std::move(odometry));
-    pipeline.SetRender(std::move(render));
-    pipeline.Start();
+    pipeline->SetDataSource(std::move(dataSource));
+    pipeline->SetOdometry(std::move(odometry));
+    pipeline->SetRender(std::move(render));
+    pipeline->Start();
 
-    while (pipeline.IsActive())
+    while (pipeline->IsActive())
     {
     }
 
