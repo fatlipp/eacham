@@ -18,7 +18,7 @@ find_package(PCL REQUIRED)
 message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
 find_package(GTSAM REQUIRED)
-find_package(realsense2 REQUIRED PATHS /home/blackdyce/Apps/librealsense)
+find_package(realsense2 REQUIRED)
 
 set(SOURCE
     src/modules/map/LocalMap.cpp
@@ -36,23 +36,6 @@ set(SOURCE
     src/modules/visualization/Render.cpp
 )
 
-# add_library(eacham_lib INTERFACE)
-# target_sources(eacham_lib
-#     INTERFACE
-#         ${HEADER}
-# )
-# target_include_directories(eacham_lib
-#     PRIVATE
-#         # where the library itself will look for its internal headers
-#         ${HEADER}
-#     PUBLIC
-#         # where top-level project will look for the library's public headers
-#         ${OpenCV_INCLUDE_DIRS}
-# )
-# target_link_libraries(eacham_lib ${OpenCV_LIBRARIES})
-
-
-# // exe
 add_executable(main)
 target_sources(main
     PRIVATE
