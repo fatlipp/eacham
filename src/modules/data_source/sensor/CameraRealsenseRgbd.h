@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "data_source/IDataSourceCamera.h"
+#include "config/Config.h"
 
 #include <librealsense2/rs.hpp> // Include Intel RealSense Cross Platform API
 
@@ -12,17 +13,16 @@ namespace eacham
 {
 
 template<typename T>
-class CameraRealsenseD435 : public IDataSourceCamera<T>
+class CameraRealsenseRgbd : public IDataSourceCamera<T>
 {
 public:
-    CameraRealsenseD435()
+    CameraRealsenseRgbd()
         : isInitialized(false)
     {
-        Initialize();
     }
 
 public:
-    void Initialize()
+    void Initialize(const ConfigCamera& config) override
     {
         if (!this->isInitialized)
         {
@@ -43,7 +43,7 @@ public:
             this->cameraMatrix.at<float>(0, 1) = intrinsics_cam.fy;
             this->cameraMatrix.at<float>(0, 2) = intrinsics_cam.ppx;
             this->cameraMatrix.at<float>(0, 3) = intrinsics_cam.ppy;
-            this->cameraMatrix.at<float>(0, 4) = 1.0f / 1000.0f;
+            this->cameraMatrix.at<float>(0, 4) = 1.0f / config.scale;
 
             this->distMatrix = cv::Mat(1, 5, CV_32F);
             this->distMatrix.at<float>(0, 0) = intrinsics_cam.coeffs[0];

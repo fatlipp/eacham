@@ -12,15 +12,20 @@ enum class DataSourceType
 
 enum class DatasetType
 {
-    TUM_RGBD,
-    KITTI_STEREO,
+    TUM,
+    KITTI,
 };
 
 enum class SensorType
 {
-    REALSENSE_RGBD,
-    REALSENSE_MONO,
-    REALSENSE_STEREO,
+    CAMERA
+};
+
+enum class CameraType
+{
+    RGBD,
+    MONO,
+    STEREO,
 };
 
 }

@@ -12,7 +12,8 @@
 #include "data_source/dataset/DataSourceKittyLidar.h"
 
 #ifdef REALSENSE_FOUND
-#include "data_source/sensor/CameraRealsenseD435.h"
+#include "data_source/sensor/CameraRealsenseRgbd.h"
+#include "data_source/sensor/CameraRealsenseStereo.h"
 #endif
 
 #include "config/Config.h"
@@ -26,30 +27,59 @@ template<typename T>
 class VisualDataSourceDirector
 {
 public:
-    std::unique_ptr<IDataSourceCamera<T>> Build(const ConfigSource& config)
+    std::unique_ptr<IDataSourceCamera<T>> Build(const Config& config)
     {
-        if (config.type == DataSourceType::DATASET)
+        if (config.GetGeneral().sensorType != SensorType::CAMERA)
         {
-            switch (config.configDataset.type)
+            std::cout << "Non-camera type" << std::endl;
+            return nullptr;
+        }
+
+        const auto cameraConfig = config.GetCamera();
+
+        std::unique_ptr<IDataSourceCamera<T>> camera;
+
+        if (config.GetGeneral().sourceType == DataSourceType::DATASET)
+        {
+            const auto dataset = config.GetDataset();
+
+            switch (dataset.type)
             {
-                case DatasetType::TUM_RGBD:
-                    return std::make_unique<DataSourceRgbdTum<T>>(config.configDataset.path);
-                case DatasetType::KITTI_STEREO:
-                    return std::make_unique<DataSourceKittyStereo<T>>(config.configDataset.path);
+                case DatasetType::TUM:
+                    camera = (cameraConfig.type == CameraType::RGBD) ? std::make_unique<DataSourceRgbdTum<T>>(dataset.path) : nullptr;
+                    break;
+                case DatasetType::KITTI:
+                    camera = (cameraConfig.type == CameraType::STEREO) ? std::make_unique<DataSourceKittyStereo<T>>(dataset.path) : nullptr;
+                    break;
             }
-            // return std::make_unique<DataSourceKittyLidar<T>>(config.configDataset.path);
+            // return std::make_unique<DataSourceKittyLidar<T>>(dataset.path);
         }
         // TODO: other devices
-        else
+        else if (config.GetGeneral().sourceType == DataSourceType::SENSOR)
         {
 #ifdef REALSENSE_FOUND
-            return std::make_unique<CameraRealsenseD435<T>>();
+
+            switch (cameraConfig.type)
+            {
+                case CameraType::RGBD:
+                    camera = std::make_unique<CameraRealsenseRgbd<T>>();
+                    break;
+                case CameraType::STEREO:
+                    camera = std::make_unique<CameraRealsenseStereo<T>>();
+                    break;
+
+            }
 #else
             std::cout << "Compiled with no RealSense. Use another device or Dataset" << std::endl;
 #endif
         }
 
-        return nullptr;
+        if (camera != nullptr)
+        {
+            camera->Initialize(cameraConfig);
+        }
+
+        return camera;
     }
 };
 

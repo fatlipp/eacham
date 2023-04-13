@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 
     // specific for visual sensor
     VisualDataSourceDirector<T> dataSourceDirector;
-    auto dataSource = dataSourceDirector.Build(config.GetSource());
+    auto dataSource = dataSourceDirector.Build(config);
 
     if (dataSource == nullptr)
     {

@@ -1,19 +1,13 @@
 {
     "general": {
-        "maxFrames": 0
+        "maxFrames": 0,
+        "source_type": "SENSOR",
+        "sensor_type": "CAMERA"
     },
-
-    "source": {
-        "type": "SENSOR",
-
-        "dataset": {
-            "type": "TUM_RGBD",
-            "path": ""
-        },
-
-        "sensor": {
-            "type": "REALSENSE_RGBD"
-        }
+    
+    "camera": {
+        "type": "RGBD",
+        "scale": 1000
     },
 
     "odometry": {

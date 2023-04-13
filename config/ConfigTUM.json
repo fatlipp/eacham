@@ -1,19 +1,18 @@
 {
     "general": {
-        "maxFrames": 100
+        "maxFrames": 100,
+        "source_type": "DATASET",
+        "sensor_type": "CAMERA"
     },
 
-    "source": {
-        "type": "DATASET",
-
-        "dataset": {
-            "type": "TUM_RGBD",
-            "path": "/home/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
-        },
-
-        "sensor": {
-            "type": "REALSENSE_RGBD"
-        }
+    "dataset": {
+        "type": "TUM",
+        "path": "/home/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
+    },
+    
+    "camera": {
+        "type": "RGBD",
+        "scale": 5000
     },
 
     "odometry": {
