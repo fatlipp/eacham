@@ -18,7 +18,12 @@ find_package(PCL REQUIRED)
 message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
 
 find_package(GTSAM REQUIRED)
-find_package(realsense2 REQUIRED)
+find_package(realsense2 QUIET)
+
+if (${realsense2_FOUND})
+    set(REALSENSE_FOUND 1)
+    add_definitions(-DREALSENSE_FOUND)
+endif()
 
 set(SOURCE
     src/modules/map/LocalMap.cpp
@@ -57,5 +62,12 @@ target_link_libraries(main
     ${PCL_LIBRARIES}
     gtsam
     metis-gtsam
-    realsense2::realsense2
 )
+
+if (${REALSENSE_FOUND})
+    target_link_libraries(main
+        realsense2::realsense2
+    )
+endif()
+
+message(STATUS "REALSENSE_FOUND: " ${REALSENSE_FOUND})

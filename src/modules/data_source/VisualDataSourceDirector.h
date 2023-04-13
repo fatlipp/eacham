@@ -11,7 +11,9 @@
 #include "data_source/dataset/DataSourceKittyStereo.h"
 #include "data_source/dataset/DataSourceKittyLidar.h"
 
+#ifdef REALSENSE_FOUND
 #include "data_source/sensor/CameraRealsenseD435.h"
+#endif
 
 #include "config/Config.h"
 #include "types/DataTypes.h"
@@ -37,9 +39,14 @@ public:
             }
             // return std::make_unique<DataSourceKittyLidar<T>>(config.configDataset.path);
         }
+        // TODO: other devices
         else
         {
+#ifdef REALSENSE_FOUND
             return std::make_unique<CameraRealsenseD435<T>>();
+#else
+            std::cout << "Compiled with no RealSense. Use another device or Dataset" << std::endl;
+#endif
         }
 
         return nullptr;

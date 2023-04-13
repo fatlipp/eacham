@@ -36,8 +36,22 @@ int main(int argc, char* argv[])
     VisualDataSourceDirector<T> dataSourceDirector;
     auto dataSource = dataSourceDirector.Build(config.GetSource());
 
+    if (dataSource == nullptr)
+    {
+        std::cerr << "dataSource is null" << std::endl;
+
+        return 3;
+    }
+
     VisualOdometryDirector<T> visualOdometryDirector;
     auto odometry = visualOdometryDirector.Build(dataSource.get(), config.GetOdometry());
+
+    if (odometry == nullptr)
+    {
+        std::cerr << "odometry is null" << std::endl;
+
+        return 3;
+    }
 
     // general implementation
     std::unique_ptr<Pipeline<T>> pipeline;

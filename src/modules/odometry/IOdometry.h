@@ -14,9 +14,8 @@ public:
         : odometry(Eigen::Matrix4f::Identity())
         , position(Eigen::Matrix4f::Identity())
     {
-        std::cout << "CALL.. IOdometry()" << std::endl;
-
     }
+    
     virtual ~IOdometry() = default;
 
 public:
