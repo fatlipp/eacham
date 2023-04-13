@@ -11,6 +11,7 @@
     },
     
     "camera": {
+        "model": "",
         "type": "STEREO",
         "scale": 0
     },

@@ -28,6 +28,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(SensorType, {
     {SensorType::CAMERA, "CAMERA"},
 })
 
+NLOHMANN_JSON_SERIALIZE_ENUM(CameraModel, {
+    {CameraModel::REALSENSE, "REALSENSE"},
+})
+
 NLOHMANN_JSON_SERIALIZE_ENUM(CameraType, {
     {CameraType::RGBD, "RGBD"},
     {CameraType::MONO, "MONO"},
@@ -99,6 +103,7 @@ struct ConfigDataset
 
 struct ConfigCamera
 {
+    CameraModel model;
     CameraType type;
     // unsigned width;
     // unsigned height;
@@ -110,6 +115,7 @@ struct ConfigCamera
 
     friend void from_json(const nlohmann::json& j, ConfigCamera& value)
     {
+        j.at("model").get_to<CameraModel>(value.model);
         j.at("type").get_to<CameraType>(value.type);
         j.at("scale").get_to(value.scale);
     }
@@ -138,7 +144,7 @@ public:
             {
                 this->dataset = data["dataset"].get<ConfigDataset>();
             }
-            
+
             if (this->general.sensorType == SensorType::CAMERA)
             {
                 this->camera = data["camera"].get<ConfigCamera>();

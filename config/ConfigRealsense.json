@@ -6,6 +6,7 @@
     },
     
     "camera": {
+        "model": "REALSENSE",
         "type": "RGBD",
         "scale": 1000
     },

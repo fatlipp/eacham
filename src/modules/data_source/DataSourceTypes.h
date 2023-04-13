@@ -21,6 +21,11 @@ enum class SensorType
     CAMERA
 };
 
+enum class CameraModel
+{
+    REALSENSE
+};
+
 enum class CameraType
 {
     RGBD,

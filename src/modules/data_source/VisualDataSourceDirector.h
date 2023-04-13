@@ -57,21 +57,23 @@ public:
         // TODO: other devices
         else if (config.GetGeneral().sourceType == DataSourceType::SENSOR)
         {
-#ifdef REALSENSE_FOUND
-
-            switch (cameraConfig.type)
+            if (cameraConfig.model == CameraModel::REALSENSE)
             {
-                case CameraType::RGBD:
-                    camera = std::make_unique<CameraRealsenseRgbd<T>>();
-                    break;
-                case CameraType::STEREO:
-                    camera = std::make_unique<CameraRealsenseStereo<T>>();
-                    break;
+#ifdef REALSENSE_FOUND
+                switch (cameraConfig.type)
+                {
+                    case CameraType::RGBD:
+                        camera = std::make_unique<CameraRealsenseRgbd<T>>();
+                        break;
+                    case CameraType::STEREO:
+                        camera = std::make_unique<CameraRealsenseStereo<T>>();
+                        break;
 
-            }
+                }
 #else
-            std::cout << "Compiled with no RealSense. Use another device or Dataset" << std::endl;
+                std::cout << "Compiled with no RealSense. Use another device or Dataset" << std::endl;
 #endif
+            }
         }
 
         if (camera != nullptr)
