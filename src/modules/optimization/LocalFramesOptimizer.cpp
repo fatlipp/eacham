@@ -160,7 +160,11 @@ namespace eacham
         for (const auto id : mapIds)
         {
             const gtsam::Point3 mapPoint = optimizationResult.at<gtsam::Point3>(gtsam::Symbol('l', id));
-            cv::Point3f result { mapPoint.x(), mapPoint.y(), mapPoint.z() };
+            cv::Point3f result { 
+                    static_cast<float>(mapPoint.x()), 
+                    static_cast<float>(mapPoint.y()), 
+                    static_cast<float>(mapPoint.z())
+                };
 
             // std::cout << "ID: " << id << ", BEFORE: " << map->GetPoint(id).position;
             // map->GetPoint(id).position = result; // TODO!!!!!!!!
