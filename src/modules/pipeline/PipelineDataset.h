@@ -34,10 +34,7 @@ protected:
             this->odometry->SetPosition(this->dataset->GetGtPose());
         }
 
-        {   
-            BlockTimer timer("Pipeline::Process()");
-            isProcessed = Pipeline<T>::Process();
-        }
+        isProcessed = Pipeline<T>::Process();
 
         if (isProcessed)
         {

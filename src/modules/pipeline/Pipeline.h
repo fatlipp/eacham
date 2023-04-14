@@ -96,7 +96,15 @@ protected:
         {
             std::cout << "frameId: " << this->frameId << std::endl;
 
-            this->odometry->Process(this->dataSource->Get());
+            {
+                BlockTimer timer("Pipeline::Process()");
+                if (!this->odometry->Process(this->dataSource->Get()))
+                {
+                    this->isPlay = false;
+                }
+            }
+
+            cv::waitKey(10);
 
             std::cout << "Current pos:\n" << this->odometry->GetPosition() << std::endl;
         }

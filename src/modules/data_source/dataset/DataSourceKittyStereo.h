@@ -19,7 +19,8 @@ class DataSourceKittyStereo : public IDataSourceCamera<T>, public IDataset
 {
 public:
     DataSourceKittyStereo(const std::string &sourcePath) 
-        : IDataset(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
+        : IDataSourceCamera<T>(CameraType::STEREO)
+        , IDataset(sourcePath + "/data_odometry_poses/dataset/poses/00.txt")
         , sourcePath(sourcePath)
         , folderLeft(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_0/")
         , folderRight(sourcePath + "/data_odometry_gray/dataset/sequences/00/image_1/")
@@ -42,16 +43,6 @@ public:
     T Get() const override;
 
     void ReadNext() override;
-
-    bool isStereo() const override
-    {
-        return true;
-    }
-
-    bool isRgbd() const override
-    {
-        return false;
-    }
 
     cv::Mat GetParameters() const override;
     cv::Mat GetDistortion() const override;
@@ -112,14 +103,14 @@ void DataSourceKittyStereo<T>::Initialize(const ConfigCamera& config)
             }
         }
 
-        // cv::Mat proj;
-        // cv::Mat rot;
-        // cv::Mat trans;
-        // cv::decomposeProjectionMatrix(projMat, proj, rot, trans);
-        // trans = trans / trans.at<float>(3);
-        // std::cout << "proj:\n" << proj << std::endl;
-        // std::cout << "rot:\n" << rot << std::endl;
-        // std::cout << "trans:\n" << trans.t() << std::endl;
+        cv::Mat proj;
+        cv::Mat rot;
+        cv::Mat trans;
+        cv::decomposeProjectionMatrix(projMat, proj, rot, trans);
+        trans = trans / trans.at<float>(3);
+        std::cout << "proj:\n" << proj << std::endl;
+        std::cout << "rot:\n" << rot << std::endl;
+        std::cout << "trans:\n" << trans.t() << std::endl;
 
         this->cameraMatrix = cv::Mat(1, 5, CV_32F);
         this->cameraMatrix.at<float>(0, 0) = projMat.at<float>(0, 0);

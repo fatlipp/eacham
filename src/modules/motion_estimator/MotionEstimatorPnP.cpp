@@ -91,13 +91,15 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
 
         if (inliersPnP.size() >= MIN_INLIERS)
 		{
+            inliersCount = inliersPnP.size();
+
             cv::Mat Rmat1;
 			cv::Rodrigues(rvec, Rmat1);
-            std::vector<int> reprojectedInliers;
-            const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat1, tvec, 2.0f, reprojectedInliers);
-            std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
-
-            inliersCount = reprojectedInliers.size();
+            // std::vector<int> reprojectedInliers;
+            // const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat1, tvec, 2.0f, reprojectedInliers);
+            // std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
+            // inliersCount = reprojectedInliers.size();
+            
 
             for(unsigned int i = 0; i < inliersPnP.size(); ++i)
             {
@@ -127,15 +129,15 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
                 cv::Rodrigues(refinedRvec, RmatNew);
 
                 std::vector<int> refinedInliers;
-                const auto [errMean, errVar] = CalcReprojectionError(frame2.GetImage(), points3d1Inliers, points2d2Inliers, cameraMat, distCoeffs, RmatNew, refinedTvec, 2.0f, refinedInliers);
-                std::cout << "inliers (refined): " << refinedInliers.size() << " (" << (refinedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
+                // const auto [errMean, errVar] = CalcReprojectionError(frame2.GetImage(), points3d1Inliers, points2d2Inliers, cameraMat, distCoeffs, RmatNew, refinedTvec, 2.0f, refinedInliers);
+                // std::cout << "inliers (refined): " << refinedInliers.size() << " (" << (refinedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
 
-                if (refinedInliers.size() >= reprojectedInliers.size())
-                {
-                    rvec = refinedRvec;
-                    tvec = refinedTvec;
-                    inliersCount = refinedInliers.size();
-                }
+                // if (refinedInliers.size() >= reprojectedInliers.size())
+                // {
+                //     rvec = refinedRvec;
+                //     tvec = refinedTvec;
+                //     inliersCount = refinedInliers.size();
+                // }
             }
 
 

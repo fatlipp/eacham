@@ -184,15 +184,15 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
 		    cv::Mat rvec = cv::Mat_<double>(3, 1);
 			cv::Rodrigues(Rmat, rvec);
 
-            {
-                std::cout << "1 tvec: " << tvec << std::endl;
+            // {
+            //     std::cout << "1 tvec: " << tvec << std::endl;
 
-                std::vector<int> reprojectedInliers;
-                const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec, 4.0f, reprojectedInliers);
+            //     std::vector<int> reprojectedInliers;
+            //     const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec, 4.0f, reprojectedInliers);
                 
-                if (reprojectedInliers.size() > 0)
-                    std::cout << "1 inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
-            }
+            //     if (reprojectedInliers.size() > 0)
+            //         std::cout << "1 inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
+            // }
 
             // cv::solvePnP(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, true, cv::SOLVEPNP_EPNP);
 
@@ -200,9 +200,9 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
 
 			cv::Rodrigues(rvec, Rmat);
             // CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec);
-            std::vector<int> reprojectedInliers;
-            const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec, 4.0f, reprojectedInliers);
-            std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
+            // std::vector<int> reprojectedInliers;
+            // const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec, 4.0f, reprojectedInliers);
+            // std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
 
         }
     }

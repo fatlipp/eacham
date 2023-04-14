@@ -19,7 +19,8 @@ class DataSourceRgbdTum : public IDataSourceCamera<T>, public IDataset
 {
 public:
     DataSourceRgbdTum(const std::string &sourcePath)
-        : IDataset(sourcePath + "/groundtruth.txt")
+        : IDataSourceCamera<T>(CameraType::RGBD)
+        , IDataset(sourcePath + "/groundtruth.txt")
         , sourcePath(sourcePath + "/")
     {
     }
@@ -44,16 +45,6 @@ public:
     T Get() const override;
 
     void ReadNext() override;
-
-    bool isStereo() const override
-    {
-        return false;
-    }
-
-    bool isRgbd() const override
-    {
-        return true;
-    }
 
     cv::Mat GetParameters() const override;
     cv::Mat GetDistortion() const override;

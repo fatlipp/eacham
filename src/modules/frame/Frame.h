@@ -35,21 +35,9 @@ public:
         : timestamp(-1.0)
     {}
     
-    Frame(const double timestamp, const cv::Mat &imageInp)
+    Frame(const double timestamp)
         : timestamp(timestamp)
     {
-        imageInp.copyTo(image);
-    }
-    
-    Frame(const double timestamp, const cv::Mat &imageInp, const cv::Mat &imageDepthInp)
-        : Frame(timestamp, imageInp)
-    {
-        imageDepthInp.copyTo(imageDepth);
-    }
-
-    const cv::Mat& GetImage() const
-    {
-        return image;
     }
 
     cv::KeyPoint GetFeature(const int id) const
@@ -134,8 +122,6 @@ protected:
 
     Eigen::Matrix4f position;
     Eigen::Matrix4f odometry;
-    cv::Mat image;
-    cv::Mat imageDepth;
     std::vector<PointData> pointsData;
 
 };

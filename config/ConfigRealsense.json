@@ -7,13 +7,15 @@
     
     "camera": {
         "model": "REALSENSE",
-        "type": "RGBD",
-        "scale": 1000
+        "type": "STEREO",
+        "scale": 1000,
+        "width": 848,
+        "height": 480
     },
 
     "odometry": {
         "featureExtractorType": "ORB",
-        "motionEstimatorType": "OPT",
+        "motionEstimatorType": "PNP",
         "odometryType": "F2M"
     }
 }

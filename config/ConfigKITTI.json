@@ -13,7 +13,9 @@
     "camera": {
         "model": "",
         "type": "STEREO",
-        "scale": 0
+        "scale": 0,
+        "width": 0,
+        "height": 0
     },
 
     "odometry": {

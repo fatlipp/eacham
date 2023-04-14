@@ -28,10 +28,14 @@ namespace eacham
             // point.associatedMapPointId = mapPoint.id;
         }
 
-        this->frames.push_back(frame);
+        {
+            std::lock_guard<std::mutex> lock(this->framesMutex);
+            this->frames.push_back(frame);
+        }
 
         if (this->GetSize() == this->capaticy)
         {
+            std::lock_guard<std::mutex> lock(this->framesMutex);
             this->frames.pop_front();
         }
     }

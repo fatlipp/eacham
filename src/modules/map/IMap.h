@@ -40,6 +40,7 @@ public:
 
     std::list<Frame> GetFrames() const
     {
+        std::lock_guard<std::mutex> lock(this->framesMutex);
         return frames;
     }
 
@@ -67,6 +68,8 @@ public:
 protected:
     std::list<Frame> frames;
     std::vector<MapPoint> points;
+
+    mutable std::mutex framesMutex;
 };
 
 }

@@ -4,108 +4,73 @@
 #include <tuple>
 #include <opencv2/opencv.hpp>
 
-#include "data_source/IDataSourceCamera.h"
-#include "config/Config.h"
-
-#include <librealsense2/rs.hpp> // Include Intel RealSense Cross Platform API
+#include "data_source/sensor/CameraRealsenseBase.h"
 
 namespace eacham
 {
 
 template<typename T>
-class CameraRealsenseStereo : public IDataSourceCamera<T>
+class CameraRealsenseStereo : public CameraRealsenseBase<T>
 {
 public:
     CameraRealsenseStereo()
-        : isInitialized(false)
-    {
-    }
+        : CameraRealsenseBase<T>(CameraType::STEREO)
+        {
+        }
 
 public:
-    void Initialize(const ConfigCamera& config) override
-    {
-        if (!this->isInitialized)
-        {
-            rs2::config cfg;
-            cfg.enable_stream(RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 30);
-            cfg.enable_stream(RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 30);
-
-            this->profile = pipeline.start(cfg);
-
-            rs2::stream_profile cam_stream = this->profile.get_stream(RS2_STREAM_INFRARED);
-            rs2_intrinsics intrinsics_cam = cam_stream.as<rs2::video_stream_profile>().get_intrinsics();
-            // std::cout << " height = " << intrinsics_cam.height << std::endl;
-            // std::cout << " width = " << intrinsics_cam.width << std::endl;
-            // std::cout << " Model = " << intrinsics_cam.model << std::endl;
-
-            this->cameraMatrix = cv::Mat(1, 5, CV_32F);
-            this->cameraMatrix.at<float>(0, 0) = intrinsics_cam.fx;
-            this->cameraMatrix.at<float>(0, 1) = intrinsics_cam.fy;
-            this->cameraMatrix.at<float>(0, 2) = intrinsics_cam.ppx;
-            this->cameraMatrix.at<float>(0, 3) = intrinsics_cam.ppy;
-            this->cameraMatrix.at<float>(0, 4) = 1.0f / config.scale;
-
-            this->distMatrix = cv::Mat(1, 5, CV_32F);
-            this->distMatrix.at<float>(0, 0) = intrinsics_cam.coeffs[0];
-            this->distMatrix.at<float>(0, 1) = intrinsics_cam.coeffs[1];
-            this->distMatrix.at<float>(0, 2) = intrinsics_cam.coeffs[2];
-            this->distMatrix.at<float>(0, 3) = intrinsics_cam.coeffs[3];
-            this->distMatrix.at<float>(0, 4) = intrinsics_cam.coeffs[4];
-            
-            this->isInitialized = true;
-
-
-            rs2::device selected_device = this->profile.get_device();
-            auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-
-            if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
-            {
-                depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f); // Disable emitter
-            }
-
-        }
-    }
-
     T Get() const override
     {
-        rs2::frameset frames = pipeline.wait_for_frames();
+        rs2::frameset frames = this->pipeline.wait_for_frames();
         rs2::frame ir_frame_left = frames.get_infrared_frame(1);
         rs2::frame ir_frame_right = frames.get_infrared_frame(2);
 
-        cv::Mat imageLeft(cv::Size(640, 480), CV_8UC1, (void*)ir_frame_left.get_data(), cv::Mat::AUTO_STEP);
-        cv::Mat imageRight(cv::Size(640, 480), CV_16U, (void*)ir_frame_right.get_data(), cv::Mat::AUTO_STEP);
+        cv::Mat imageLeft(cv::Size(this->width, this->height), CV_8UC1, (void*)ir_frame_left.get_data(), cv::Mat::AUTO_STEP);
+        cv::Mat imageRight(cv::Size(this->width, this->height), CV_8UC1, (void*)ir_frame_right.get_data(), cv::Mat::AUTO_STEP);
 
-        return {0, imageLeft, imageRight};
+        return {0, imageLeft.clone(), imageRight.clone()};
     }
-public:
-    bool isStereo() const override
+
+protected:
+    rs2::config GetRealsenseConfig(const ConfigCamera& config) const override
     {
-        return true;
-    }
+        rs2::config cfg;
+        cfg.enable_stream(RS2_STREAM_INFRARED, 1, config.width, config.height, RS2_FORMAT_Y8, 30);
+        cfg.enable_stream(RS2_STREAM_INFRARED, 2, config.width, config.height, RS2_FORMAT_Y8, 30);
 
-    bool isRgbd() const override
+        return cfg;
+    }
+    
+    std::tuple<cv::Mat, cv::Mat> GenerateIntrinsics(const ConfigCamera& config) const override
     {
-        return false;
+        rs2::stream_profile cameraStream1 = this->profile.get_stream(RS2_STREAM_INFRARED, 1);
+
+        rs2_intrinsics intrinsics = cameraStream1.as<rs2::video_stream_profile>().get_intrinsics();
+        cv::Mat cameraMatrix = cv::Mat(1, 5, CV_32F);
+        cameraMatrix.at<float>(0, 0) = intrinsics.fx;
+        cameraMatrix.at<float>(0, 1) = intrinsics.fy;
+        cameraMatrix.at<float>(0, 2) = intrinsics.ppx;
+        cameraMatrix.at<float>(0, 3) = intrinsics.ppy;
+
+        rs2::stream_profile cameraStream2 = this->profile.get_stream(RS2_STREAM_INFRARED, 2);
+
+        // Given two streams, use the get_extrinsics_to() function to get the transformation from the stream to the other stream
+        rs2_extrinsics extrinsics = cameraStream2.get_extrinsics_to(cameraStream1);
+        std::cout << "Translation: [" << extrinsics.translation[0] << "," << 
+                                         extrinsics.translation[1] << "," << 
+                                         extrinsics.translation[2] << "]\n";
+
+        cameraMatrix.at<float>(0, 4) = extrinsics.translation[0] * intrinsics.fx;
+        
+        cv::Mat distMatrix = cv::Mat(1, 5, CV_32F);
+        distMatrix.at<float>(0, 0) = intrinsics.coeffs[0];
+        distMatrix.at<float>(0, 1) = intrinsics.coeffs[1];
+        distMatrix.at<float>(0, 2) = intrinsics.coeffs[2];
+        distMatrix.at<float>(0, 3) = intrinsics.coeffs[3];
+        distMatrix.at<float>(0, 4) = intrinsics.coeffs[4];
+
+        return {cameraMatrix, distMatrix};
     }
-
-    cv::Mat GetParameters() const override
-    {
-        return cameraMatrix;
-    }
-
-    cv::Mat GetDistortion() const override
-    {
-        return cv::Mat::zeros(1, 5, CV_32F);
-    }
-
-private:
-    bool isInitialized;
-    rs2::pipeline pipeline;
-    rs2::pipeline_profile profile;
-
-    cv::Mat cameraMatrix;
-    cv::Mat distMatrix;
-
 };
 
 }

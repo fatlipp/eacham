@@ -13,7 +13,9 @@
     "camera": {
         "model": "",
         "type": "RGBD",
-        "scale": 5000
+        "scale": 5000,
+        "width": 0,
+        "height": 0
     },
 
     "odometry": {

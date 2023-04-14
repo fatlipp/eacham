@@ -105,8 +105,8 @@ struct ConfigCamera
 {
     CameraModel model;
     CameraType type;
-    // unsigned width;
-    // unsigned height;
+    unsigned width;
+    unsigned height;
     // unsigned fx;
     // unsigned fy;
     // unsigned cx;
@@ -118,6 +118,8 @@ struct ConfigCamera
         j.at("model").get_to<CameraModel>(value.model);
         j.at("type").get_to<CameraType>(value.type);
         j.at("scale").get_to(value.scale);
+        j.at("width").get_to(value.width);
+        j.at("height").get_to(value.height);
     }
 };
 
