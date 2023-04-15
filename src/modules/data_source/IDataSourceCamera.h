@@ -2,11 +2,14 @@
 
 #include <string>
 #include <tuple>
+#include <future>
+#include <thread>
 #include <opencv2/opencv.hpp>
 
 #include "data_source/IDataSource.h"
 #include "data_source/DataSourceTypes.h"
 #include "config/Config.h"
+#include "types/DataTypes.h"
 
 
 namespace eacham
@@ -18,17 +21,55 @@ class IDataSourceCamera : public IDataSource<T>
 public:
     IDataSourceCamera(const CameraType& type)
         : type(type)
+        , isRunning(false)
+        , dataGot(false)
         {
         }
 
 public:
     virtual void Initialize(const ConfigCamera& config) = 0;
 
-public:
-    virtual cv::Mat GetParameters() const = 0;
-    virtual cv::Mat GetDistortion() const = 0;
+    void Start()
+    {
+        this->isRunning = true;
+        this->cameraThread = std::async(std::launch::async, &IDataSourceCamera<T>::Loop, this);
+    }
+
+    void Stop()
+    {
+        this->isRunning = false;
+    }
 
 public:
+    T Get() const override
+    {
+        while (!this->dataGot)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        }
+
+        std::lock_guard<std::mutex> lock(this->dataMutex);
+        this->dataGot = false;
+
+        return {0, imageLeft.clone(), imageRight.clone()};
+    }
+
+public:
+    cv::Mat GetParameters() const
+    {
+        return this->cameraMatrix;
+    }
+
+    cv::Mat GetDistortion() const
+    {
+        return this->distMatrix;
+    }
+
+    bool isMono() const
+    {
+        return this->type == CameraType::MONO;
+    }
+
     bool isStereo() const
     {
         return this->type == CameraType::STEREO;
@@ -40,7 +81,28 @@ public:
     }
 
 protected:
+    void Loop()
+    {
+        while (this->isRunning)
+        {
+            Process();
+        }
+    }
+
+    virtual void Process() = 0;
+
+protected:
     const CameraType type;
+    cv::Mat cameraMatrix;
+    cv::Mat distMatrix;
+
+    std::atomic<bool> isRunning;
+    std::future<void> cameraThread;
+    mutable std::atomic<bool> dataGot;
+
+    cv::Mat imageLeft;
+    cv::Mat imageRight;
+    mutable std::mutex dataMutex;
 };
 
 }

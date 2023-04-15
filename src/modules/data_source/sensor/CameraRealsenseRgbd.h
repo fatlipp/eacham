@@ -17,21 +17,6 @@ public:
         : CameraRealsenseBase<T>(CameraType::RGBD)
         {
         }
-        
-public:
-    T Get() const override
-    {
-        rs2::frameset frames = this->pipeline.wait_for_frames();
-        rs2::frame ir_frame = frames.first(RS2_STREAM_INFRARED);
-        rs2::frame depth_frame = frames.get_depth_frame();
-        depth_frame = this->thresholdFilter.process(depth_frame);
-        // depth_frame = this->temporalFilter.process(depth_frame);
-
-        cv::Mat imageLeft(cv::Size(this->width, this->height), CV_8UC1, (void*)ir_frame.get_data(), cv::Mat::AUTO_STEP);
-        cv::Mat imageDepth(cv::Size(this->width, this->height), CV_16U, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
-
-        return {0, imageLeft.clone(), imageDepth.clone()};
-    }
 
 public:
     void Initialize(const ConfigCamera& config) override

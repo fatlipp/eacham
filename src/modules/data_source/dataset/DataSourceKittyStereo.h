@@ -38,14 +38,19 @@ public:
 
 public:
     void Initialize(const ConfigCamera& config) override;
+    
+    void Process() override;
 
 public:
-    T Get() const override;
+    Eigen::Matrix4f GetGtPose() const override
+    {
+        while (!this->dataGot)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        }
 
-    void ReadNext() override;
-
-    cv::Mat GetParameters() const override;
-    cv::Mat GetDistortion() const override;
+        return groundTruthPos;
+    }
 
 private:
     const std::string sourcePath;
@@ -53,10 +58,6 @@ private:
     const std::string folderRight;
     const std::string timestampFolder;
     mutable std::ifstream timeFileStream;
-
-    T currentData;
-
-    cv::Mat_<float> cameraMatrix;
 
     mutable unsigned id;
 };
@@ -103,24 +104,34 @@ void DataSourceKittyStereo<T>::Initialize(const ConfigCamera& config)
             }
         }
 
-        cv::Mat proj;
-        cv::Mat rot;
-        cv::Mat trans;
-        cv::decomposeProjectionMatrix(projMat, proj, rot, trans);
-        trans = trans / trans.at<float>(3);
-        std::cout << "proj:\n" << proj << std::endl;
-        std::cout << "rot:\n" << rot << std::endl;
-        std::cout << "trans:\n" << trans.t() << std::endl;
+        // cv::Mat proj;
+        // cv::Mat rot;
+        // cv::Mat trans;
+        // cv::decomposeProjectionMatrix(projMat, proj, rot, trans);
+        // trans = trans / trans.at<float>(3);
+        // std::cout << "proj:\n" << proj << std::endl;
+        // std::cout << "rot:\n" << rot << std::endl;
+        // std::cout << "trans:\n" << trans.t() << std::endl;
 
-        this->cameraMatrix = cv::Mat(1, 5, CV_32F);
-        this->cameraMatrix.at<float>(0, 0) = projMat.at<float>(0, 0);
-        this->cameraMatrix.at<float>(0, 1) = projMat.at<float>(1, 1);
-        this->cameraMatrix.at<float>(0, 2) = projMat.at<float>(0, 2);
-        this->cameraMatrix.at<float>(0, 3) = projMat.at<float>(1, 2);
-        this->cameraMatrix.at<float>(0, 4) = (-projMat.at<float>(0, 3));
-        // this->cameraMatrix.at<float>(0, 4) = (trans.at<float>(0));
+        auto cameraMat = cv::Mat(1, 5, CV_32F);
+        cameraMat.at<float>(0, 0) = projMat.at<float>(0, 0);
+        cameraMat.at<float>(0, 1) = projMat.at<float>(1, 1);
+        cameraMat.at<float>(0, 2) = projMat.at<float>(0, 2);
+        cameraMat.at<float>(0, 3) = projMat.at<float>(1, 2);
+        cameraMat.at<float>(0, 4) = (-projMat.at<float>(0, 3));
 
-        std::cout << "KITTI Stereo cameraMatrix:\n" << this->cameraMatrix << std::endl;
+        auto distMat = cv::Mat(1, 5, CV_32F);
+        distMat.at<float>(0, 0) = 0;
+        distMat.at<float>(0, 1) = 0;
+        distMat.at<float>(0, 2) = 0;
+        distMat.at<float>(0, 3) = 0;
+        distMat.at<float>(0, 4) = 0;
+
+        this->cameraMatrix = cameraMat;
+        this->distMatrix = distMat;
+
+        std::cout << "KITTI Stereo cameraMatrix:\n" << cameraMat << std::endl;
+        std::cout << "KITTI Stereo distMatrix:\n" << distMat << std::endl;
 
         file.close();
     }
@@ -151,10 +162,13 @@ std::string format(const unsigned number)
 }
 
 template<typename T>
-void DataSourceKittyStereo<T>::ReadNext()
+void DataSourceKittyStereo<T>::Process()
 {
-    const auto im1 = cv::imread(folderLeft  + format(id) + ".png");
-    const auto im2 = cv::imread(folderRight + format(id) + ".png");
+    if (this->dataGot)
+    {
+        return;
+    }
+
     double timestamp = -1.0;
 
     if (timeFileStream.is_open())
@@ -162,8 +176,6 @@ void DataSourceKittyStereo<T>::ReadNext()
         timeFileStream >> timestamp;
     }
 
-    currentData = {timestamp, im1.clone(), im2.clone()};
-    
     Eigen::Matrix4f redPos = Eigen::Matrix4f::Identity();
 
     if (this->gtFileStream.is_open())
@@ -173,29 +185,13 @@ void DataSourceKittyStereo<T>::ReadNext()
         this->gtFileStream >> redPos(2, 0) >> redPos(2, 1) >> redPos(2, 2) >> redPos(2, 3);
     }
 
-    this->currentPose = redPos;
+    std::lock_guard<std::mutex> lock(this->dataMutex);
+    this->imageLeft = cv::imread(folderLeft  + format(id) + ".png");
+    this->imageRight = cv::imread(folderRight  + format(id) + ".png");
+    this->groundTruthPos = redPos;
+    this->dataGot = true;
 
     ++id;
 }
-
-template<typename T>
-T DataSourceKittyStereo<T>::Get() const
-{
-    return currentData;
-}
-
-template<typename T>
-cv::Mat DataSourceKittyStereo<T>::GetParameters() const
-{
-    return cameraMatrix;
-}
-
-template<typename T>
-cv::Mat DataSourceKittyStereo<T>::GetDistortion() const
-{
-    return cv::Mat::zeros(1, 5, CV_32F);
-}
-
-
 
 }

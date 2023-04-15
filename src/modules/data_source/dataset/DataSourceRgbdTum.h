@@ -41,13 +41,18 @@ public:
 public:
     void Initialize(const ConfigCamera& config) override;
 
+    void Process() override;
+
 public:
-    T Get() const override;
-
-    void ReadNext() override;
-
-    cv::Mat GetParameters() const override;
-    cv::Mat GetDistortion() const override;
+    Eigen::Matrix4f GetGtPose() const override
+    {
+        while (!this->dataGot)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        }
+        
+        return groundTruthPos;
+    }
 
 private:
     const std::string sourcePath;
@@ -56,9 +61,6 @@ private:
     mutable std::ifstream depthFileStream;
 
     T currentData;
-
-    cv::Mat_<float> cameraMatrix;
-    cv::Mat_<float> distortionMatrix;
 
     mutable unsigned id;
 };
@@ -134,27 +136,35 @@ void DataSourceRgbdTum<T>::Initialize(const ConfigCamera& config)
     // Camera1.k3: 0.0
     // Camera1.k4: 0.0
 
-    this->cameraMatrix = cv::Mat(1, 5, CV_32F);
-    this->cameraMatrix.at<float>(0, 0) = 535.4;
-    this->cameraMatrix.at<float>(0, 1) = 539.2;
-    this->cameraMatrix.at<float>(0, 2) = 320.1;
-    this->cameraMatrix.at<float>(0, 3) = 247.6;
-    this->cameraMatrix.at<float>(0, 4) = 1.0f / 5000.0;
+    auto cameraMat = cv::Mat(1, 5, CV_32F);
+    cameraMat.at<float>(0, 0) = 535.4;
+    cameraMat.at<float>(0, 1) = 539.2;
+    cameraMat.at<float>(0, 2) = 320.1;
+    cameraMat.at<float>(0, 3) = 247.6;
+    cameraMat.at<float>(0, 4) = 1.0f / 5000.0;
 
-    this->distortionMatrix = cv::Mat(1, 5, CV_32F);
-    this->distortionMatrix.at<float>(0, 0) = 0;
-    this->distortionMatrix.at<float>(0, 1) = 0;
-    this->distortionMatrix.at<float>(0, 2) = 0;
-    this->distortionMatrix.at<float>(0, 3) = 0;
-    this->distortionMatrix.at<float>(0, 4) = 0;
+    auto distMat = cv::Mat(1, 5, CV_32F);
+    distMat.at<float>(0, 0) = 0;
+    distMat.at<float>(0, 1) = 0;
+    distMat.at<float>(0, 2) = 0;
+    distMat.at<float>(0, 3) = 0;
+    distMat.at<float>(0, 4) = 0;
 
-    std::cout << "TUM cameraMatrix:\n" << this->cameraMatrix << std::endl;
-    std::cout << "TUM distortionMatrix:\n" << this->distortionMatrix << std::endl;
+    this->cameraMatrix = cameraMat;
+    this->distMatrix = distMat;
+
+    std::cout << "TUM cameraMatrix:\n" << cameraMat << std::endl;
+    std::cout << "TUM distMatrix:\n" << distMat << std::endl;
 }
 
 template<typename T>
-void DataSourceRgbdTum<T>::ReadNext()
+void DataSourceRgbdTum<T>::Process()
 {
+    if (this->dataGot)
+    {
+        return;
+    }
+    
     double timestampRgb = -1.0;
     std::string pathRgb;
 
@@ -172,18 +182,20 @@ void DataSourceRgbdTum<T>::ReadNext()
         depthFileStream >> pathDepth;
     }
 
+    std::lock_guard<std::mutex> lock(this->dataMutex);
     auto imRgb = cv::imread(sourcePath + pathRgb);
     cv::cvtColor(imRgb, imRgb, cv::COLOR_BGR2GRAY);
 
-    auto imDepth = cv::imread(sourcePath + pathDepth, cv::IMREAD_UNCHANGED);
+    this->imageLeft = imRgb;
+    this->imageRight = cv::imread(sourcePath + pathDepth, cv::IMREAD_UNCHANGED);
+    this->groundTruthPos = Eigen::Matrix4f::Identity();
 
-    currentData = {timestampDepth, imRgb, imDepth};
-
-    double timestampGt = -1.0;
-    Eigen::Vector3f position;
-    Eigen::Quaternionf quaternion;
     if (this->gtFileStream.is_open())
     {   
+        double timestampGt = -1.0;
+        Eigen::Vector3f position;
+        Eigen::Quaternionf quaternion;
+
         // TODO: Shit code !!
         while (timestampGt < timestampDepth)
         {
@@ -191,34 +203,15 @@ void DataSourceRgbdTum<T>::ReadNext()
             this->gtFileStream >> position.x() >> position.y() >> position.z();
             this->gtFileStream >> quaternion.x() >> quaternion.y() >> quaternion.z() >> quaternion.w();
         }
+
+        Eigen::Matrix3f matRot = quaternion.toRotationMatrix();
+        this->groundTruthPos.block(0, 0, 3, 3) = matRot;
+        this->groundTruthPos.block(0, 3, 3, 1) = position;
     }
 
-    this->currentPose = Eigen::Matrix4f::Identity();
-    Eigen::Matrix3f matRot = quaternion.toRotationMatrix();
-    this->currentPose.block(0, 0, 3, 3) = matRot;
-    this->currentPose.block(0, 3, 3, 1) = position;
+    this->dataGot = true;
 
     ++id;
 }
-
-template<typename T>
-T DataSourceRgbdTum<T>::Get() const
-{
-    return currentData;
-}
-
-template<typename T>
-cv::Mat DataSourceRgbdTum<T>::GetParameters() const
-{
-    return this->cameraMatrix;
-}
-
-template<typename T>
-cv::Mat DataSourceRgbdTum<T>::GetDistortion() const
-{
-    return this->distortionMatrix;
-}
-
-
 
 }

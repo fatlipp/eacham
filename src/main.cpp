@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     std::unique_ptr<Render> render = std::make_unique<Render>();
     render->SetOnPlayClick([&pipeline]() { pipeline->Play(); });
     render->SetOnStepClick([&pipeline]() { pipeline->Step(); });
-    render->SetOnCloseClick([&pipeline]() { pipeline->Kill(); });
+    render->SetOnCloseClick([&pipeline, &dataSource]() { pipeline->Kill(); dataSource->Stop(); });
 
     if (dynamic_cast<IDataset*>(dataSource.get()) != nullptr)
     {

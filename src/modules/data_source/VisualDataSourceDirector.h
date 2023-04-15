@@ -79,6 +79,7 @@ public:
         if (camera != nullptr)
         {
             camera->Initialize(cameraConfig);
+            camera->Start();
         }
 
         return camera;

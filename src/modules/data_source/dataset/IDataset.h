@@ -27,18 +27,16 @@ public:
         }
     }
 
-    virtual void ReadNext() = 0;
-
     virtual Eigen::Matrix4f GetGtPose() const
     {
-        return currentPose;
+        return this->groundTruthPos;
     }
 
 protected:
     const std::string gtPosePath;
     mutable std::ifstream gtFileStream;
 
-    mutable Eigen::Matrix4f currentPose;
+    mutable Eigen::Matrix4f groundTruthPos;
 };
 
 }

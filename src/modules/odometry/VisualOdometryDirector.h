@@ -28,6 +28,8 @@ namespace eacham
 template<typename T>
 class VisualOdometryDirector
 {
+using camera_t = IDataSourceCamera<T>;
+
 public:
     std::unique_ptr<IVisualOdometry<T>> Build(const camera_t* const camera, const ConfigOdometry& config)
     {

@@ -27,14 +27,14 @@ public:
 protected:
     bool Process() override
     {
-        bool isProcessed = PrepareNextFrame();
+        const auto gtPos = this->dataset->GetGtPose();
 
         if (this->frameId == 0)
         {
-            this->odometry->SetPosition(this->dataset->GetGtPose());
+            this->odometry->SetPosition(gtPos);
         }
 
-        isProcessed = Pipeline<T>::Process();
+        const bool isProcessed = Pipeline<T>::Process();
 
         if (isProcessed)
         {
@@ -42,7 +42,6 @@ protected:
             {   
                 BlockTimer timer("Pipeline::Dataset()");
                 const auto currentPos = this->odometry->GetPosition();
-                const auto gtPos = this->dataset->GetGtPose();
 
                 const Eigen::Matrix4f diff = (currentPos - gtPos);
                 const float diffLen = std::sqrt(diff(0, 3) * diff(0, 3) + 
@@ -56,19 +55,6 @@ protected:
         }
 
         return isProcessed;
-    }
-
-private:
-    bool PrepareNextFrame()
-    {
-        if (this->dataset != nullptr)
-        {
-            this->dataset->ReadNext();
-            
-            return true;
-        }
-
-        return false;
     }
 
 private:
