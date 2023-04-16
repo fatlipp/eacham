@@ -19,14 +19,14 @@ FeatureExtractor::FeatureExtractor(const FeatureExtractorType &type)
             // int  	patchSize = 31, - windows size to BRIEF
             // int  	fastThreshold = 20  - if abs pixel difference larger than this value - potentially corner
             // decrease to get more features
-        this->detector = cv::ORB::create(1500, 1.2f, 8, winSize, 0, 2, cv::ORB::HARRIS_SCORE, winSize, 25);
+        this->detector = cv::ORB::create(1000, 1.1f, 8, winSize, 0, 2, cv::ORB::HARRIS_SCORE, winSize, 30);
         break;
     case FeatureExtractorType::SIFT:
     // (int nfeatures=0, int nOctaveLayers=3, double contrastThreshold=0.04, double edgeThreshold=10, double sigma=1.6)
-        this->detector = cv::SIFT::create(1500, 3, 0.04, 10, 1.6);
+        this->detector = cv::SIFT::create(1000, 3, 0.04, 10, 1.6);
         break;
     case FeatureExtractorType::SURF:
-        this->detector = cv::xfeatures2d::SURF::create(1500);
+        this->detector = cv::xfeatures2d::SURF::create(1000);
         break;
     }
 }

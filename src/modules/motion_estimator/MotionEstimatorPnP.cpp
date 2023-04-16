@@ -72,7 +72,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorPnP::Estimate(const Frame& 
     //     cv::imshow("ME: Matches", img_match);
     // }
 
-    std::cout << "matches: " << matches << std::endl;
+    std::cout << "MotionEstimatorPnP() Good matches: " << matches << std::endl;
 
     Eigen::Affine3f motion = Eigen::Affine3f::Identity();
     unsigned inliersCount = 0;

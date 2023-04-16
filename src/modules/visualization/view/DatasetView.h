@@ -17,9 +17,9 @@ public:
     }
 
 public:
-    void Draw() override
+    void Draw(pangolin::OpenGlRenderState& state) override
     {   
-        view_tools::DrawCamera(dataset->GetGtPose(), Eigen::Vector3f{0, 1, 0});
+        view_tools::DrawCamera(std::get<1>(dataset->GetGtPose()), Eigen::Vector3f{0, 1, 0});
     }
 
 private:

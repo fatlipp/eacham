@@ -41,6 +41,7 @@ void Render::Loop()
     pangolin::CreatePanel("ui").SetBounds(0.0, 1.0, 0.0, pangolin::Attach::Pix(UI_WIDTH));
     pangolin::Var<bool> buttonPlay("ui.Play", false, false);
     pangolin::Var<bool> buttonStep("ui.Step", false, false);
+    pangolin::Var<bool> buttonReset("ui.Reset", false, false);
     pangolin::Var<bool> buttonClose("ui.Close", false, false);
 
     // Define Projection and initial ModelView matrix
@@ -72,6 +73,10 @@ void Render::Loop()
             {
                 onStepClick();
             }
+            if (pangolin::Pushed(buttonReset) && onResetClick != nullptr)
+            {
+                onResetClick();
+            }
             if (pangolin::Pushed(buttonClose) && onCloseClick != nullptr)
             {
                 onCloseClick();
@@ -81,7 +86,7 @@ void Render::Loop()
         displayCam.Activate(cameraState);
         glScalef(-1.f, -1.f, 1.f);
         
-        Draw();
+        Draw(cameraState);
 
         pangolin::FinishFrame();
 

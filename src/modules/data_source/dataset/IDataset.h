@@ -27,10 +27,7 @@ public:
         }
     }
 
-    virtual Eigen::Matrix4f GetGtPose() const
-    {
-        return this->groundTruthPos;
-    }
+    virtual std::tuple<double, Eigen::Matrix4f> GetGtPose() const = 0;
 
 protected:
     const std::string gtPosePath;

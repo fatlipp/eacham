@@ -9,6 +9,8 @@ namespace eacham
 {
     void LocalMap::AddFrame(const Frame &frame)
     {
+        std::lock_guard<std::mutex> lock(this->globalMutex);
+        
         static unsigned ID = 1;
         const Eigen::Matrix4f framePos = frame.GetPosition();
 

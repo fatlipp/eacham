@@ -27,11 +27,11 @@ public:
         this->drawables.emplace_back(std::move(drawable));
     }
 
-    void Draw()
+    void Draw(pangolin::OpenGlRenderState& state)
     {
         for (auto& drawable : drawables)
         {
-            drawable->Draw();
+            drawable->Draw(state);
         }    
     }
 

@@ -12,9 +12,9 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
 {
     const auto [features1, descriptor1] = extractor->GetFeatures(std::get<1>(data));
     
-    std::cout << "features1.size() = " << features1.size() << std::endl;
+    std::cout << "STEREO features1.size() = " << features1.size() << std::endl;
 
-    if (features1.size() < 50)
+    if (features1.size() < 30)
     {
         return {};
     }
@@ -22,9 +22,9 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
 
     const auto [features2, descriptor2] = extractor->GetFeatures(std::get<2>(data)); 
 
-    std::cout << "features2.size() = " << features2.size() << std::endl;
+    std::cout << "STEREO features2.size() = " << features2.size() << std::endl;
 
-    if (features2.size() < 50)
+    if (features2.size() < 30)
     {
         return {};
     }
@@ -32,16 +32,14 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
     std::vector<std::vector<cv::DMatch>> matches;
     this->matcher->knnMatch(descriptor1, descriptor2, matches, 2);
 
-    std::cout << "matches.size() = " << matches.size() << std::endl;
+    std::cout << "STEREO matches.size() = " << matches.size() << std::endl;
 
-    if (matches.size() < 40)
+    if (matches.size() < 30)
     {
         return {};
     }
 
     Frame frame { std::get<0>(data) };
-
-    int pointId = 0;
 
     for (const auto& m : matches)
     {
@@ -54,15 +52,10 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
 
             if (pos3d.z > 0.10f && pos3d.z < 70.0f)
             {
-                frame.AddPoint(pointId++, pos3d, features1[id1], descriptor1.row(id1));
+                frame.AddPoint(pos3d, features1[id1], descriptor1.row(id1));
             }
         }
     }
-    std::cout << "pointId = " << pointId << std::endl;
-
-
-    cv::imshow("im1", std::get<1>(data));
-    cv::waitKey(1);
 
     return frame;
 }

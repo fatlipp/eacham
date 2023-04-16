@@ -14,23 +14,25 @@ namespace eacham
 {
 
 template<typename T>
-class VisualOdometryView : public IDrawable
+class VisualOdometryF2MView : public IDrawable
 {
 public:
-    VisualOdometryView(IFrameToMapOdometry<T>* odom)
+    VisualOdometryF2MView(IFrameToMapOdometry<T>* odom)
         : odometry(odom)
     {
     }
 
 public:
-    void Draw() override
+    void Draw(pangolin::OpenGlRenderState& state) override
     {   
         const auto frames = odometry->GetLocalMap()->GetFrames();
 
-        Eigen::Matrix4f prevPos;
-
         unsigned num = 0;
 
+        Eigen::Matrix4f zeroPos = Eigen::Matrix4f::Identity();
+        Eigen::Matrix4f latestPos = Eigen::Matrix4f::Identity();
+        view_tools::DrawCamera(zeroPos, Eigen::Vector3f{1, 1, 1});
+        
         for (const auto& frame : frames)
         {
             const Eigen::Vector3f color = (num == frames.size() - 1) ? Eigen::Vector3f{1, 0, 0} : Eigen::Vector3f{1, 1, 0};
@@ -44,7 +46,7 @@ public:
                 glColor3f(color.x(), color.y(), color.z());
                 glLineWidth(3);
                 glVertex3f(framePos(0, 3), framePos(1, 3), framePos(2, 3));
-                glVertex3f(prevPos(0, 3), prevPos(1, 3), prevPos(2, 3));
+                glVertex3f(latestPos(0, 3), latestPos(1, 3), latestPos(2, 3));
                 glEnd();
             }
 
@@ -62,9 +64,17 @@ public:
 
             glEnd();
 
-            prevPos = framePos;
+            latestPos = framePos;
             ++num;
         }
+
+        pangolin::OpenGlMatrix followPoint;
+        followPoint.SetIdentity();
+        followPoint.m[12] = latestPos(0, 3);
+        followPoint.m[13] = latestPos(1, 3);
+        followPoint.m[14] = latestPos(2, 3);
+
+        state.Follow(followPoint);
     }
 
 private:

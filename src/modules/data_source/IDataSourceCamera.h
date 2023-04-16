@@ -21,8 +21,9 @@ class IDataSourceCamera : public IDataSource<T>
 public:
     IDataSourceCamera(const CameraType& type)
         : type(type)
+        , timestamp(0)
         , isRunning(false)
-        , dataGot(false)
+        , dataUpdated(false)
         {
         }
 
@@ -43,15 +44,15 @@ public:
 public:
     T Get() const override
     {
-        while (!this->dataGot)
+        while (!this->dataUpdated)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(3));
         }
 
         std::lock_guard<std::mutex> lock(this->dataMutex);
-        this->dataGot = false;
+        this->dataUpdated = false;
 
-        return {0, imageLeft.clone(), imageRight.clone()};
+        return {this->timestamp, this->imageLeft.clone(), this->imageRight.clone()};
     }
 
 public:
@@ -98,11 +99,12 @@ protected:
 
     std::atomic<bool> isRunning;
     std::future<void> cameraThread;
-    mutable std::atomic<bool> dataGot;
 
+    double timestamp;
     cv::Mat imageLeft;
     cv::Mat imageRight;
     mutable std::mutex dataMutex;
+    mutable std::atomic<bool> dataUpdated;
 };
 
 }

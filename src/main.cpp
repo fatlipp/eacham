@@ -7,7 +7,8 @@
 #include "pipeline/Pipeline.h"
 #include "pipeline/PipelineDataset.h"
 #include "visualization/Render.h"
-#include "visualization/view/VisualOdometryView.h"
+#include "visualization/view/VisualOdometryF2MView.h"
+#include "visualization/view/VisualOdometryF2FView.h"
 #include "visualization/view/DatasetView.h"
 
 using namespace eacham;
@@ -58,6 +59,7 @@ int main(int argc, char* argv[])
     std::unique_ptr<Render> render = std::make_unique<Render>();
     render->SetOnPlayClick([&pipeline]() { pipeline->Play(); });
     render->SetOnStepClick([&pipeline]() { pipeline->Step(); });
+    render->SetOnResetClick([&pipeline]() { pipeline->Reset(); });
     render->SetOnCloseClick([&pipeline, &dataSource]() { pipeline->Kill(); dataSource->Stop(); });
 
     if (dynamic_cast<IDataset*>(dataSource.get()) != nullptr)
@@ -71,10 +73,20 @@ int main(int argc, char* argv[])
         pipeline = std::make_unique<Pipeline<T>>(config.GetGeneral());
     }
 
-    auto vo = dynamic_cast<IFrameToMapOdometry<T>*>(odometry.get()) ;
-    if (vo != nullptr)
     {
-        render->Add(std::make_unique<VisualOdometryView<T>>(vo));
+        auto vo = dynamic_cast<IFrameToMapOdometry<T>*>(odometry.get()) ;
+        if (vo != nullptr)
+        {
+            render->Add(std::make_unique<VisualOdometryF2MView<T>>(vo));
+        }
+    }
+
+    {
+        auto vo = dynamic_cast<IFrameToFrameOdometry<T>*>(odometry.get()) ;
+        if (vo != nullptr)
+        {
+            render->Add(std::make_unique<VisualOdometryF2FView<T>>(vo));
+        }
     }
     
     pipeline->SetDataSource(std::move(dataSource));

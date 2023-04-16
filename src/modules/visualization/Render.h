@@ -34,6 +34,11 @@ public:
         this->onStepClick = onStepClick;
     }
 
+    void SetOnResetClick(std::function<void()> onResetClick)
+    {
+        this->onResetClick = onResetClick;
+    }
+
     void SetOnCloseClick(std::function<void()> onCloseClick)
     {
         this->onCloseClick = onCloseClick;
@@ -49,6 +54,7 @@ private:
 
     std::function<void()> onPlayClick;
     std::function<void()> onStepClick;
+    std::function<void()> onResetClick;
     std::function<void()> onCloseClick;
 };
 

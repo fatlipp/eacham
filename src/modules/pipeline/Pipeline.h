@@ -20,6 +20,7 @@ public:
         , maxFrames(config.maxFrames)
         , isPlay(false)
         , isStep(false)
+        , isReset(false)
         , isRunning(false)
     {
     }
@@ -90,28 +91,61 @@ public:
         this->isStep = true;
     }
 
+    void Reset()
+    {
+        this->isReset = true;
+    }
+
 protected:
     virtual bool Process()
     {
-        {
-            std::cout << "frameId: " << this->frameId << std::endl;
+        std::cout << "frameId: " << this->frameId << std::endl;
 
+        bool isProcessed  = true;
+        {
+            BlockTimer timer("Pipeline::Process()");
+
+            const auto data = this->dataSource->Get();
+
+            static int lostCount = 0;
+
+            isProcessed = this->odometry->Process(data);
+
+            if (!isProcessed)
             {
-                BlockTimer timer("Pipeline::Process()");
-                if (!this->odometry->Process(this->dataSource->Get()))
+                ++lostCount;
+
+                if (lostCount > 10)
                 {
                     this->isPlay = false;
                 }
             }
-
-            cv::waitKey(10);
-
-            std::cout << "Current pos:\n" << this->odometry->GetPosition() << std::endl;
+            else
+            {
+                lostCount = 0;
+            }
         }
+
+        cv::waitKey(1);
+
+        std::cout << "Current pos:\n" << this->odometry->GetPosition() << std::endl;
 
         ++this->frameId;
 
-        return true;
+        return isProcessed;
+    }
+
+    virtual void CheckReset()
+    {
+        if (this->isReset)
+        {
+            Pause();
+
+            this->odometry->Reset();
+
+            this->frameId = 0;
+            this->isReset = false;
+        }
     }
 
 private:
@@ -133,6 +167,8 @@ private:
                     Pause();
                 }
             }
+            
+            CheckReset();
         }
     }
 
@@ -149,6 +185,7 @@ protected:
 
     std::atomic<bool> isPlay;
     std::atomic<bool> isStep;
+    std::atomic<bool> isReset;
 
     std::function<void()> onProcessComplete;
 };

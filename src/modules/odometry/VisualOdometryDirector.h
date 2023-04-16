@@ -7,6 +7,7 @@
 #include <pcl/common/common.h>
 
 #include "odometry/IVisualOdometry.h"
+#include "odometry/FrameToFrameOdometry.h"
 #include "odometry/FrameToMapOdometry.h"
 #include "config/Config.h"
 #include "tools/Tools3d.h"
@@ -41,7 +42,7 @@ public:
         switch (config.odometryType)
         {
             case OdometryType::FRAME_TO_FRAME:
-                odometry = std::make_unique<FrameToMapOdometry<T>>();
+                odometry = std::make_unique<FrameToFrameOdometry<T>>();
                 break;
             case OdometryType::FRAME_TO_MAP:
                 odometry = std::make_unique<FrameToMapOdometry<T>>();

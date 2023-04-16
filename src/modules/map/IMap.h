@@ -62,13 +62,21 @@ public:
 public:
     virtual void AddFrame(const Frame &frame)
     {
-        frames.push_back(frame);
+        this->frames.push_back(frame);
+    }
+
+    virtual void Reset()
+    {
+        std::lock_guard<std::mutex> lock(this->globalMutex);
+        this->frames.clear();
+        this->points.clear();
     }
 
 protected:
     std::list<Frame> frames;
     std::vector<MapPoint> points;
 
+    mutable std::mutex globalMutex;
     mutable std::mutex framesMutex;
 };
 

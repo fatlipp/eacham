@@ -20,6 +20,12 @@ public:
 
 public:
     virtual bool Process(const T &data) = 0;
+
+    virtual void Reset()
+    {
+        this->odometry = Eigen::Matrix4f::Identity();
+        this->position = Eigen::Matrix4f::Identity();
+    }
     
     virtual Eigen::Matrix4f GetOdometry() const
     {

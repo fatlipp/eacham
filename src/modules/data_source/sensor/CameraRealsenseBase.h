@@ -77,6 +77,8 @@ protected:
                 break;
         }
 
+        this->timestamp = 0; // TODO
+
         SaveData(frameLeft, frameRight);
     }
 
@@ -98,7 +100,7 @@ protected:
                 break;
         }
 
-        this->dataGot = true;
+        this->dataUpdated = true;
     }
 
 protected:

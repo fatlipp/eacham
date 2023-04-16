@@ -24,6 +24,18 @@ public:
 namespace eacham
 {
 
+Frame GenerateFrameFromMap(IMap *map)
+{
+    Frame result = map->GetLatestFrame();
+
+    for (const auto& frame : map->GetFrames())
+    {
+        result.AddPointDatas(frame.GetPointsData());
+    }
+
+    return result;
+}
+
 template<typename T>
 bool FrameToMapOdometry<T>::Process(const T &data)
 {
@@ -33,7 +45,7 @@ bool FrameToMapOdometry<T>::Process(const T &data)
     {
         if (this->localMap->GetSize() > 0)
         {
-            const auto& latestFrame = this->localMap->GetLatestFrame();
+            const auto latestFrame = GenerateFrameFromMap(this->localMap.get());
             const auto [odom, inliers] = this->motionEstimator->Estimate(latestFrame, frame);
 
             if (inliers == 0)
@@ -49,14 +61,17 @@ bool FrameToMapOdometry<T>::Process(const T &data)
 
         frame.SetOdometry(this->odometry);
         frame.SetPosition(this->position);
-
-        this->localMap->AddFrame(frame);
-
-        if (this->localOptimizer != nullptr)
+        
         {
-            // this->localOptimizer->Optimize(this->localMap.get());
+            std::lock_guard<std::mutex> lock(this->syncMutex);
+            this->localMap->AddFrame(frame);
 
-            this->SetPosition(this->localMap->GetLatestFrame().GetPosition());
+            if (this->localOptimizer != nullptr)
+            {
+                // this->localOptimizer->Optimize(this->localMap.get());
+
+                this->SetPosition(this->localMap->GetLatestFrame().GetPosition());
+            }
         }
     }
     else

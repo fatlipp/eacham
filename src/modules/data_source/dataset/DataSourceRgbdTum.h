@@ -8,19 +8,17 @@
 #include <istream>
 #include <fstream>
 
-#include "data_source/IDataSourceCamera.h"
-#include "data_source/dataset/IDataset.h"
+#include "data_source/dataset/IDatasetVisual.h"
 
 namespace eacham
 {
 
 template<typename T>
-class DataSourceRgbdTum : public IDataSourceCamera<T>, public IDataset
+class DataSourceRgbdTum : public IDatasetVisual<T>
 {
 public:
     DataSourceRgbdTum(const std::string &sourcePath)
-        : IDataSourceCamera<T>(CameraType::RGBD)
-        , IDataset(sourcePath + "/groundtruth.txt")
+        : IDatasetVisual<T>(CameraType::RGBD, sourcePath + "/groundtruth.txt")
         , sourcePath(sourcePath + "/")
     {
     }
@@ -43,32 +41,31 @@ public:
 
     void Process() override;
 
-public:
-    Eigen::Matrix4f GetGtPose() const override
-    {
-        while (!this->dataGot)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(3));
-        }
-        
-        return groundTruthPos;
-    }
-
 private:
     const std::string sourcePath;
 
     mutable std::ifstream rgbFileStream;
     mutable std::ifstream depthFileStream;
-
-    T currentData;
-
-    mutable unsigned id;
 };
 
 }
 
 namespace eacham
 {
+
+void IgnoreCaption(std::ifstream& stream)
+{
+    if (!stream.is_open())
+    {
+        return;
+    }
+
+    while (stream.peek() == '#')
+    {
+        std::string tmp;
+        std::getline(stream, tmp);
+    }
+}
 
 template<typename T>
 void DataSourceRgbdTum<T>::Initialize(const ConfigCamera& config)
@@ -79,23 +76,9 @@ void DataSourceRgbdTum<T>::Initialize(const ConfigCamera& config)
     this->rgbFileStream.open(folderRgb, std::ios::in);
     this->depthFileStream.open(folderDepth, std::ios::in);
 
-    while (this->rgbFileStream.peek() == '#')
-    {
-        std::string tmp;
-        std::getline(this->rgbFileStream, tmp);
-    }
-
-    while (this->depthFileStream.peek() == '#')
-    {
-        std::string tmp;
-        std::getline(this->depthFileStream, tmp);
-    }
-
-    while (this->gtFileStream.peek() == '#')
-    {
-        std::string tmp;
-        std::getline(this->gtFileStream, tmp);
-    }
+    IgnoreCaption(this->rgbFileStream);
+    IgnoreCaption(this->depthFileStream);
+    IgnoreCaption(this->gtFileStream);
 
     std::cout << "sourcePath: " << this->sourcePath << std::endl;
     std::cout << "folderRgb: " << folderRgb << std::endl;
@@ -160,58 +143,60 @@ void DataSourceRgbdTum<T>::Initialize(const ConfigCamera& config)
 template<typename T>
 void DataSourceRgbdTum<T>::Process()
 {
-    if (this->dataGot)
+    if (this->dataUpdated)
+    {
+        return;
+    }
+
+    if (!this->rgbFileStream.is_open() || !this->depthFileStream.is_open() || !this->gtFileStream.is_open())
     {
         return;
     }
     
-    double timestampRgb = -1.0;
+    // read data
+    double timestamp = -1.0;
     std::string pathRgb;
+    rgbFileStream >> timestamp;
+    rgbFileStream >> pathRgb;
 
-    if (rgbFileStream.is_open())
-    {
-        rgbFileStream >> timestampRgb;
-        rgbFileStream >> pathRgb;
-    }
-
-    double timestampDepth = -1.0;
     std::string pathDepth;
-    if (depthFileStream.is_open())
-    {
-        depthFileStream >> timestampDepth;
-        depthFileStream >> pathDepth;
-    }
+    depthFileStream >> timestamp;
+    depthFileStream >> pathDepth;
 
-    std::lock_guard<std::mutex> lock(this->dataMutex);
     auto imRgb = cv::imread(sourcePath + pathRgb);
     cv::cvtColor(imRgb, imRgb, cv::COLOR_BGR2GRAY);
+    auto imDepth = cv::imread(sourcePath + pathDepth, cv::IMREAD_UNCHANGED);
+    
+    Eigen::Vector3f position;
+    Eigen::Quaternionf quaternion;
 
-    this->imageLeft = imRgb;
-    this->imageRight = cv::imread(sourcePath + pathDepth, cv::IMREAD_UNCHANGED);
-    this->groundTruthPos = Eigen::Matrix4f::Identity();
-
-    if (this->gtFileStream.is_open())
-    {   
-        double timestampGt = -1.0;
-        Eigen::Vector3f position;
-        Eigen::Quaternionf quaternion;
-
-        // TODO: Shit code !!
-        while (timestampGt < timestampDepth)
-        {
-            this->gtFileStream >> timestampGt;
-            this->gtFileStream >> position.x() >> position.y() >> position.z();
-            this->gtFileStream >> quaternion.x() >> quaternion.y() >> quaternion.z() >> quaternion.w();
-        }
-
-        Eigen::Matrix3f matRot = quaternion.toRotationMatrix();
-        this->groundTruthPos.block(0, 0, 3, 3) = matRot;
-        this->groundTruthPos.block(0, 3, 3, 1) = position;
+    // TODO: Shit code !!
+    double timestampGt = -1.0;
+    while (timestampGt < timestamp)
+    {
+        this->gtFileStream >> timestampGt;
+        this->gtFileStream >> position.x() >> position.y() >> position.z();
+        this->gtFileStream >> quaternion.x() >> quaternion.y() >> quaternion.z() >> quaternion.w();
     }
 
-    this->dataGot = true;
+    // update data
+    std::lock_guard<std::mutex> lock(this->dataMutex);
 
-    ++id;
+    this->imageLeft = imRgb;
+    this->imageRight = imDepth;
+    this->timestamp = timestamp;
+
+    this->groundTruthPos = Eigen::Matrix4f::Identity();
+    this->groundTruthPos.block(0, 0, 3, 3) = quaternion.toRotationMatrix();
+    this->groundTruthPos.block(0, 3, 3, 1) = position;
+
+    if (!this->datasetUpdated)
+    {
+        this->timestampOld = this->timestamp;
+        this->groundTruthPosOld = this->groundTruthPos;
+    }
+
+    this->dataUpdated = true;
 }
 
 }

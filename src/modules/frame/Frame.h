@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types/DataTypes.h"
+#include "tools/Tools3d.h"
 
 #include <opencv2/core.hpp>
 #include <eigen3/Eigen/Core>
@@ -77,9 +78,18 @@ public:
         return timestamp;
     }
 
-    void AddPoint(const int pointId, const cv::Point3f& position3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
+    void AddPoint(const cv::Point3f& position3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
     {
-        pointsData.push_back({keypoint, position3d, descriptor.clone()});
+        this->pointsData.push_back({keypoint, position3d, descriptor.clone()});
+    }
+
+    void AddPointDatas(const std::vector<PointData> &data)
+    {
+        for (const auto& dd : data)
+        {
+            AddPoint(tools::transformPoint3d(dd.position3d, this->position), dd.keypoint, dd.descriptor);
+        }
+        // this->pointsData.insert(this->pointsData.end(), data.begin(), data.end());
     }
 
     void SetOdometry(const Eigen::Matrix4f &odom) 
