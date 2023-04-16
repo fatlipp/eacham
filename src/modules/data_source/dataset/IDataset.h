@@ -10,15 +10,12 @@
 namespace eacham
 {
 
-template<typename T>
 class IDataset
 {
 public:
     IDataset(const std::string& gtPosePath)
         : gtPosePath(gtPosePath)
     {
-        std::cout << "gtPosePath: " << gtPosePath << std::endl;
-
         gtFileStream.open(gtPosePath, std::ios::in);
     }
 
@@ -30,18 +27,13 @@ public:
         }
     }
 
-    virtual void ReadNext() = 0;
-
-    virtual Eigen::Matrix4f GetGtPose() const
-    {
-        return currentPose;
-    }
+    virtual std::tuple<double, Eigen::Matrix4f> GetGtPose() const = 0;
 
 protected:
     const std::string gtPosePath;
     mutable std::ifstream gtFileStream;
 
-    mutable Eigen::Matrix4f currentPose;
+    mutable Eigen::Matrix4f groundTruthPos;
 };
 
 }

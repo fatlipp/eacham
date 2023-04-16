@@ -8,6 +8,8 @@
 #include "data_source/DataSourceTypes.h"
 #include "motion_estimator/MotionEstimatorType.h"
 #include "features/FeatureExtractorType.h"
+#include "odometry/OdometryType.h"
+
 
 namespace eacham
 {
@@ -18,14 +20,22 @@ NLOHMANN_JSON_SERIALIZE_ENUM(DataSourceType, {
 })
 
 NLOHMANN_JSON_SERIALIZE_ENUM(DatasetType, {
-    {DatasetType::TUM_RGBD, "TUM_RGBD"},
-    {DatasetType::KITTI_STEREO, "KITTI_STEREO"},
+    {DatasetType::TUM, "TUM"},
+    {DatasetType::KITTI, "KITTI"},
 })
 
 NLOHMANN_JSON_SERIALIZE_ENUM(SensorType, {
-    {SensorType::REALSENSE_RGBD, "REALSENSE_RGBD"},
-    {SensorType::REALSENSE_STEREO, "REALSENSE_STEREO"},
-    {SensorType::REALSENSE_MONO, "REALSENSE_MONO"},
+    {SensorType::CAMERA, "CAMERA"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(CameraModel, {
+    {CameraModel::REALSENSE, "REALSENSE"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(CameraType, {
+    {CameraType::RGBD, "RGBD"},
+    {CameraType::MONO, "MONO"},
+    {CameraType::STEREO, "STEREO"},
 })
 
 NLOHMANN_JSON_SERIALIZE_ENUM(FeatureExtractorType, {
@@ -39,6 +49,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MotionEstimatorType, {
     {MotionEstimatorType::PNP, "PNP"},
 })
 
+NLOHMANN_JSON_SERIALIZE_ENUM(OdometryType, {
+    {OdometryType::FRAME_TO_FRAME, "F2F"},
+    {OdometryType::FRAME_TO_MAP, "F2M"},
+    {OdometryType::OPT, "OPT"}
+})
+
 }
 
 namespace eacham
@@ -48,9 +64,28 @@ struct ConfigGeneral
 {
     int maxFrames;
 
+    DataSourceType sourceType;
+    SensorType sensorType;
+
     friend void from_json(const nlohmann::json& j, ConfigGeneral& value)
     {
         j.at("maxFrames").get_to(value.maxFrames);
+        j.at("source_type").get_to<DataSourceType>(value.sourceType);
+        j.at("sensor_type").get_to<SensorType>(value.sensorType);
+    }
+};
+
+struct ConfigOdometry
+{
+    FeatureExtractorType featureExtractorType;
+    MotionEstimatorType motionEstimatorType;
+    OdometryType odometryType;
+
+    friend void from_json(const nlohmann::json& j, ConfigOdometry& value)
+    {
+        j.at("featureExtractorType").get_to<FeatureExtractorType>(value.featureExtractorType);
+        j.at("motionEstimatorType").get_to<MotionEstimatorType>(value.motionEstimatorType);
+        j.at("odometryType").get_to<OdometryType>(value.odometryType);
     }
 };
 
@@ -66,46 +101,25 @@ struct ConfigDataset
     }
 };
 
-struct ConfigSensor
+struct ConfigCamera
 {
-    SensorType type;
+    CameraModel model;
+    CameraType type;
+    unsigned width;
+    unsigned height;
+    // unsigned fx;
+    // unsigned fy;
+    // unsigned cx;
+    // unsigned cy;
+    float scale;
 
-    friend void from_json(const nlohmann::json& j, ConfigSensor& value)
+    friend void from_json(const nlohmann::json& j, ConfigCamera& value)
     {
-        j.at("type").get_to<SensorType>(value.type);
-    }
-};
-
-struct ConfigSource
-{
-    DataSourceType type;
-    ConfigDataset configDataset;
-    ConfigSensor configSensor;
-
-    friend void from_json(const nlohmann::json& j, ConfigSource& value)
-    {
-        j.at("type").get_to<DataSourceType>(value.type);
-
-        if (value.type == DataSourceType::DATASET)
-        {
-            j.at("dataset").get_to<ConfigDataset>(value.configDataset);
-        }
-        else if (value.type == DataSourceType::SENSOR)
-        {
-            j.at("sensor").get_to<ConfigSensor>(value.configSensor);
-        }
-    }
-};
-
-struct ConfigOdometry
-{
-    FeatureExtractorType featureExtractorType;
-    MotionEstimatorType motionEstimatorType;
-
-    friend void from_json(const nlohmann::json& j, ConfigOdometry& value)
-    {
-        j.at("featureExtractorType").get_to<FeatureExtractorType>(value.featureExtractorType);
-        j.at("motionEstimatorType").get_to<MotionEstimatorType>(value.motionEstimatorType);
+        j.at("model").get_to<CameraModel>(value.model);
+        j.at("type").get_to<CameraType>(value.type);
+        j.at("scale").get_to(value.scale);
+        j.at("width").get_to(value.width);
+        j.at("height").get_to(value.height);
     }
 };
 
@@ -126,22 +140,17 @@ public:
         {
             nlohmann::json data = nlohmann::json::parse(configStream);
             this->general = data["general"].get<ConfigGeneral>();
-            this->source = data["source"].get<ConfigSource>();
             this->odometry = data["odometry"].get<ConfigOdometry>();
 
-            // Print the values
-            std::cout << "general: " << std::endl;
-            std::cout << "-maxFrames: " << general.maxFrames << std::endl;
-            
-            std::cout << "source: " << std::endl;
-            std::cout << "-type: " << static_cast<int>(source.type) << std::endl;
-            std::cout << "dataset: " << std::endl;
-            std::cout << "-type: " << static_cast<int>(this->source.configDataset.type) << std::endl;
-            std::cout << "-path: " << this->source.configDataset.path << std::endl;
-            
-            std::cout << "odometry: " << std::endl;
-            std::cout << "-featureExtractorType: " << static_cast<int>(odometry.featureExtractorType) << std::endl;
-            std::cout << "-motionEstimatorType: " << static_cast<int>(odometry.motionEstimatorType) << std::endl;
+            if (this->general.sourceType == DataSourceType::DATASET)
+            {
+                this->dataset = data["dataset"].get<ConfigDataset>();
+            }
+
+            if (this->general.sensorType == SensorType::CAMERA)
+            {
+                this->camera = data["camera"].get<ConfigCamera>();
+            }
 
             configStream.close();
         }
@@ -160,22 +169,28 @@ public:
         return general;
     }
 
-    const ConfigSource& GetSource() const
-    {
-        return source;
-    }
-
     const ConfigOdometry& GetOdometry() const
     {
         return odometry;
+    }
+
+    const ConfigDataset& GetDataset() const
+    {
+        return dataset;
+    }
+
+    const ConfigCamera& GetCamera() const
+    {
+        return camera;
     }
 
 private:
     const std::string confidPath;
 
     ConfigGeneral general;
-    ConfigSource source;
     ConfigOdometry odometry;
+    ConfigDataset dataset;
+    ConfigCamera camera;
 
 };
 

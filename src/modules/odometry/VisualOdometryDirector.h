@@ -6,7 +6,9 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
 
-#include "odometry/IFrameToMapOdometry.h"
+#include "odometry/IVisualOdometry.h"
+#include "odometry/FrameToFrameOdometry.h"
+#include "odometry/FrameToMapOdometry.h"
 #include "config/Config.h"
 #include "tools/Tools3d.h"
 #include "types/DataTypes.h"
@@ -15,7 +17,6 @@
 #include "frame/IFrameCreator.h"
 #include "frame/FrameCreatorRgbd.h"
 #include "frame/FrameCreatorStereo.h"
-#include "odometry/VisualOdometry.h"
 #include "optimization/LocalFramesOptimizer.h"
 #include "motion_estimator/MotionEstimatorPnP.h"
 #include "motion_estimator/MotionEstimatorOpt.h"
@@ -25,15 +26,32 @@
 namespace eacham
 {
 
-// template<typename T>
+template<typename T>
 class VisualOdometryDirector
 {
+using camera_t = IDataSourceCamera<T>;
+
 public:
-    std::unique_ptr<IFrameToMapOdometry<stereodata_t>> Build(const camera_t* const camera, const ConfigOdometry& config)
+    std::unique_ptr<IVisualOdometry<T>> Build(const camera_t* const camera, const ConfigOdometry& config)
     {
         auto featureMatcher = BuildFeatureMatcher(config.featureExtractorType);
 
-        auto odometry = std::make_unique<VisualOdometry<stereodata_t>>();
+        std::unique_ptr<IVisualOdometry<T>> odometry;
+
+        // TODO: different visual odometry types
+        switch (config.odometryType)
+        {
+            case OdometryType::FRAME_TO_FRAME:
+                odometry = std::make_unique<FrameToFrameOdometry<T>>();
+                break;
+            case OdometryType::FRAME_TO_MAP:
+                odometry = std::make_unique<FrameToMapOdometry<T>>();
+                break;
+            case OdometryType::OPT:
+                odometry = std::make_unique<FrameToMapOdometry<T>>();
+                break;
+        }
+
         odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.featureExtractorType));
         odometry->SetMotionEstimator(BuildMotionEstimator(camera, config.motionEstimatorType, featureMatcher));
         // odometry->SetLocalOptimizer(BuildLocalOptimizer(camera));

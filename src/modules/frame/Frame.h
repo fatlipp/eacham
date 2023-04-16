@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types/DataTypes.h"
+#include "tools/Tools3d.h"
 
 #include <opencv2/core.hpp>
 #include <eigen3/Eigen/Core>
@@ -8,27 +9,11 @@
 namespace eacham
 {
 
-// struct FramePoint3d
-// {
-//     unsigned mapPointId = 0;
-
-//     FramePoint3d(const unsigned mapPointId, const cv::Point3f &position)
-//         : mapPointId(mapPointId)
-//         , position(position)
-//         {}
-
-//     void SetMapPointId(const unsigned mapPointId)
-//     {
-//         this->mapPointId = mapPointId;
-//     }
-// };
-
 struct PointData
 {
     unsigned id = 0;
     unsigned associatedMapPointId = 0;
     float uncertatinty;
-    bool isInlier;
 
     cv::KeyPoint keypoint;
     cv::Point3f position3d;
@@ -36,7 +21,6 @@ struct PointData
 
     PointData(const cv::KeyPoint &keypoint, const cv::Point3f &position3d, const cv::Mat &descriptor)
         : id(0)
-        , isInlier(false)
         , uncertatinty(1000.0f)
         , associatedMapPointId(0)
         , keypoint(keypoint)
@@ -52,21 +36,9 @@ public:
         : timestamp(-1.0)
     {}
     
-    Frame(const double timestamp, const cv::Mat &imageInp)
+    Frame(const double timestamp)
         : timestamp(timestamp)
     {
-        imageInp.copyTo(image);
-    }
-    
-    Frame(const double timestamp, const cv::Mat &imageInp, const cv::Mat &imageDepthInp)
-        : Frame(timestamp, imageInp)
-    {
-        imageDepthInp.copyTo(imageDepth);
-    }
-
-    const cv::Mat& GetImage() const
-    {
-        return image;
     }
 
     cv::KeyPoint GetFeature(const int id) const
@@ -79,7 +51,7 @@ public:
         return pointsData[id].position3d;
     }
 
-    std::vector<PointData>& GetPointsData()
+    const std::vector<PointData>& GetPointsData() const
     {
         return pointsData;
     }
@@ -106,9 +78,18 @@ public:
         return timestamp;
     }
 
-    void AddPoint(const int pointId, const cv::Point3f& position3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
+    void AddPoint(const cv::Point3f& position3d, const cv::KeyPoint& keypoint, const cv::Mat &descriptor)
     {
-        pointsData.push_back({keypoint, position3d, descriptor.clone()});
+        this->pointsData.push_back({keypoint, position3d, descriptor.clone()});
+    }
+
+    void AddPointDatas(const std::vector<PointData> &data)
+    {
+        for (const auto& dd : data)
+        {
+            AddPoint(tools::transformPoint3d(dd.position3d, this->position), dd.keypoint, dd.descriptor);
+        }
+        // this->pointsData.insert(this->pointsData.end(), data.begin(), data.end());
     }
 
     void SetOdometry(const Eigen::Matrix4f &odom) 
@@ -146,15 +127,11 @@ public:
         return pointsData[id];
     }
 
-    unsigned id;
-
 protected:
     double timestamp;
 
     Eigen::Matrix4f position;
     Eigen::Matrix4f odometry;
-    cv::Mat image;
-    cv::Mat imageDepth;
     std::vector<PointData> pointsData;
 
 };

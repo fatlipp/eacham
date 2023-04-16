@@ -14,12 +14,11 @@
 namespace eacham
 {
 template<typename T>
-class IFrameToMapOdometry : public IVisualOdometry<T>
+class IFrameToFrameOdometry : public IVisualOdometry<T>
 {
 public:
-    IFrameToMapOdometry()
+    IFrameToFrameOdometry()
     {
-        this->localMap = std::make_unique<LocalMap>(4U);
     }
 
 public:
@@ -29,18 +28,18 @@ public:
         
         IOdometry<T>::Reset();
         
-        this->localMap->Reset();
+        // this->lastFrame->Reset();
     }
 
 public:
-    const IMap* const GetLocalMap() const
+    const Frame* const GetLastFrame() const
     {
         std::lock_guard<std::mutex> lock(this->syncMutex);
-        return localMap.get();
+        return &this->lastFrame;
     }
 
 protected:
-    std::unique_ptr<IMap> localMap;
+    Frame lastFrame;
 
     mutable std::mutex syncMutex;
 };

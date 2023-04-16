@@ -1,21 +1,16 @@
 {
     "general": {
-        "maxFrames": 100,
-        "source_type": "DATASET",
+        "maxFrames": 0,
+        "source_type": "SENSOR",
         "sensor_type": "CAMERA"
     },
     
-    "dataset": {
-        "type": "KITTI",
-        "path": "/home/Datasets/KITTI"
-    },
-    
     "camera": {
-        "model": "",
+        "model": "REALSENSE",
         "type": "STEREO",
-        "scale": 0,
-        "width": 0,
-        "height": 0
+        "scale": 1000,
+        "width": 848,
+        "height": 480
     },
 
     "odometry": {

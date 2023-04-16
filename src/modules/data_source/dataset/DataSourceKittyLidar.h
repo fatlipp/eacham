@@ -64,8 +64,6 @@ public:
 
     T Get() const override;
 
-    // void ReadNext() override;
-
 private:
     const std::string folder;
     Eigen::Matrix4f calibrationMatrix;

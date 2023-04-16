@@ -3,14 +3,16 @@
 
 Visual SLAM
 
-Ready for reading TUM and KITTI datasets (probably needs to correct config file and some paths in the source code)
+Implemented: 
+* TUM and KITTI datasets
+* Realsense (D435i) (hardcoded: RGBD mode, 640x480)
 
-usage: ./dataset_reader path-to-config/ConfigTUM.json
+usage: ./main path-to-config/Config*.json
 
 /config - config folder
 
 Odometry:
-* Optimization based
+* Optimization based (BA)
 * PnP
 
 Dependencies:
@@ -19,3 +21,6 @@ Dependencies:
 * Eigen3 (Matrix operations)
 * Pangolin (Visualization)
 * nlohmann (JSON parser, included in thirdparty)
+* librealsense2 (OPTIONAL)
+
+(Local Map Optimizer is Disabled)
