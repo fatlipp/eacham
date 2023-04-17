@@ -8,30 +8,6 @@
 
 namespace eacham
 {
-    struct CameraDataOne
-    {
-        double timestamp;
-        cv::Mat left;
-    };
-
-    struct CameraDataTwo
-    {
-        double timestamp;
-        cv::Mat left;
-        cv::Mat right;
-    };
-
-    struct CameraDataTwoDataset
-    {
-        double timestamp;
-        cv::Mat left;
-        cv::Mat right;
-        Eigen::Matrix4f gtPos;
-    };
-}
-
-namespace eacham
-{
 class FeatureExtractor;
 
 template<typename T>

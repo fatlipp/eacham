@@ -1,21 +1,22 @@
 {
     "general": {
         "maxFrames": 0,
+        "mapCapacity": 0,
         "source_type": "SENSOR",
         "sensor_type": "CAMERA"
     },
     
     "camera": {
         "model": "REALSENSE",
-        "type": "STEREO",
+        "type": "RGBD",
         "scale": 1000,
-        "width": 848,
+        "width": 640,
         "height": 480
     },
 
     "odometry": {
-        "featureExtractorType": "ORB",
-        "motionEstimatorType": "PNP",
-        "odometryType": "F2M"
+        "featureExtractorType": "SIFT",
+        "motionEstimatorType": "OPT",
+        "odometryType": "F2F"
     }
 }

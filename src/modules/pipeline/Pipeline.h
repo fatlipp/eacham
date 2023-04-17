@@ -2,6 +2,9 @@
 
 #include "data_source/IDataSource.h"
 #include "odometry/IOdometry.h"
+#include "odometry/IVisualOdometry.h"
+#include "map/IMap.h"
+#include "optimizer/IMapOptimizer.h"
 #include "visualization/IRender.h"
 #include "config/Config.h"
 #include "performance/BlockTimer.h"
@@ -38,9 +41,19 @@ public:
         this->dataSource = std::move(dataSourceInp);
     }
 
-    void SetOdometry(std::unique_ptr<IOdometry<T>> odometryInp)
+    void SetOdometry(std::unique_ptr<IVisualOdometry<T>> odometryInp)
     {
         this->odometry = std::move(odometryInp);
+    }
+
+    void SetMap(std::unique_ptr<IMap> mapInp)
+    {
+        this->map = std::move(mapInp);
+    }
+
+    void SetOptimizer(std::unique_ptr<IMapOptimizer> optimizerInp)
+    {
+        this->optimizer = std::move(optimizerInp);
     }
 
     void SetRender(std::unique_ptr<IRender> renderInp)
@@ -57,6 +70,12 @@ public:
 public:
     void Start()
     {
+        if (this->map != nullptr)
+        {
+            this->odometry->SetMap(this->map.get());
+            this->optimizer->SetMap(this->map.get());
+        }
+
         this->render->Start();
 
         this->isRunning = true;
@@ -123,6 +142,8 @@ protected:
             else
             {
                 lostCount = 0;
+
+                this->optimizer->Optimize();
             }
         }
 
@@ -142,6 +163,7 @@ protected:
             Pause();
 
             this->odometry->Reset();
+            this->map->Reset();
 
             this->frameId = 0;
             this->isReset = false;
@@ -174,7 +196,9 @@ private:
 
 protected:
     std::unique_ptr<IDataSource<T>> dataSource;
-    std::unique_ptr<IOdometry<T>> odometry;
+    std::unique_ptr<IVisualOdometry<T>> odometry;
+    std::unique_ptr<IMap> map;
+    std::unique_ptr<IMapOptimizer> optimizer;
     std::unique_ptr<IRender> render;
 
     std::future<void> pipelineThread;

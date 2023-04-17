@@ -28,18 +28,18 @@ public:
         
         IOdometry<T>::Reset();
         
-        // this->lastFrame->Reset();
+        this->lastFrame = {};
     }
 
 public:
-    const Frame* const GetLastFrame() const
+    const IFrame* const GetLastFrame() const
     {
         std::lock_guard<std::mutex> lock(this->syncMutex);
         return &this->lastFrame;
     }
 
 protected:
-    Frame lastFrame;
+    IFrame lastFrame;
 
     mutable std::mutex syncMutex;
 };

@@ -8,7 +8,6 @@
 
 #include "odometry/IVisualOdometry.h"
 #include "odometry/FrameToFrameOdometry.h"
-#include "odometry/FrameToMapOdometry.h"
 #include "config/Config.h"
 #include "tools/Tools3d.h"
 #include "types/DataTypes.h"
@@ -17,7 +16,6 @@
 #include "frame/IFrameCreator.h"
 #include "frame/FrameCreatorRgbd.h"
 #include "frame/FrameCreatorStereo.h"
-#include "optimization/LocalFramesOptimizer.h"
 #include "motion_estimator/MotionEstimatorPnP.h"
 #include "motion_estimator/MotionEstimatorOpt.h"
 #include "motion_estimator/IMotionEstimator.h"
@@ -38,23 +36,22 @@ public:
 
         std::unique_ptr<IVisualOdometry<T>> odometry;
 
-        // TODO: different visual odometry types
         switch (config.odometryType)
         {
             case OdometryType::FRAME_TO_FRAME:
                 odometry = std::make_unique<FrameToFrameOdometry<T>>();
                 break;
             case OdometryType::FRAME_TO_MAP:
-                odometry = std::make_unique<FrameToMapOdometry<T>>();
                 break;
-            case OdometryType::OPT:
-                odometry = std::make_unique<FrameToMapOdometry<T>>();
+            default:
                 break;
         }
 
-        odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.featureExtractorType));
-        odometry->SetMotionEstimator(BuildMotionEstimator(camera, config.motionEstimatorType, featureMatcher));
-        // odometry->SetLocalOptimizer(BuildLocalOptimizer(camera));
+        if (odometry != nullptr)
+        {
+            odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.featureExtractorType));
+            odometry->SetMotionEstimator(BuildMotionEstimator(camera, config.motionEstimatorType, featureMatcher));
+        }
 
         return odometry;
     }
@@ -117,11 +114,6 @@ public:
         motionEstimator->SetMatcher(matcher);
 
         return motionEstimator;
-    }
-
-    std::unique_ptr<LocalFramesOptimizer> BuildLocalOptimizer(const camera_t* const camera)
-    {
-        return std::make_unique<LocalFramesOptimizer>(camera->GetParameters(), camera->GetDistortion());
     }
 };
 

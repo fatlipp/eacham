@@ -1,4 +1,4 @@
-#include "LocalFramesOptimizer.h"
+#include "optimizer/MapOptimizerBA.h"
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
@@ -22,32 +22,36 @@
 
 namespace eacham
 {
-    LocalFramesOptimizer::LocalFramesOptimizer(const cv::Mat &cameraMat, const cv::Mat &distCoeffs)
-    {
-        if (cameraMat.rows == 1)
-        {
-            this->K = boost::make_shared<gtsam::Cal3_S2>(cameraMat.at<float>(0, 0), cameraMat.at<float>(0, 1), 
-                                                        0.0, 
-                                                        cameraMat.at<float>(0, 2) , cameraMat.at<float>(0, 3));
-        }
-        else
-        {
-            std::cerr << "NEED CHECK VALUES!!!!!!!!!\n";
-        }
-    }
-
     gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6(const float posNoise, const float rot)
     {
         const float rotNoise = rot * 3.141592f / 180.0f;
         return gtsam::noiseModel::Diagonal::Sigmas(
                     (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
     }
+}
 
-    bool LocalFramesOptimizer::Optimize(LocalMap *map)
+namespace eacham
+{
+    MapOptimizerBA::MapOptimizerBA(const cv::Mat &cameraMatInp)
     {
-        std::cout << "LocalFramesOptimizer() map.size = " << map->GetSize() << std::endl;
+        if (cameraMatInp.rows == 1)
+        {
+            this->cameraMat = boost::make_shared<gtsam::Cal3_S2>(
+                    cameraMatInp.at<float>(0, 0), cameraMatInp.at<float>(0, 1), 
+                    0.0, 
+                    cameraMatInp.at<float>(0, 2) , cameraMatInp.at<float>(0, 3));
+        }
+        else
+        {
+            std::cerr << "IMapOptimizer() Wrong camera parameters\n";
+        }
+    }
+    
+    bool MapOptimizerBA::Optimize()
+    {
+        std::cout << "MapOptimizerBA() map.size = " << this->map->GetSize() << std::endl;
 
-        if (map->GetSize() < 3)
+        if (this->map->GetSize() < 2)
         {
             return false;
         }
@@ -66,7 +70,7 @@ namespace eacham
             
             // std::cout << frameId << "] ==================================================================================================================\n";
 
-            // if (frame.id > 1)
+            if (frameId > 0)
             {
                 const auto noise = CreateNoise6(0.2, 1.5);  
 
@@ -75,12 +79,12 @@ namespace eacham
                 //     gtsam::Pose3(odom), noise);
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
-            // else
-            // {
-            //     const auto noise = CreateNoise6(0.000001, 0.0000001); 
+            else
+            {
+                const auto noise = CreateNoise6(0.000001, 0.0000001); 
 
-            //     graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
-            // }
+                graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
+            }
 
             for (const auto &point : frame.GetPointsData())
             {
@@ -94,7 +98,7 @@ namespace eacham
                 // gtsam::PinholeCamera<gtsam::Cal3_S2> camera(gtsam::Pose3(position), *K);
                 // const gtsam::Point2 measurement0 = camera.project2(mapPointGTSAM);
                 // const gtsam::Point2 measurement1 = camera.projectSafe(mapPointGTSAM).first;
-                const gtsam::Point2 measurement2 = {point.keypoint.pt.x, point.keypoint.pt.y};
+                const gtsam::Point2 measurement2 = {point.keypoint.x, point.keypoint.y};
 
                 // std::cout << "measurement = 1: [" << measurement0.x() << ", " << measurement0.y() << 
                 //     "], 2: [" << measurement1.x() << ", " << measurement1.y() << 
@@ -107,7 +111,7 @@ namespace eacham
                     measurementNoise);
                 
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
-                    measurement2, huber, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->K);
+                    measurement2, huber, gtsam::Symbol('x', frameId), gtsam::Symbol('l', point.associatedMapPointId), this->cameraMat);
 
             }
 
@@ -153,7 +157,7 @@ namespace eacham
             result.block<3, 1>(0, 3) = targetFrame.translation();
 
             // std::cout << "ID: " << i << ", BEFORE:\n" << map->GetFrame(i).GetPosition() << std::endl;
-            // map->GetFrame(i).SetPosition(result.cast<float>());// TODO!!!!!!!!
+            map->GetFrame(i).SetPosition(result.cast<float>());
             // std::cout << "AFTER:\n" << map->GetFrame(i).GetPosition() << std::endl;
         }
 
@@ -167,7 +171,7 @@ namespace eacham
                 };
 
             // std::cout << "ID: " << id << ", BEFORE: " << map->GetPoint(id).position;
-            // map->GetPoint(id).position = result; // TODO!!!!!!!!
+            map->GetPoint(id).position = result;
             // std::cout << ", AFTER: " << map->GetPoint(id).position << std::endl;
         }
 

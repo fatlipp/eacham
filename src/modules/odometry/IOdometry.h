@@ -45,7 +45,6 @@ public:
 protected:
     Eigen::Matrix4f odometry;
     Eigen::Matrix4f position;
-
 };
 
 } // namespace eacham

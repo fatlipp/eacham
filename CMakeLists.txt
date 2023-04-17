@@ -36,7 +36,7 @@ set(SOURCE
     src/modules/frame/FrameCreatorStereo.cpp
     src/modules/frame/FrameCreatorRgbd.cpp
     
-    src/modules/optimization/LocalFramesOptimizer.cpp
+    src/modules/optimizer/MapOptimizerBA.cpp
 
     src/modules/visualization/Render.cpp
 )

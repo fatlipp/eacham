@@ -27,7 +27,15 @@ namespace eacham
 template<typename T>
 bool FrameToFrameOdometry<T>::Process(const T &data)
 {
-    Frame frame = this->frameCreator->Create(data);
+    IFrame frame = this->frameCreator->Create(data);
+
+    std::cout << "1";
+    if (this->map->GetSize() > 0)
+    {
+        std::lock_guard<std::mutex> lock(this->syncMutex);
+        this->lastFrame = this->map->GetFrames().back();
+    }
+    std::cout << "2";
 
     if (frame.isValid())
     {
@@ -51,6 +59,7 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
         
         std::lock_guard<std::mutex> lock(this->syncMutex);
         this->lastFrame = frame;
+        this->map->AddFrame(this->lastFrame);
     }
     else
     {
@@ -58,6 +67,7 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 
         return false;
     }
+    std::cout << "3";
 
     return true;
 }
