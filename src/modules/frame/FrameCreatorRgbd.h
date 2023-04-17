@@ -13,7 +13,7 @@ public:
     {
     }
 protected:
-    Frame Create(const stereodata_t& data) override;
+    IFrame Create(const stereodata_t& data) override;
 };
 
 } // namespace eacham

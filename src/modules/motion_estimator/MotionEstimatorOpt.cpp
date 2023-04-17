@@ -54,7 +54,7 @@ gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2(const float posNoise, con
                 (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
 }
 
-void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& pointsIds, const unsigned id, 
+void addFramePointsToTheGraph(const IFrame &frame, const std::vector<int>& pointsIds, const unsigned id, 
     gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &K)
 {
     // const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
@@ -65,7 +65,7 @@ void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& points
     unsigned landmarkId = 0;
     for (auto &pointId : pointsIds)
     {
-        const auto point = frame.GetPointData(pointId).keypoint.pt;
+        const auto point = frame.GetPointData(pointId).keypoint;
         const gtsam::Point2 measurement2 = {point.x, point.y};
 
         graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
@@ -75,7 +75,7 @@ void addFramePointsToTheGraph(const Frame &frame, const std::vector<int>& points
     }
 }
 
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& frame1, Frame& frame2)
+std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const IFrame& frame1, IFrame& frame2)
 {
     const auto [pts1, pts2] = FindMatches(frame1, frame2); 
 
@@ -138,7 +138,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
     gtsam::LevenbergMarquardtParams params;
     gtsam::LevenbergMarquardtParams::SetCeresDefaults(&params);
     // params.setLinearSolverType("MULTIFRONTAL_CHOLESKY");
-    params.setMaxIterations(20);
+    params.setMaxIterations(4);
     optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
 
     const gtsam::Values optimizationResult = optimizer->optimize();
@@ -159,7 +159,7 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const Frame& 
         // for (size_t i = 0; i < matches; ++i)
         // {
         //     pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
-        //     pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint.pt);
+        //     pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint);
         // }
 
         // reprojection error stat

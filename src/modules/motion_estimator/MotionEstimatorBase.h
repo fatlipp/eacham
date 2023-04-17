@@ -2,7 +2,7 @@
 
 #include "IMotionEstimator.h"
 
-#include "frame/Frame.h"
+#include "frame/IFrame.h"
 #include "types/DataTypes.h"
 
 namespace eacham
@@ -21,7 +21,7 @@ public:
     }
 
 public:
-    std::tuple<std::vector<int>, std::vector<int>> FindMatches(const Frame& frame1, const Frame& frame2);
+    std::tuple<std::vector<int>, std::vector<int>> FindMatches(const IFrame& frame1, const IFrame& frame2);
 
 protected:
     cv::Mat cameraMat;

@@ -8,7 +8,7 @@
 namespace eacham
 {
 
-Frame FrameCreatorRgbd::Create(const stereodata_t& data)
+IFrame FrameCreatorRgbd::Create(const stereodata_t& data)
 {
     const auto [features, descriptors] = extractor->GetFeatures(std::get<1>(data));
 
@@ -19,7 +19,7 @@ Frame FrameCreatorRgbd::Create(const stereodata_t& data)
         return {};
     }
 
-    Frame frame {std::get<0>(data)};
+    IFrame frame;
 
     int pointId = 0;
 
@@ -28,8 +28,8 @@ Frame FrameCreatorRgbd::Create(const stereodata_t& data)
         const cv::Point3f pos3d = tools::Get3dPointByDepthMap(feature.pt, std::get<2>(data), this->cameraData);
 
         if (pos3d.z > 0.10f && pos3d.z < 70.0f)
-        {
-            frame.AddPoint(pos3d, feature, descriptors.row(pointId));
+        {   
+            frame.AddPoint({ feature.pt, pos3d, descriptors.row(pointId).clone() });
         }
 
         ++pointId;

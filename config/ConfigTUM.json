@@ -1,6 +1,7 @@
 {
     "general": {
-        "maxFrames": 100,
+        "maxFrames": 500,
+        "mapCapacity": 3,
         "source_type": "DATASET",
         "sensor_type": "CAMERA"
     },
@@ -20,7 +21,7 @@
 
     "odometry": {
         "featureExtractorType": "ORB",
-        "motionEstimatorType": "PNP",
-        "odometryType": "F2M"
+        "motionEstimatorType": "OPT",
+        "odometryType": "F2F"
     }
 }

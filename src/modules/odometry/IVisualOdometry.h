@@ -11,7 +11,6 @@
 #include "data_source/IDataSourceCamera.h"
 #include "frame/IFrameCreator.h"
 #include "motion_estimator/IMotionEstimator.h"
-#include "optimization/LocalFramesOptimizer.h"
 #include "map/IMap.h"
 #include "map/LocalMap.h"
 
@@ -31,15 +30,15 @@ public:
         this->motionEstimator = std::move(motionEstimatorInp);
     }
 
-    void SetLocalOptimizer(std::unique_ptr<LocalFramesOptimizer> optimizerInp)
+    void SetMap(IMap* map)
     {
-        this->localOptimizer = std::move(optimizerInp);
+        this->map = map;
     }
 
 protected:
     std::unique_ptr<IFrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
-    std::unique_ptr<LocalFramesOptimizer> localOptimizer;
+    IMap* map;
 
 };
 

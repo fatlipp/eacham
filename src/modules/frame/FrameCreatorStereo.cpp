@@ -8,7 +8,7 @@
 namespace eacham
 {
 
-Frame FrameCreatorStereo::Create(const stereodata_t& data)
+IFrame FrameCreatorStereo::Create(const stereodata_t& data)
 {
     const auto [features1, descriptor1] = extractor->GetFeatures(std::get<1>(data));
     
@@ -39,7 +39,7 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
         return {};
     }
 
-    Frame frame { std::get<0>(data) };
+    IFrame frame;
 
     for (const auto& m : matches)
     {
@@ -52,7 +52,7 @@ Frame FrameCreatorStereo::Create(const stereodata_t& data)
 
             if (pos3d.z > 0.10f && pos3d.z < 70.0f)
             {
-                frame.AddPoint(pos3d, features1[id1], descriptor1.row(id1));
+                frame.AddPoint({ features1[id1].pt, pos3d, descriptor1.row(id1).clone() });
             }
         }
     }

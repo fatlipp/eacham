@@ -6,8 +6,9 @@
 #include "config/Config.h"
 #include "pipeline/Pipeline.h"
 #include "pipeline/PipelineDataset.h"
+#include "map/MapFactory.h"
+#include "optimizer/OptimizerFactory.h"
 #include "visualization/Render.h"
-#include "visualization/view/VisualOdometryF2MView.h"
 #include "visualization/view/VisualOdometryF2FView.h"
 #include "visualization/view/DatasetView.h"
 
@@ -54,6 +55,9 @@ int main(int argc, char* argv[])
         return 3;
     }
 
+    auto optimizer = OptimizerFactory::Build(config, dataSource->GetParameters());
+    auto map = MapFactory::Build(config);
+
     // general implementation
     std::unique_ptr<Pipeline<T>> pipeline;
     std::unique_ptr<Render> render = std::make_unique<Render>();
@@ -73,24 +77,16 @@ int main(int argc, char* argv[])
         pipeline = std::make_unique<Pipeline<T>>(config.GetGeneral());
     }
 
+    auto vo = dynamic_cast<IFrameToFrameOdometry<T>*>(odometry.get()) ;
+    if (vo != nullptr)
     {
-        auto vo = dynamic_cast<IFrameToMapOdometry<T>*>(odometry.get()) ;
-        if (vo != nullptr)
-        {
-            render->Add(std::make_unique<VisualOdometryF2MView<T>>(vo));
-        }
-    }
-
-    {
-        auto vo = dynamic_cast<IFrameToFrameOdometry<T>*>(odometry.get()) ;
-        if (vo != nullptr)
-        {
-            render->Add(std::make_unique<VisualOdometryF2FView<T>>(vo));
-        }
+        render->Add(std::make_unique<VisualOdometryF2FView<T>>(vo));
     }
     
     pipeline->SetDataSource(std::move(dataSource));
     pipeline->SetOdometry(std::move(odometry));
+    pipeline->SetMap(std::move(map));
+    pipeline->SetOptimizer(std::move(optimizer));
     pipeline->SetRender(std::move(render));
     pipeline->Start();
 

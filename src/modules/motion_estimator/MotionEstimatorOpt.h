@@ -1,6 +1,6 @@
 #pragma once
 
-#include "frame/Frame.h"
+#include "frame/IFrame.h"
 #include "MotionEstimatorBase.h"
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
@@ -27,7 +27,7 @@ class MotionEstimatorOpt : public MotionEstimatorBase
 public:
     MotionEstimatorOpt(const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
 
-    std::tuple<Eigen::Matrix4f, unsigned> Estimate(const Frame& frame1, Frame& frame2) override;
+    std::tuple<Eigen::Matrix4f, unsigned> Estimate(const IFrame& frame1, IFrame& frame2) override;
 
 private:
     boost::shared_ptr<gtsam::Cal3_S2> K;

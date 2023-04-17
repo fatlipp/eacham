@@ -62,7 +62,8 @@ namespace eacham
 
 struct ConfigGeneral
 {
-    int maxFrames;
+    unsigned maxFrames;
+    unsigned mapCapacity;
 
     DataSourceType sourceType;
     SensorType sensorType;
@@ -70,6 +71,7 @@ struct ConfigGeneral
     friend void from_json(const nlohmann::json& j, ConfigGeneral& value)
     {
         j.at("maxFrames").get_to(value.maxFrames);
+        j.at("mapCapacity").get_to(value.mapCapacity);
         j.at("source_type").get_to<DataSourceType>(value.sourceType);
         j.at("sensor_type").get_to<SensorType>(value.sensorType);
     }

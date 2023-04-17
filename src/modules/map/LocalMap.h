@@ -2,7 +2,7 @@
 
 #include "map/IMap.h"
 #include "map/MapPoint.h"
-#include "frame/Frame.h"
+#include "frame/IFrame.h"
 
 
 namespace eacham
@@ -11,19 +11,15 @@ namespace eacham
 class LocalMap : public IMap
 {
 public:
-    LocalMap()
-        : capaticy(5U) 
-        {}
-
-    LocalMap(const unsigned capaticy)
-        : capaticy(capaticy) 
+    LocalMap(const unsigned capacityInp)
+        : capaticy(capacityInp) 
         {}
 
 public:
-    void AddFrame(const Frame &frame) override;
+    void AddFrame(IFrame &frame) override;
 
 private:
-    unsigned capaticy;
+    const unsigned capaticy;
 };
 
 }
