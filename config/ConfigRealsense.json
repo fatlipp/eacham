@@ -1,7 +1,7 @@
 {
     "general": {
         "maxFrames": 0,
-        "mapCapacity": 3,
+        "mapCapacity": 0,
         "source_type": "SENSOR",
         "sensor_type": "CAMERA"
     },
@@ -15,7 +15,7 @@
     },
 
     "odometry": {
-        "featureExtractorType": "ORB",
+        "featureExtractorType": "SIFT",
         "motionEstimatorType": "OPT",
         "odometryType": "F2F"
     }

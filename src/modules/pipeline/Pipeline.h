@@ -163,6 +163,7 @@ protected:
             Pause();
 
             this->odometry->Reset();
+            this->map->Reset();
 
             this->frameId = 0;
             this->isReset = false;
