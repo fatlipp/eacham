@@ -16,7 +16,7 @@ Odometry:
 * PnP
 
 Dependencies:
-* GTSAM (Local map optimization and Odometry)
+* GTSAM (Local map optimizer and Odometry)
 * OpenCV (Image reading, processing, feature extracting and matching)
 * Eigen3 (Matrix operations)
 * Pangolin (Visualization)

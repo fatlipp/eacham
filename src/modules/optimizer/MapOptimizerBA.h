@@ -1,6 +1,6 @@
 #pragma once
 
-#include "map/LocalMap.h"
+#include "optimizer/IMapOptimizer.h"
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
@@ -14,15 +14,15 @@
 namespace eacham
 {
 
-class LocalFramesOptimizer
+class MapOptimizerBA : public IMapOptimizer
 {
 public:
-    LocalFramesOptimizer(const cv::Mat &cameraMat, const cv::Mat &distCoeffs);
+    MapOptimizerBA(const cv::Mat &cameraMatInp);
 
-    bool Optimize(LocalMap *map);
+    bool Optimize() override;
 
 private:
-    boost::shared_ptr<gtsam::Cal3_S2> K;
+    boost::shared_ptr<gtsam::Cal3_S2> cameraMat;
 };
 
 }

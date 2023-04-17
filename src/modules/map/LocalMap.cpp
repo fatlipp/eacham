@@ -7,14 +7,14 @@
 
 namespace eacham
 {
-    void LocalMap::AddFrame(const Frame &frame)
+    void LocalMap::AddFrame(IFrame &frame)
     {
         std::lock_guard<std::mutex> lock(this->globalMutex);
         
         static unsigned ID = 1;
         const Eigen::Matrix4f framePos = frame.GetPosition();
 
-        for (const auto &point : frame.GetPointsData())
+        for (auto &point : frame.GetPointsData())
         {
             if (point.associatedMapPointId > 0)
             {
@@ -27,7 +27,7 @@ namespace eacham
             mapPoint.observers = 1;
             this->points.push_back(mapPoint);
 
-            // point.associatedMapPointId = mapPoint.id;
+            point.associatedMapPointId = mapPoint.id;
         }
 
         {
@@ -35,7 +35,7 @@ namespace eacham
             this->frames.push_back(frame);
         }
 
-        if (this->GetSize() == this->capaticy)
+        if (this->GetSize() >= this->capaticy)
         {
             std::lock_guard<std::mutex> lock(this->framesMutex);
             this->frames.pop_front();

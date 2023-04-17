@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Frame.h"
+#include "IFrame.h"
 #include "types/DataTypes.h"
 #include "features/FeatureExtractor.h"
 
@@ -17,7 +17,7 @@ public:
     {
     }
 
-    virtual Frame Create(const stereodata_t& data) = 0;
+    virtual IFrame Create(const stereodata_t& data) = 0;
     
 protected:
     cv::Mat cameraData;

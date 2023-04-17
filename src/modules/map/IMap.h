@@ -1,7 +1,7 @@
 #pragma once
 
 #include "map/MapPoint.h"
-#include "frame/Frame.h"
+#include "frame/IFrame.h"
 #include <list>
 #include <vector>
 
@@ -20,33 +20,18 @@ public:
         return frames.size();
     }
 
-    const Frame& GetLatestFrame() const
-    {
-        return frames.back();
-    }
-
-    const Frame& GetFrame(const size_t id) const
-    {
-        auto firstItem = frames.begin();
-        std::advance(firstItem, id);
-
-        return *firstItem;
-    }
-
-    // const std::list<Frame>& GetFrames() const
-    // {
-    //     return frames;
-    // }
-
-    std::list<Frame> GetFrames() const
+    std::list<IFrame> GetFrames() const
     {
         std::lock_guard<std::mutex> lock(this->framesMutex);
         return frames;
     }
 
-    const std::vector<MapPoint>& GetPoints() const
+    IFrame& GetFrame(const size_t id)
     {
-        return points;
+        auto firstItem = frames.begin();
+        std::advance(firstItem, id);
+
+        return *firstItem;
     }
 
     MapPoint& GetPoint(const size_t id)
@@ -60,7 +45,7 @@ public:
     }
 
 public:
-    virtual void AddFrame(const Frame &frame)
+    virtual void AddFrame(IFrame &frame)
     {
         this->frames.push_back(frame);
     }
@@ -73,7 +58,7 @@ public:
     }
 
 protected:
-    std::list<Frame> frames;
+    std::list<IFrame> frames;
     std::vector<MapPoint> points;
 
     mutable std::mutex globalMutex;
