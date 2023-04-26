@@ -2,11 +2,19 @@
 
 #include "map/IMap.h"
 
+#include "config/ConfigMapOptimizer.h"
+
 namespace eacham
 {
 
 class IMapOptimizer
 {
+public:
+    IMapOptimizer(const ConfigMapOptimizer& config)
+        : config(config)
+    {
+    }
+
 public:
     void SetMap(IMap* map)
     {
@@ -17,6 +25,7 @@ public:
 
 protected:
     IMap* map;
+    ConfigMapOptimizer config;
 };
 
 }

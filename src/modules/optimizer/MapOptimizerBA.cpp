@@ -32,7 +32,8 @@ namespace eacham
 
 namespace eacham
 {
-    MapOptimizerBA::MapOptimizerBA(const cv::Mat &cameraMatInp)
+    MapOptimizerBA::MapOptimizerBA(const ConfigMapOptimizer& config, const cv::Mat &cameraMatInp)
+        : IMapOptimizer(config)
     {
         if (cameraMatInp.rows == 1)
         {
@@ -72,24 +73,33 @@ namespace eacham
 
             if (frameId > 0)
             {
-                const auto noise = CreateNoise6(0.2, 1.5);  
-
+                // const auto noiseOdom = CreateNoise6(config.GetOdomNoiseRot(), config.GetOdomNoisePos());
                 // const Eigen::Matrix4d odom = frame.GetOdometry().cast<double>();
                 // graph.emplace_shared<gtsam::BetweenFactor<gtsam::Pose3> >(gtsam::Symbol('x', frameId), gtsam::Symbol('x', frameId - 1), 
-                //     gtsam::Pose3(odom), noise);
+                //     gtsam::Pose3(odom), noiseOdom);
+
+                const auto noise = CreateNoise6(config.GetKeyframeNoiseRot(), config.GetKeyframeNoisePos());
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
             else
             {
                 const auto noise = CreateNoise6(0.000001, 0.0000001); 
-
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
 
+            unsigned count = 0;
+
             for (const auto &point : frame.GetPointsData())
             {
+                if (count > config.GetPointsLimit())
+                {
+                    break;
+                }
+
                 if (point.associatedMapPointId == 0 || map->GetPoint(point.associatedMapPointId).observers < 2)
                     continue;
+
+                ++count;
 
                 mapIds.insert(point.associatedMapPointId);
 
@@ -106,8 +116,8 @@ namespace eacham
                 //     "], map: [" << mapPointGTSAM.x() << ", " << mapPointGTSAM.y() << ", " << mapPointGTSAM.z() << "] " << std::endl;
 
                 // const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, point.uncertatinty);
-                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.5f);
-                const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(1.1), 
+                const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, config.GetMeasurementNoiseUv());
+                const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(config.GetHuberUv()), 
                     measurementNoise);
                 
                 graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
@@ -127,19 +137,41 @@ namespace eacham
             initialMeasurements.insert(gtsam::Symbol('l', pointId), mapPointGTSAM);
 
             // add uncertatinty to the map points
-            const auto priorNoise = gtsam::noiseModel::Isotropic::Sigma(3, 0.25);
-            graph.addPrior(gtsam::Symbol('l', pointId), mapPointGTSAM, priorNoise);
+            const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(3, config.GetMeasurementNoise3d());
+            const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(config.GetHuber3d()), 
+                measurementNoise);
+
+            graph.addPrior(gtsam::Symbol('l', pointId), mapPointGTSAM, huber);
 
             ++mapPoints;
         }
 
         std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
+        const unsigned type = config.GetType();
 
-        gtsam::LevenbergMarquardtParams params;
-        params.lambdaFactor = 10;
-        params.maxIterations = 1000;
-        params.absoluteErrorTol = 0.00001;
-        optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
+        std::cout << "1 frames: " << frameId << ", mapPoints: " << mapPoints << std::endl;
+        if (type == 0)
+        {
+            gtsam::LevenbergMarquardtParams params;
+            params.lambdaFactor = 3;
+            params.maxIterations = config.GetMaxIterations();
+            params.absoluteErrorTol = 0.01;
+            optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graph, initialMeasurements, params);
+        }
+        else if (type == 1)
+        {
+			gtsam::GaussNewtonParams params;
+			params.relativeErrorTol = 0.01f;
+			params.maxIterations = config.GetMaxIterations();
+			optimizer = std::make_unique<gtsam::GaussNewtonOptimizer>(graph, initialMeasurements, params);
+        }
+        else if (type == 2)
+        {
+			gtsam::DoglegParams params;
+			params.relativeErrorTol = 0.01f;
+			params.maxIterations = config.GetMaxIterations();
+			optimizer = std::make_unique<gtsam::DoglegOptimizer>(graph, initialMeasurements, params);
+        }
 
         gtsam::Values optimizationResult = optimizer->optimize();
 

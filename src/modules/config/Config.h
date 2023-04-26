@@ -5,9 +5,12 @@
 
 #include <json.hpp>
 
+#include "config/IConfig.h"
+#include "config/ConfigFeatureExtractor.h"
+#include "config/ConfigMapOptimizer.h"
+
 #include "data_source/DataSourceTypes.h"
 #include "motion_estimator/MotionEstimatorType.h"
-#include "features/FeatureExtractorType.h"
 #include "odometry/OdometryType.h"
 
 
@@ -36,12 +39,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(CameraType, {
     {CameraType::RGBD, "RGBD"},
     {CameraType::MONO, "MONO"},
     {CameraType::STEREO, "STEREO"},
-})
-
-NLOHMANN_JSON_SERIALIZE_ENUM(FeatureExtractorType, {
-    {FeatureExtractorType::ORB, "ORB"},
-    {FeatureExtractorType::SIFT, "SIFT"},
-    {FeatureExtractorType::SURF, "SURF"},
 })
 
 NLOHMANN_JSON_SERIALIZE_ENUM(MotionEstimatorType, {
@@ -79,13 +76,11 @@ struct ConfigGeneral
 
 struct ConfigOdometry
 {
-    FeatureExtractorType featureExtractorType;
     MotionEstimatorType motionEstimatorType;
     OdometryType odometryType;
 
     friend void from_json(const nlohmann::json& j, ConfigOdometry& value)
     {
-        j.at("featureExtractorType").get_to<FeatureExtractorType>(value.featureExtractorType);
         j.at("motionEstimatorType").get_to<MotionEstimatorType>(value.motionEstimatorType);
         j.at("odometryType").get_to<OdometryType>(value.odometryType);
     }
@@ -154,6 +149,9 @@ public:
                 this->camera = data["camera"].get<ConfigCamera>();
             }
 
+            featureExtractor.Read(data);
+            mapOptimizer.Read(data);
+
             configStream.close();
         }
         else
@@ -186,6 +184,16 @@ public:
         return camera;
     }
 
+    const ConfigFeatureExtractor& GetFeatureExtractor() const
+    {
+        return featureExtractor;
+    }
+
+    const ConfigMapOptimizer& GetMapOptimizer() const
+    {
+        return mapOptimizer;
+    }
+
 private:
     const std::string confidPath;
 
@@ -194,6 +202,8 @@ private:
     ConfigDataset dataset;
     ConfigCamera camera;
 
+    ConfigFeatureExtractor featureExtractor;
+    ConfigMapOptimizer mapOptimizer;
 };
 
 }

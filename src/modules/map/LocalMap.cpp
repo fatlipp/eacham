@@ -35,7 +35,7 @@ namespace eacham
             this->frames.push_back(frame);
         }
 
-        if (this->GetSize() >= this->capaticy)
+        if (this->GetSize() > this->capaticy)
         {
             std::lock_guard<std::mutex> lock(this->framesMutex);
             this->frames.pop_front();

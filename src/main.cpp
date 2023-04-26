@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     }
 
     VisualOdometryDirector<T> visualOdometryDirector;
-    auto odometry = visualOdometryDirector.Build(dataSource.get(), config.GetOdometry());
+    auto odometry = visualOdometryDirector.Build(dataSource.get(), config);
 
     if (odometry == nullptr)
     {

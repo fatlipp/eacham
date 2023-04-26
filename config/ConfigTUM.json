@@ -1,7 +1,7 @@
 {
     "general": {
-        "maxFrames": 500,
-        "mapCapacity": 3,
+        "maxFrames": 100,
+        "mapCapacity": 5,
         "source_type": "DATASET",
         "sensor_type": "CAMERA"
     },
@@ -20,8 +20,28 @@
     },
 
     "odometry": {
-        "featureExtractorType": "ORB",
-        "motionEstimatorType": "OPT",
+        "motionEstimatorType": "PNP",
         "odometryType": "F2F"
+    },
+
+    "featureExtractor": {
+        "type": "ORB",
+        "maxFeatures": 1000,
+        "levelsCount": 8,
+        "levelsScale": 1.1
+    },
+
+    "mapOptimizer": {
+        "type": 0,
+        "maxIterations": 4,
+        "mapPointsLimit": 80,
+        "keyframeNoiseRot": 0.2,
+        "keyframeNoisePos": 1.5,
+        "odomNoiseRot": 0.2,
+        "odomNoisePos": 0.25,
+        "measurementNoiseUV": 1.5,
+        "huberUV": 5.0,
+        "measurementNoise3d": 0.15,
+        "huber3d": 0.25
     }
 }

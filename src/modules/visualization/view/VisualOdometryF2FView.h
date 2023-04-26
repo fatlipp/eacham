@@ -33,6 +33,8 @@ public:
         const auto frame = odometry->GetLastFrame();
         const auto framePos = frame->GetPosition();
 
+        // std::cout << "framePos:\n" << framePos << std::endl;
+
         view_tools::DrawCamera(framePos, color);
 
         glPointSize(7);
@@ -55,7 +57,7 @@ public:
         followPoint.m[13] = framePos(1, 3);
         followPoint.m[14] = framePos(2, 3);
 
-        state.Follow(followPoint);
+        // state.Follow(followPoint);
     }
 
 private:

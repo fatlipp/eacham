@@ -29,13 +29,17 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 {
     IFrame frame = this->frameCreator->Create(data);
 
-    std::cout << "1";
     if (this->map->GetSize() > 0)
     {
         std::lock_guard<std::mutex> lock(this->syncMutex);
         this->lastFrame = this->map->GetFrames().back();
+
+        std::cout << "GOT FRAME" << std::endl;
+        std::cout << "GOT FRAME" << std::endl;
+        std::cout << "GOT FRAME" << std::endl;
+        std::cout << "GOT FRAME" << std::endl;
+        std::cout << "GOT FRAME11111111111111111111111111111111111" << std::endl;
     }
-    std::cout << "2";
 
     if (frame.isValid())
     {
@@ -67,7 +71,6 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 
         return false;
     }
-    std::cout << "3";
 
     return true;
 }
