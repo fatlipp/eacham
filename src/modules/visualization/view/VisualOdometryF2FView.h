@@ -28,9 +28,6 @@ public:
         Eigen::Matrix4f zeroPos = Eigen::Matrix4f::Identity();
         view_tools::DrawCamera(zeroPos, Eigen::Vector3f{1, 1, 1});
 
-        const Eigen::Vector3f color = Eigen::Vector3f{1, 0, 0};
-
-        return;
         const auto frame = odometry->GetLastFrame();
 
         if (!frame.isValid())
@@ -38,9 +35,8 @@ public:
             return;
         }
 
+        const Eigen::Vector3f color = Eigen::Vector3f{1, 0, 0};
         const auto framePos = frame.GetPosition();
-
-        // std::cout << "framePos:\n" << framePos << std::endl;
 
         view_tools::DrawCamera(framePos, color);
 

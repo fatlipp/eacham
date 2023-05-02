@@ -157,6 +157,7 @@ protected:
             {
                 lostCount = 0;
                 this->isLocalMapUpdate = true;
+                // this->optimizer->Optimize();
             }
         }
 

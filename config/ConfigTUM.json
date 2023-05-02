@@ -1,7 +1,7 @@
 {
     "general": {
         "maxFrames": 100,
-        "mapCapacity": 5,
+        "mapCapacity": 15,
         "source_type": "DATASET",
         "sensor_type": "CAMERA"
     },

@@ -29,45 +29,39 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 {
     IFrame frame = this->frameCreator->Create(data);
 
-    if (frame.isValid())
+    if (!frame.isValid())
     {
-        std::cout << "GetLastFrame: 1";
-        const auto lastFrame = IVisualOdometry<T>::GetLastFrame();
-        std::cout << "GetLastFrame: 2";
-        
-        if (lastFrame.isValid())
-        {
-            const auto [odom, inliers] = this->motionEstimator->Estimate(lastFrame, frame);
+        std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
 
-            if (inliers == 0)
-            {
-                std::cout << "\n++++++++++\nMotion estimation error\n++++++++++\n";
-
-                return false;
-            }
-
-            this->odometry = odom;
-
-            WaitForLocalMap();
-
-            const auto lastFrameNew = IVisualOdometry<T>::GetLastFrame().GetPosition();
-            this->SetPosition(lastFrameNew * this->odometry);
-        }
-
-        // just in case
-        WaitForLocalMap();
-
-        frame.SetOdometry(this->odometry);
-        frame.SetPosition(this->position);
-
-        this->map->AddFrame(frame);
-
-        return true;
+        return false;
     }
 
-    std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
+    const auto lastFrame = IVisualOdometry<T>::GetLastFrame();
+    
+    if (lastFrame.isValid())
+    {
+        const auto [odom, inliers] = this->motionEstimator->Estimate(lastFrame, frame);
 
-    return false;
+        if (inliers == 0)
+        {
+            std::cout << "\n++++++++++\nMotion estimation error\n++++++++++\n";
+
+            return false;
+        }
+
+        this->WaitForLocalMap();
+
+        const auto lastFrameNew = IVisualOdometry<T>::GetLastFrame().GetPosition();
+        this->odometry = odom;
+        this->position = (lastFrameNew * this->odometry);
+    }
+
+    frame.SetOdometry(this->odometry);
+    frame.SetPosition(this->position);
+
+    this->map->AddFrame(frame);
+
+    return true;
 }
 
 }

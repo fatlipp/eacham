@@ -43,9 +43,8 @@ public:
 
     void Stop()
     {
-        std::cout << "IDataSourceCamera Stop" << std::endl;
         isRunning.store(false);
-        std::cout << "IDataSourceCamera Stop2" << std::endl;
+        
         if (this->cameraThread.valid())
         {
             this->cameraThread.get();
