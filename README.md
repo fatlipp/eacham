@@ -22,5 +22,3 @@ Dependencies:
 * Pangolin (Visualization)
 * nlohmann (JSON parser, included in thirdparty)
 * librealsense2 (OPTIONAL)
-
-(Local Map Optimizer is Disabled)
