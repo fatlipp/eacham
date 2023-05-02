@@ -76,6 +76,7 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 
         return false;
     }
+    std::cout << "3";
 
     return true;
 }
