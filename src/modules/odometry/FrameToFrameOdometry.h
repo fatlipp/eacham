@@ -29,23 +29,15 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 {
     IFrame frame = this->frameCreator->Create(data);
 
-    if (this->map->GetSize() > 0)
-    {
-        std::lock_guard<std::mutex> lock(this->syncMutex);
-        this->lastFrame = this->map->GetFrames().back();
-
-        std::cout << "GOT FRAME" << std::endl;
-        std::cout << "GOT FRAME" << std::endl;
-        std::cout << "GOT FRAME" << std::endl;
-        std::cout << "GOT FRAME" << std::endl;
-        std::cout << "GOT FRAME11111111111111111111111111111111111" << std::endl;
-    }
-
     if (frame.isValid())
     {
-        if (this->lastFrame.isValid())
+        std::cout << "GetLastFrame: 1";
+        const auto lastFrame = IVisualOdometry<T>::GetLastFrame();
+        std::cout << "GetLastFrame: 2";
+        
+        if (lastFrame.isValid())
         {
-            const auto [odom, inliers] = this->motionEstimator->Estimate(this->lastFrame, frame);
+            const auto [odom, inliers] = this->motionEstimator->Estimate(lastFrame, frame);
 
             if (inliers == 0)
             {
@@ -53,17 +45,30 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 
                 return false;
             }
+
             this->odometry = odom;
 
-            this->SetPosition(this->lastFrame.GetPosition() * this->odometry);
+            std::cout << "this->isMapOptimizationProcess start" << std::endl;
+            while (this->isMapOptimizationProcess)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            }
+            std::cout << "this->isMapOptimizationProcess end" << std::endl;
+
+            const auto lastFrameNew = IVisualOdometry<T>::GetLastFrame().GetPosition();
+            this->SetPosition(lastFrameNew * this->odometry);
         }
 
         frame.SetOdometry(this->odometry);
         frame.SetPosition(this->position);
         
-        std::lock_guard<std::mutex> lock(this->syncMutex);
-        this->lastFrame = frame;
-        this->map->AddFrame(this->lastFrame);
+        std::cout << "this->isMapOptimizationProcess start 2" << std::endl;
+        while (this->isMapOptimizationProcess)
+        {
+        }
+        std::cout << "this->isMapOptimizationProcess end 2" << std::endl;
+        this->map->AddFrame(frame);
+        std::cout << "ODOM this->GetSize(): " << this->map->GetSize() << std::endl;
     }
     else
     {

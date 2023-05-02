@@ -1,7 +1,17 @@
 cmake_minimum_required(VERSION 3.19)
 project(eacham)
 
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
+
+# set(CMAKE_BUILD_TYPE Debug)
+
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a")
+message("CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message("Your C++ compiler supports these C++ features:")
+foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+  message("${i}")
+endforeach()
 
 find_package(OpenCV 4.7 REQUIRED)
 message("OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
@@ -39,6 +49,8 @@ set(SOURCE
     src/modules/optimizer/MapOptimizerBA.cpp
 
     src/modules/visualization/Render.cpp
+
+    src/modules/performance/BlockTimer.cpp
 )
 
 add_executable(main)
@@ -63,6 +75,7 @@ target_link_libraries(main
     gtsam
     metis-gtsam
 )
+set_property(TARGET main PROPERTY CXX_STANDARD 20)
 
 if (${REALSENSE_FOUND})
     target_link_libraries(main

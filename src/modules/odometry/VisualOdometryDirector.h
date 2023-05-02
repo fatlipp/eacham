@@ -42,8 +42,6 @@ public:
             case OdometryType::FRAME_TO_FRAME:
                 odometry = std::make_unique<FrameToFrameOdometry<T>>();
                 break;
-            case OdometryType::FRAME_TO_MAP:
-                break;
             default:
                 break;
         }

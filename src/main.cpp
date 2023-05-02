@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
     render->SetOnPlayClick([&pipeline]() { pipeline->Play(); });
     render->SetOnStepClick([&pipeline]() { pipeline->Step(); });
     render->SetOnResetClick([&pipeline]() { pipeline->Reset(); });
-    render->SetOnCloseClick([&pipeline, &dataSource]() { pipeline->Kill(); dataSource->Stop(); });
+    render->SetOnCloseClick([&pipeline, &dataSource]() { pipeline->Kill(); });
 
     if (dynamic_cast<IDataset*>(dataSource.get()) != nullptr)
     {
@@ -93,6 +93,8 @@ int main(int argc, char* argv[])
     while (pipeline->IsActive())
     {
     }
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     return 0;
 }

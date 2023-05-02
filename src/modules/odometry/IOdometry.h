@@ -6,6 +6,7 @@
 namespace eacham
 {
 
+// TODO: non thread-safe
 template<typename T>
 class IOdometry
 {
@@ -31,7 +32,7 @@ public:
     {
         return this->odometry;
     }
-
+    
     const Eigen::Matrix4f& GetPosition() const
     {
         return this->position;

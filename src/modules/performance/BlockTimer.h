@@ -1,34 +1,31 @@
 #pragma once
 
-#include <iostream>
-
+#include <string>
 #include <chrono>
+#include <unordered_map>
 
 namespace eacham
 {
 
 class BlockTimer
 {
+
 public:
-    BlockTimer(const std::string &caption)
-        : caption(caption)
-    {
-        this->startTime = std::chrono::high_resolution_clock::now();
-    }
+    BlockTimer(const std::string &caption, const bool saveStat = false);
 
-    ~BlockTimer()
-    {
-        const auto endTime = std::chrono::high_resolution_clock::now();
+    ~BlockTimer();
 
-        const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - this->startTime).count();
+    static void PrintStat();
 
-        std::cout << "[" << caption << "] time: " << duration << std::endl;
-    }
+protected:
+    static std::unordered_map<std::string, std::pair<unsigned, double>> timeMap;
 
 private:
     const std::string caption;
+    const bool saveStat;
 
     std::chrono::high_resolution_clock::time_point startTime;
+
 
 };
 

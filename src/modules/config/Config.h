@@ -48,7 +48,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MotionEstimatorType, {
 
 NLOHMANN_JSON_SERIALIZE_ENUM(OdometryType, {
     {OdometryType::FRAME_TO_FRAME, "F2F"},
-    {OdometryType::FRAME_TO_MAP, "F2M"},
     {OdometryType::OPT, "OPT"}
 })
 

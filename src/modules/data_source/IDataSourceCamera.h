@@ -27,18 +27,29 @@ public:
         {
         }
 
+    ~IDataSourceCamera() override
+    {
+        std::cout << "IDataSourceCamera destroy" << std::endl;
+    }
+
 public:
     virtual void Initialize(const ConfigCamera& config) = 0;
 
     void Start()
     {
-        this->isRunning = true;
+        isRunning.store(true);
         this->cameraThread = std::async(std::launch::async, &IDataSourceCamera<T>::Loop, this);
     }
 
     void Stop()
     {
-        this->isRunning = false;
+        std::cout << "IDataSourceCamera Stop" << std::endl;
+        isRunning.store(false);
+        std::cout << "IDataSourceCamera Stop2" << std::endl;
+        if (this->cameraThread.valid())
+        {
+            this->cameraThread.get();
+        }
     }
 
 public:
@@ -53,6 +64,11 @@ public:
         this->dataUpdated = false;
 
         return {this->timestamp, this->imageLeft.clone(), this->imageRight.clone()};
+    }
+
+    void Clear()
+    {
+        Stop();
     }
 
 public:

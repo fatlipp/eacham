@@ -1,4 +1,4 @@
-#include "map/LocalMap.h"
+#include "map/GlobalMap.h"
 #include "tools/Tools3d.h"
 
 #include <eigen3/Eigen/Geometry>
@@ -7,8 +7,10 @@
 
 namespace eacham
 {
-    void LocalMap::AddFrame(IFrame &frame)
+    void GlobalMap::AddFrame(IFrame &frame)
     {
+        std::lock_guard<std::mutex> lock(this->globalMutex);
+        
         static unsigned ID = 1;
         const Eigen::Matrix4f framePos = frame.GetPosition();
 
@@ -26,13 +28,6 @@ namespace eacham
             this->points.push_back(mapPoint);
 
             point.associatedMapPointId = mapPoint.id;
-        }
-
-        IMap::AddFrame(frame);
-
-        if (this->GetSize() > this->capaticy)
-        {
-            IMap::DeleteFrame(0);
         }
     }
 }
