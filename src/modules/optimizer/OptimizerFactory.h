@@ -12,7 +12,7 @@ class OptimizerFactory
 public:
     static std::unique_ptr<IMapOptimizer> Build(const Config& config, const cv::Mat& cameraMat)
     {
-        return std::make_unique<MapOptimizerBA>(cameraMat);
+        return std::make_unique<MapOptimizerBA>(config.GetMapOptimizer(), cameraMat);
     }
 };
 

@@ -3,10 +3,9 @@
 
 namespace eacham
 {
-FeatureExtractor::FeatureExtractor(const FeatureExtractorType &type)
+FeatureExtractor::FeatureExtractor(const ConfigFeatureExtractor &config)
 {
-    const int winSize = 31;
-    switch (type)
+    switch (config.GetType())
     {
     case FeatureExtractorType::ORB:
             // int  	nfeatures = 500,
@@ -19,14 +18,15 @@ FeatureExtractor::FeatureExtractor(const FeatureExtractorType &type)
             // int  	patchSize = 31, - windows size to BRIEF
             // int  	fastThreshold = 20  - if abs pixel difference larger than this value - potentially corner
             // decrease to get more features
-        this->detector = cv::ORB::create(1000, 1.1f, 8, winSize, 0, 2, cv::ORB::HARRIS_SCORE, winSize, 30);
+        this->detector = cv::ORB::create(config.GetMaxFeatures(), config.GetLevelScale(), config.GetLevelsCount(), 
+                31, 0, 2, cv::ORB::HARRIS_SCORE, 31, 30);
         break;
     case FeatureExtractorType::SIFT:
     // (int nfeatures=0, int nOctaveLayers=3, double contrastThreshold=0.04, double edgeThreshold=10, double sigma=1.6)
-        this->detector = cv::SIFT::create(1000, 3, 0.04, 10, 1.6);
+        this->detector = cv::SIFT::create(config.GetMaxFeatures(), 3, 0.04, 10, 1.6);
         break;
     case FeatureExtractorType::SURF:
-        this->detector = cv::xfeatures2d::SURF::create(1000);
+        this->detector = cv::xfeatures2d::SURF::create(config.GetMaxFeatures());
         break;
     }
 }

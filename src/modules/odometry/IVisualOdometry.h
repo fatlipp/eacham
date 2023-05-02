@@ -20,6 +20,12 @@ template<typename T>
 class IVisualOdometry : public IOdometry<T>
 {
 public:
+    IVisualOdometry()
+        : isMapOptimizationProcess{false}
+    {
+    }
+
+public:
     void SetFrameCreator(std::unique_ptr<IFrameCreator> frameCreatorInp)
     {
         this->frameCreator = std::move(frameCreatorInp);
@@ -32,13 +38,70 @@ public:
 
     void SetMap(IMap* map)
     {
+        std::lock_guard<std::mutex> lock(this->mapMutex);
+
         this->map = map;
+    }
+
+    void SetUpdatseStarted()
+    {
+        this->isMapOptimizationProcess = true;
+    }
+
+    void SetUpdatseCompleted()
+    {
+        this->isMapOptimizationProcess = false;
+    }
+
+public:
+    // const IFrame* const GetLastFrame() const
+    // {
+    //     std::lock_guard<std::mutex> lock(this->mapMutex);
+
+    //     if (this->map->GetSize() > 0)
+    //     {
+    //         return &this->map->GetFrames().back();
+    //     }
+
+    //     return nullptr;
+    // }
+    IFrame GetLastFrame() const
+    {
+        std::lock_guard<std::mutex> lock(this->mapMutex);
+
+        if (this->map->GetSize() > 0)
+        {
+            return this->map->GetFrames().back();
+        }
+
+        return {};
+    }
+
+    // const IMap* const GetMap() const
+    // {
+    //     std::lock_guard<std::mutex> lock(this->mapMutex);
+
+    //     return this->map;
+    // }
+
+protected:
+    void WaitForLocalMap() const
+    {
+        while (this->isMapOptimizationProcess)
+        {
+            // std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
     }
 
 protected:
     std::unique_ptr<IFrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
     IMap* map;
+
+    std::atomic<bool> isMapOptimizationProcess;
+
+private:
+    mutable std::mutex mapMutex;
 
 };
 

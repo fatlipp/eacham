@@ -17,7 +17,7 @@ namespace eacham
 class MapOptimizerBA : public IMapOptimizer
 {
 public:
-    MapOptimizerBA(const cv::Mat &cameraMatInp);
+    MapOptimizerBA(const ConfigMapOptimizer& config, const cv::Mat &cameraMatInp);
 
     bool Optimize() override;
 

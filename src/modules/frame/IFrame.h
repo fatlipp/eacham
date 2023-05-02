@@ -26,6 +26,12 @@ struct KeyPointDataVisual
 
 class IFrame
 {
+
+public:
+    IFrame()
+        : id(0)
+        {}
+
 public:
     bool isValid() const
     {
@@ -63,6 +69,11 @@ public:
         return pointsData[id];
     }
 
+    unsigned GetId() const
+    {
+        return id;
+    }
+
 public:
     void AddPoint(const KeyPointDataVisual& data)
     {
@@ -79,10 +90,17 @@ public:
         this->position = position;
     }
 
+    void SetId(const unsigned id) 
+    {
+        this->id = id;
+    }
+
 protected:
     Eigen::Matrix4f position;
     Eigen::Matrix4f odometry;
     std::vector<KeyPointDataVisual> pointsData;
+
+    unsigned id;
 
 };
 

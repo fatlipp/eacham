@@ -29,45 +29,37 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 {
     IFrame frame = this->frameCreator->Create(data);
 
-    std::cout << "1";
-    if (this->map->GetSize() > 0)
-    {
-        std::lock_guard<std::mutex> lock(this->syncMutex);
-        this->lastFrame = this->map->GetFrames().back();
-    }
-    std::cout << "2";
-
-    if (frame.isValid())
-    {
-        if (this->lastFrame.isValid())
-        {
-            const auto [odom, inliers] = this->motionEstimator->Estimate(this->lastFrame, frame);
-
-            if (inliers == 0)
-            {
-                std::cout << "\n++++++++++\nMotion estimation error\n++++++++++\n";
-
-                return false;
-            }
-            this->odometry = odom;
-
-            this->SetPosition(this->lastFrame.GetPosition() * this->odometry);
-        }
-
-        frame.SetOdometry(this->odometry);
-        frame.SetPosition(this->position);
-        
-        std::lock_guard<std::mutex> lock(this->syncMutex);
-        this->lastFrame = frame;
-        this->map->AddFrame(this->lastFrame);
-    }
-    else
+    if (!frame.isValid())
     {
         std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
 
         return false;
     }
-    std::cout << "3";
+
+    const auto lastFrame = IVisualOdometry<T>::GetLastFrame();
+    
+    if (lastFrame.isValid())
+    {
+        const auto [odom, inliers] = this->motionEstimator->Estimate(lastFrame, frame);
+
+        if (inliers == 0)
+        {
+            std::cout << "\n++++++++++\nMotion estimation error\n++++++++++\n";
+
+            return false;
+        }
+
+        this->WaitForLocalMap();
+
+        const auto lastFrameNew = IVisualOdometry<T>::GetLastFrame().GetPosition();
+        this->odometry = odom;
+        this->position = (lastFrameNew * this->odometry);
+    }
+
+    frame.SetOdometry(this->odometry);
+    frame.SetPosition(this->position);
+
+    this->map->AddFrame(frame);
 
     return true;
 }

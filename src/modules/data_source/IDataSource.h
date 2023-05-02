@@ -17,6 +17,8 @@ public:
     virtual ~IDataSource() = default;
 
     virtual T Get() const = 0;
+
+    virtual void Clear() {}
 };
 
 }

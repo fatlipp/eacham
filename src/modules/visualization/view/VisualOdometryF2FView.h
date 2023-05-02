@@ -24,14 +24,19 @@ public:
 
 public:
     void Draw(pangolin::OpenGlRenderState& state) override
-    {   
+    {
         Eigen::Matrix4f zeroPos = Eigen::Matrix4f::Identity();
         view_tools::DrawCamera(zeroPos, Eigen::Vector3f{1, 1, 1});
 
-        const Eigen::Vector3f color = Eigen::Vector3f{1, 0, 0};
-
         const auto frame = odometry->GetLastFrame();
-        const auto framePos = frame->GetPosition();
+
+        if (!frame.isValid())
+        {
+            return;
+        }
+
+        const Eigen::Vector3f color = Eigen::Vector3f{1, 0, 0};
+        const auto framePos = frame.GetPosition();
 
         view_tools::DrawCamera(framePos, color);
 
@@ -39,7 +44,7 @@ public:
         glBegin(GL_POINTS);
         glColor3f(color.x(), color.y(), color.z());
 
-        for (const auto& point : frame->GetPointsData())
+        for (const auto& point : frame.GetPointsData())
         {   
             auto poss = tools::transformPoint3d(point.position3d, framePos);
 
@@ -55,7 +60,7 @@ public:
         followPoint.m[13] = framePos(1, 3);
         followPoint.m[14] = framePos(2, 3);
 
-        state.Follow(followPoint);
+        // state.Follow(followPoint);
     }
 
 private:

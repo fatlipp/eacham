@@ -30,18 +30,17 @@ class VisualOdometryDirector
 using camera_t = IDataSourceCamera<T>;
 
 public:
-    std::unique_ptr<IVisualOdometry<T>> Build(const camera_t* const camera, const ConfigOdometry& config)
-    {
-        auto featureMatcher = BuildFeatureMatcher(config.featureExtractorType);
+    std::unique_ptr<IVisualOdometry<T>> Build(const camera_t* const camera, const Config& config)
+    {   
+        auto configOdometry = config.GetOdometry();
+        auto featureMatcher = BuildFeatureMatcher(config.GetFeatureExtractor().GetType());
 
         std::unique_ptr<IVisualOdometry<T>> odometry;
 
-        switch (config.odometryType)
+        switch (configOdometry.odometryType)
         {
             case OdometryType::FRAME_TO_FRAME:
                 odometry = std::make_unique<FrameToFrameOdometry<T>>();
-                break;
-            case OdometryType::FRAME_TO_MAP:
                 break;
             default:
                 break;
@@ -49,16 +48,16 @@ public:
 
         if (odometry != nullptr)
         {
-            odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.featureExtractorType));
-            odometry->SetMotionEstimator(BuildMotionEstimator(camera, config.motionEstimatorType, featureMatcher));
+            odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.GetFeatureExtractor()));
+            odometry->SetMotionEstimator(BuildMotionEstimator(camera, configOdometry.motionEstimatorType, featureMatcher));
         }
 
         return odometry;
     }
 
-    extractor_t BuildFeatureExtractor(const FeatureExtractorType &type)
+    extractor_t BuildFeatureExtractor(const ConfigFeatureExtractor &config)
     {
-        return std::make_unique<FeatureExtractor>(type);
+        return std::make_unique<FeatureExtractor>(config);
     }
 
     matcher_t BuildFeatureMatcher(const FeatureExtractorType &type)
@@ -76,9 +75,9 @@ public:
         return nullptr;
     }
 
-    std::unique_ptr<IFrameCreator> BuildFrameCreator(const camera_t* const camera, const matcher_t& matcher, const FeatureExtractorType &type)
+    std::unique_ptr<IFrameCreator> BuildFrameCreator(const camera_t* const camera, const matcher_t& matcher, const ConfigFeatureExtractor &config)
     {
-        auto featureExtractor = BuildFeatureExtractor(type);
+        auto featureExtractor = BuildFeatureExtractor(config);
 
         if (camera->isStereo())
         {

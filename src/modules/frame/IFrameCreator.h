@@ -18,6 +18,14 @@ public:
     }
 
     virtual IFrame Create(const stereodata_t& data) = 0;
+
+protected:
+    unsigned GetId() const
+    {
+        static unsigned ID = 1;
+        
+        return ID++;
+    }
     
 protected:
     cv::Mat cameraData;

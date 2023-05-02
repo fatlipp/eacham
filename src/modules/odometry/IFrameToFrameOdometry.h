@@ -13,35 +13,10 @@
 
 namespace eacham
 {
+
 template<typename T>
 class IFrameToFrameOdometry : public IVisualOdometry<T>
 {
-public:
-    IFrameToFrameOdometry()
-    {
-    }
-
-public:
-    void Reset() override
-    {
-        std::lock_guard<std::mutex> lock(this->syncMutex);
-        
-        IOdometry<T>::Reset();
-        
-        this->lastFrame = {};
-    }
-
-public:
-    const IFrame* const GetLastFrame() const
-    {
-        std::lock_guard<std::mutex> lock(this->syncMutex);
-        return &this->lastFrame;
-    }
-
-protected:
-    IFrame lastFrame;
-
-    mutable std::mutex syncMutex;
 };
 
 } // namespace eacham

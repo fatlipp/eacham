@@ -40,6 +40,7 @@ IFrame FrameCreatorStereo::Create(const stereodata_t& data)
     }
 
     IFrame frame;
+    frame.SetId(GetId());
 
     for (const auto& m : matches)
     {

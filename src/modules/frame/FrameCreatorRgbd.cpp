@@ -5,6 +5,8 @@
 
 #include "tools/Tools3d.h"
 
+#include <ranges>
+
 namespace eacham
 {
 
@@ -20,10 +22,9 @@ IFrame FrameCreatorRgbd::Create(const stereodata_t& data)
     }
 
     IFrame frame;
+    frame.SetId(GetId());
 
-    int pointId = 0;
-
-    for (const auto& feature : features)
+    for (unsigned pointId = 0; const auto& feature : features)
     {
         const cv::Point3f pos3d = tools::Get3dPointByDepthMap(feature.pt, std::get<2>(data), this->cameraData);
 
