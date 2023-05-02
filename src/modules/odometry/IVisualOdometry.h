@@ -85,6 +85,15 @@ public:
     // }
 
 protected:
+    void WaitForLocalMap() const
+    {
+        while (this->isMapOptimizationProcess)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+
+protected:
     std::unique_ptr<IFrameCreator> frameCreator;
     std::unique_ptr<IMotionEstimator> motionEstimator;
     IMap* map;

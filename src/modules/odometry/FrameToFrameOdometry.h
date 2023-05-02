@@ -48,37 +48,26 @@ bool FrameToFrameOdometry<T>::Process(const T &data)
 
             this->odometry = odom;
 
-            std::cout << "this->isMapOptimizationProcess start" << std::endl;
-            while (this->isMapOptimizationProcess)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(2));
-            }
-            std::cout << "this->isMapOptimizationProcess end" << std::endl;
+            WaitForLocalMap();
 
             const auto lastFrameNew = IVisualOdometry<T>::GetLastFrame().GetPosition();
             this->SetPosition(lastFrameNew * this->odometry);
         }
 
+        // just in case
+        WaitForLocalMap();
+
         frame.SetOdometry(this->odometry);
         frame.SetPosition(this->position);
-        
-        std::cout << "this->isMapOptimizationProcess start 2" << std::endl;
-        while (this->isMapOptimizationProcess)
-        {
-        }
-        std::cout << "this->isMapOptimizationProcess end 2" << std::endl;
+
         this->map->AddFrame(frame);
-        std::cout << "ODOM this->GetSize(): " << this->map->GetSize() << std::endl;
-    }
-    else
-    {
-        std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
 
-        return false;
+        return true;
     }
-    std::cout << "3";
 
-    return true;
+    std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
+
+    return false;
 }
 
 }
