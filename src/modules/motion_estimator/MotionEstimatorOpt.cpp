@@ -21,30 +21,22 @@
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
+#include <concepts>
+#include <tuple>
+#include <unordered_set>
+
 namespace eacham
 {
 
 MotionEstimatorOpt::MotionEstimatorOpt(const cv::Mat &cameraMatInp, const cv::Mat &distCoeffsInp)
-    : MotionEstimatorBase()
+    : MotionEstimatorBase(cameraMatInp, distCoeffsInp)
 {
     if (cameraMatInp.rows == 1)
     {
-        this->K = boost::make_shared<gtsam::Cal3_S2>(cameraMatInp.at<float>(0, 0), cameraMatInp.at<float>(0, 1), 
+        this->cameraMatGtsam = boost::make_shared<gtsam::Cal3_S2>(cameraMatInp.at<float>(0, 0), cameraMatInp.at<float>(0, 1), 
                                     0.0, 
                                     cameraMatInp.at<float>(0, 2) , cameraMatInp.at<float>(0, 3));
-        cameraMat = cv::Mat::eye(3, 3, CV_32FC1);
-        cameraMat.at<float>(0, 0) = cameraMatInp.at<float>(0, 0);
-        cameraMat.at<float>(1, 1) = cameraMatInp.at<float>(0, 1);
-        cameraMat.at<float>(0, 2) = cameraMatInp.at<float>(0, 2);
-        cameraMat.at<float>(1, 2) = cameraMatInp.at<float>(0, 3);
-        cameraMat.at<float>(2, 2) = 1.0f;
     }
-    else
-    {
-        std::cerr << "NEED CHECK VALUES!!!!!!!!!\n";
-    }
-
-    this->distCoeffs = distCoeffsInp;
 }
 
 gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2(const float posNoise, const float rot)
@@ -54,56 +46,44 @@ gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2(const float posNoise, con
                 (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
 }
 
-void addFramePointsToTheGraph(const IFrame &frame, const std::vector<int>& pointsIds, const unsigned id, 
-    gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &K)
+template<typename T>
+concept IsFrame = requires(const T& frame)
+{
+    { frame.GetPointData(0) } -> std::same_as<const FramePointData&>;
+};
+
+template<unsigned ID, IsFrame T>
+void AddFramePointsToTheGraph(const T& frame, const std::vector<std::pair<unsigned, unsigned>>& matches, 
+    gtsam::NonlinearFactorGraph &graph, const gtsam::Cal3_S2::shared_ptr &camera)
 {
     // const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 1.1);
     const auto measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, 2.0f);
     const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(5.0f), 
         measurementNoise);
 
-    unsigned landmarkId = 0;
-    for (auto &pointId : pointsIds)
+    for (unsigned landmarkId = 0; const auto &math : matches)
     {
+        const unsigned idd = ID;
+        const auto pointId = std::get<ID>(math);
         const auto point = frame.GetPointData(pointId).keypoint;
         const gtsam::Point2 measurement2 = {point.x, point.y};
 
         graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
-            measurement2, huber, gtsam::Symbol('x', id), gtsam::Symbol('l', landmarkId), K);
+            measurement2, huber, gtsam::Symbol('x', idd), gtsam::Symbol('l', landmarkId), camera);
 
         ++landmarkId;
     }
 }
 
-std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const IFrame& frame1, IFrame& frame2)
+EstimationResult MotionEstimatorOpt::Estimate(const IFrameLight& frame1, const IFrame& frame2,
+    const std::vector<std::pair<unsigned, unsigned>>& matches)
 {
-    const auto [pts1, pts2] = FindMatches(frame1, frame2); 
-
-    const unsigned matches = pts1.size();
-
-    // std::vector<std::pair<int, int>> normIds;
-
-    for (size_t i = 0; i < matches; ++i)
-    {
-        frame2.GetPointData(pts2[i]).associatedMapPointId = frame1.GetPointData(pts1[i]).associatedMapPointId;
-
-        // normIds.push_back(std::make_pair(pts1[i], pts2[i]));
-    }
-
-    std::cout << "MotionEstimationOpt() Good matches: " << matches << std::endl;
-
-    if (matches < 10)
-    {
-        std::cout << "Motion Estimation error: Not enough matches count\n";
-
-        return {Eigen::Matrix4f::Identity(), 0};
-    }
+    const unsigned matchesSize = matches.size();
 
     gtsam::NonlinearFactorGraph graph;
     gtsam::Values initialMeasurements;
 
-    const int INITIAL_ID = 0;
-    int frameId = INITIAL_ID;
+    int frameId = 0;
 
     Eigen::Matrix4d position = Eigen::Matrix4d::Identity();
     graph.emplace_shared<gtsam::NonlinearEquality<gtsam::Pose3> >(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
@@ -114,12 +94,12 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const IFrame&
     graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise2);
     initialMeasurements.insert(gtsam::Symbol('x', frameId), gtsam::Pose3(position));
 
-    addFramePointsToTheGraph(frame1, pts1, 0, graph, this->K);
-    addFramePointsToTheGraph(frame2, pts2, 1, graph, this->K);
+    AddFramePointsToTheGraph<0>(frame1, matches, graph, this->cameraMatGtsam);
+    AddFramePointsToTheGraph<1>(frame2, matches, graph, this->cameraMatGtsam);
     
     // map
     unsigned landmarkId = 0;
-    for (auto &point1 : pts1)
+    for (const auto &[point1, point2] : matches)
     {
         const auto point = frame1.GetPointData(point1).position3d;
 
@@ -152,58 +132,20 @@ std::tuple<Eigen::Matrix4f, unsigned> MotionEstimatorOpt::Estimate(const IFrame&
     result.block<3, 3>(0, 0) = targetFrame.rotation().matrix();
     result.block<3, 1>(0, 3) = targetFrame.translation();
 
+    EstimationResult estimation;
+    estimation.frameIdPrev = frame1.GetId();
+    estimation.frameIdCurrent = frame2.GetId();
+    estimation.odometry = result.cast<float>();
+
+    // TODO: reprojection best candidates
+    for (const auto& match : matches)
     {
-        // std::vector<cv::Point3f> pts3d1;
-        // std::vector<cv::Point2f> pts2d2; 
-
-        // for (size_t i = 0; i < matches; ++i)
-        // {
-        //     pts3d1.push_back(frame1.GetPointData(pts1[i]).position3d);
-        //     pts2d2.push_back(frame2.GetPointData(pts2[i]).keypoint);
-        // }
-
-        // reprojection error stat
-        // {
-        //     cv::Mat Rmat = cv::Mat_<double>(3, 3);
-
-        //     for (int i = 0; i < 3; ++i)
-        //     {
-        //         for (int j = 0; j < 3; ++j)
-        //         {
-        //             Rmat.at<double>(i, j) = result(i, j); 
-        //         }
-        //     }
-
-        //     cv::Mat tvec = cv::Mat_<double>(3, 1);
-        //     tvec.at<double>(0, 0) = targetFrame.translation().x();
-        //     tvec.at<double>(1, 0) = targetFrame.translation().y();
-        //     tvec.at<double>(2, 0) = targetFrame.translation().z();
-
-		//     cv::Mat rvec = cv::Mat_<double>(3, 1);
-		// 	cv::Rodrigues(Rmat, rvec);
-
-        //     // {
-        //     //     std::cout << "1 tvec: " << tvec << std::endl;
-
-        //     //     std::vector<int> reprojectedInliers;
-        //     //     const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec, 4.0f, reprojectedInliers);
-                
-        //     //     if (reprojectedInliers.size() > 0)
-        //     //         std::cout << "1 inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
-        //     // }
-
-        //     // cv::solvePnP(pts3d1, pts2d2, cameraMat, distCoeffs, rvec, tvec, true, cv::SOLVEPNP_EPNP);
-
-		// 	cv::Rodrigues(rvec, Rmat);
-        //     // CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec);
-        //     // std::vector<int> reprojectedInliers;
-        //     // const auto [errMean1, errVar1] = CalcReprojectionError(frame2.GetImage(), pts3d1, pts2d2, cameraMat, distCoeffs, Rmat, tvec, 4.0f, reprojectedInliers);
-        //     // std::cout << "inliers (reprojected): " << reprojectedInliers.size() << " (" << (reprojectedInliers.size() / static_cast<float>(matches)) << ")" << std::endl;
-
-        // }
+        const auto prevFramePointId = frame1.GetPointData(match.first).id;
+        const auto currentFramePointId = frame2.GetPointData(match.second).id;
+        estimation.matches.insert({currentFramePointId, prevFramePointId});
     }
 
-    return { result.cast<float>(), matches };
+    return estimation;
 }
 
 }

@@ -8,7 +8,7 @@
     
     "dataset": {
         "type": "KITTI",
-        "path": "/home/Datasets/KITTI"
+        "path": "/home/blackdyce/Datasets/KITTI"
     },
     
     "camera": {
@@ -25,7 +25,7 @@
     },
 
     "featureExtractor": {
-        "type": "ORB",
+        "type": "SIFT",
         "maxFeatures": 1500,
         "levelsCount": 8,
         "levelsScale": 1.4

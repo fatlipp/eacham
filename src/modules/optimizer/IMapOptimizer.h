@@ -1,6 +1,6 @@
 #pragma once
 
-#include "map/IMap.h"
+#include "map/Map.h"
 
 #include "config/ConfigMapOptimizer.h"
 
@@ -16,7 +16,7 @@ public:
     }
 
 public:
-    void SetMap(IMap* map)
+    void SetMap(Map* map)
     {
         this->map = map;
     }
@@ -34,7 +34,7 @@ public:
     virtual bool Optimize() = 0;
 
 protected:
-    IMap* map;
+    Map* map;
     ConfigMapOptimizer config;
 
     std::function<void()> onStart;

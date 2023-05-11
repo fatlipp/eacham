@@ -15,7 +15,7 @@ class IRender
 public:
     ~IRender() = default;
 
-    virtual void Start() = 0;
+    virtual void Activate() = 0;
     virtual void Stop() = 0;
 
 public:

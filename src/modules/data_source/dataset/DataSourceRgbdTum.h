@@ -190,6 +190,11 @@ void DataSourceRgbdTum<T>::Process()
     this->groundTruthPos.block(0, 0, 3, 3) = quaternion.toRotationMatrix();
     this->groundTruthPos.block(0, 3, 3, 1) = position;
 
+    {
+        static Eigen::Matrix4f defaultPosInv = this->groundTruthPos.inverse();
+        this->groundTruthPos = defaultPosInv * this->groundTruthPos;
+    }
+
     if (!this->datasetUpdated)
     {
         this->timestampOld = this->timestamp;

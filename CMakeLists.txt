@@ -36,9 +36,9 @@ if (${realsense2_FOUND})
 endif()
 
 set(SOURCE
-    src/modules/map/LocalMap.cpp
+    src/modules/map/Map.cpp
 
-    src/modules/motion_estimator/MotionEstimatorBase.cpp
+    # src/modules/motion_estimator/MotionEstimatorBase.cpp
     src/modules/motion_estimator/MotionEstimatorPnP.cpp
     src/modules/motion_estimator/MotionEstimatorOpt.cpp
     

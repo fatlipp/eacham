@@ -25,6 +25,7 @@ public:
 
         auto j = data[name];
         j.at("type").get_to(this->type);
+        j.at("maxFramesCount").get_to(this->maxFramesCount);
         j.at("maxIterations").get_to(this->maxIterations);
         j.at("mapPointsLimit").get_to(this->mapPointsLimit);
 
@@ -43,6 +44,11 @@ public:
     const unsigned& GetType() const
     {
         return this->type;
+    }
+
+    const unsigned& GetMaxFramesCount() const
+    {
+        return this->maxFramesCount;
     }
 
     const unsigned& GetMaxIterations() const
@@ -97,6 +103,7 @@ public:
 
 private:
     unsigned type;
+    unsigned maxFramesCount;
     unsigned maxIterations;
     unsigned mapPointsLimit;
     //noise

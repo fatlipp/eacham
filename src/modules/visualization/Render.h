@@ -14,7 +14,7 @@ class Render : public IRender
 {
 
 public:
-    void Start() override;
+    void Activate() override;
     void Stop() override;
 
 public:

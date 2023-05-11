@@ -37,8 +37,11 @@ public:
 
     void Start()
     {
+        std::cout << "Start11" << std::endl;
         isRunning.store(true);
+        std::cout << "Start12" << std::endl;
         this->cameraThread = std::async(std::launch::async, &IDataSourceCamera<T>::Loop, this);
+        std::cout << "Start13" << std::endl;
     }
 
     void Stop()

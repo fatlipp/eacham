@@ -42,7 +42,7 @@ IFrame FrameCreatorStereo::Create(const stereodata_t& data)
     IFrame frame;
     frame.SetId(GetId());
 
-    for (const auto& m : matches)
+    for (unsigned pointId = 0; const auto& m : matches)
     {
         if (m[0].distance < 0.7f * m[1].distance)
         {
@@ -53,7 +53,8 @@ IFrame FrameCreatorStereo::Create(const stereodata_t& data)
 
             if (pos3d.z > 0.10f && pos3d.z < 70.0f)
             {
-                frame.AddPoint({ features1[id1].pt, pos3d, descriptor1.row(id1).clone() });
+                frame.AddPoint({ .id = pointId, .keypoint = features1[id1].pt, .position3d = pos3d, .descriptor = descriptor1.row(id1).clone() });
+                ++pointId;
             }
         }
     }

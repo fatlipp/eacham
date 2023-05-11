@@ -30,7 +30,7 @@ IFrame FrameCreatorRgbd::Create(const stereodata_t& data)
 
         if (pos3d.z > 0.10f && pos3d.z < 70.0f)
         {   
-            frame.AddPoint({ feature.pt, pos3d, descriptors.row(pointId).clone() });
+            frame.AddPoint({ .id = pointId, .keypoint = feature.pt, .position3d = pos3d, .descriptor = descriptors.row(pointId).clone() });
         }
 
         ++pointId;

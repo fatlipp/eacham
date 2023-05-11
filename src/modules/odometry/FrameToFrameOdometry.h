@@ -1,67 +1,70 @@
 #pragma once
 
-#include <vector>
-#include <list>
-
-#include <pcl/common/eigen.h>
-#include <pcl/common/common.h>
-
-#include "odometry/IFrameToFrameOdometry.h"
+#include "motion_estimator/EstimationResult.h"
+#include "odometry/IVisualOdometry.h"
+#include "frame/FrameMatcher.h"
 #include "types/DataTypes.h"
+
+#include <tuple>
 
 namespace eacham
 {
-template<typename T>
-class FrameToFrameOdometry : public IFrameToFrameOdometry<T>
+
+class FrameToFrameOdometry : public IVisualOdometry
 {
 public:
-    bool Process(const T &data) override;
+    FrameToFrameOdometry(std::unique_ptr<FrameMatcher> &frameMatcher)
+        : IVisualOdometry(frameMatcher)
+        {
+        }
+
+public:
+    EstimationResult Process(const IFrame &frame) override;
 };
 
 } // namespace eacham
 
-
 namespace eacham
 {
 
-template<typename T>
-bool FrameToFrameOdometry<T>::Process(const T &data)
+EstimationResult FrameToFrameOdometry::Process(const IFrame &frame)
 {
-    IFrame frame = this->frameCreator->Create(data);
-
     if (!frame.isValid())
     {
         std::cout << "\n++++++++++\nMotion estimation error: Invalid frame\n++++++++++\n";
 
-        return false;
+        return { .frameIdPrev = 0, .frameIdCurrent = 0 };
     }
 
-    const auto lastFrame = IVisualOdometry<T>::GetLastFrame();
-    
-    if (lastFrame.isValid())
+    if (!this->lastFrame.isValid())
     {
-        const auto [odom, inliers] = this->motionEstimator->Estimate(lastFrame, frame);
+        this->lastFrame = { frame.GetId(), frame.GetPointsDataCopy() };
 
-        if (inliers == 0)
-        {
-            std::cout << "\n++++++++++\nMotion estimation error\n++++++++++\n";
-
-            return false;
-        }
-
-        this->WaitForLocalMap();
-
-        const auto lastFrameNew = IVisualOdometry<T>::GetLastFrame().GetPosition();
-        this->odometry = odom;
-        this->position = (lastFrameNew * this->odometry);
+        return EstimationResult { .frameIdPrev = 0, .frameIdCurrent = frame.GetId(), .odometry = Eigen::Matrix4f::Identity() };
     }
 
-    frame.SetOdometry(this->odometry);
-    frame.SetPosition(this->position);
+    const auto matches = this->frameMatcher->FindMatches(this->lastFrame, frame);
+    std::cout << "FrameToFrameOdometry() matches: " << matches.size() << std::endl;
 
-    this->map->AddFrame(frame);
+    Eigen::Affine3f motion = Eigen::Affine3f::Identity();
 
-    return true;
+    const int MIN_INLIERS = 5;
+
+    if (matches.size() < MIN_INLIERS)
+    {
+        std::cout << "FrameToFrameOdometry() No enough inliers (" << matches.size() << ")" << std::endl;
+        return EstimationResult { .frameIdPrev = 0, .frameIdCurrent = 0, .odometry = Eigen::Matrix4f::Identity() };
+    }
+
+    const auto res = this->motionEstimator->Estimate(this->lastFrame, frame, matches);
+
+    if (res.isValid())
+    {
+        this->lastFrame = { frame.GetId(), frame.GetPointsDataCopy() };
+    }
+    std::cout << "TOTAL matches: " << res.matches.size() << std::endl;
+
+    return res;
 }
 
 }

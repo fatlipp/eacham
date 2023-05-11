@@ -1,15 +1,17 @@
 #pragma once
 
 #include "map/MapPoint.h"
+#include "map/MapFrame.h"
 #include "frame/IFrame.h"
+#include "motion_estimator/EstimationResult.h"
+
 #include <list>
 #include <vector>
-
 
 namespace eacham
 {
 
-class IMap
+class Map
 {
 
 public:
@@ -19,13 +21,13 @@ public:
         return frames.size();
     }
 
-    std::list<IFrame> GetFrames() const
+    std::list<MapFrame> GetFrames() const
     {
         std::lock_guard<std::mutex> lock(this->globalMutex);
         return frames;
     }
 
-    IFrame& GetFrame(const unsigned id)
+    MapFrame& GetFrame(const unsigned id)
     {
         std::lock_guard<std::mutex> lock(this->globalMutex);
         // auto firstItem = frames.begin();
@@ -33,7 +35,7 @@ public:
 
         for (auto& frame : this->frames)
         {
-            if (frame.GetId() == id)
+            if (frame.id == id)
             {
                 return frame;
             }
@@ -41,7 +43,7 @@ public:
 
         std::cout << "id not found\n";
         
-        IFrame f;
+        static MapFrame f(0, {});
         return f;
     }
 
@@ -56,47 +58,36 @@ public:
         return points[id - 1];
     }
 
-    void lock()
+    auto GetPoints() const
     {
-        this->globalMutex.lock();
+        std::lock_guard<std::mutex> lock(this->globalMutex);
+        return points;
     }
 
+    void lock()
+    {
+        this->mapMutex.lock();
+    }
 
     void unlock()
     {
-        this->globalMutex.unlock();
+        this->mapMutex.unlock();
     }
-
 
 public:
-    virtual void AddFrame(IFrame &frame)
-    {
-        std::lock_guard<std::mutex> lock(this->globalMutex);
-        this->frames.push_back(frame);
-    }
+    bool AddFrame(const std::vector<FramePointData>& frameData, const EstimationResult& estimation);
 
-    virtual void DeleteFrame(const size_t id)
-    {
-        std::lock_guard<std::mutex> lock(this->globalMutex);
-
-        if (id == 0 && this->frames.size() > 0)
-        {
-            this->frames.pop_front();
-        }
-    }
-
-    virtual void Reset()
-    {
-        std::lock_guard<std::mutex> lock(this->globalMutex);
-        this->frames.clear();
-        this->points.clear();
-    }
+    void Reset();
 
 protected:
-    std::list<IFrame> frames;
+    void AddMapPoint(MapFrame& frame, const FramePointData& framePoint);
+
+protected:
+    std::list<MapFrame> frames;
     std::vector<MapPoint> points;
 
     mutable std::mutex globalMutex;
+    mutable std::mutex mapMutex;
 };
 
 }

@@ -20,7 +20,7 @@
 namespace eacham
 {
 
-void Render::Start()
+void Render::Activate()
 {
     this->isRunning = true;
     this->drawThread = std::async(std::launch::async, &Render::Loop, this);

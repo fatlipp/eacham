@@ -6,16 +6,17 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
 
+#include "odometry/IOdometry.h"
 #include "odometry/IVisualOdometry.h"
 #include "odometry/FrameToFrameOdometry.h"
 #include "config/Config.h"
 #include "tools/Tools3d.h"
 #include "types/DataTypes.h"
-#include "map/LocalMap.h"
 #include "data_source/IDataSourceCamera.h"
 #include "frame/IFrameCreator.h"
 #include "frame/FrameCreatorRgbd.h"
 #include "frame/FrameCreatorStereo.h"
+#include "frame/FrameMatcher.h"
 #include "motion_estimator/MotionEstimatorPnP.h"
 #include "motion_estimator/MotionEstimatorOpt.h"
 #include "motion_estimator/IMotionEstimator.h"
@@ -30,34 +31,20 @@ class VisualOdometryDirector
 using camera_t = IDataSourceCamera<T>;
 
 public:
-    std::unique_ptr<IVisualOdometry<T>> Build(const camera_t* const camera, const Config& config)
+    std::unique_ptr<IVisualOdometry> Build(const camera_t* const camera, const Config& config)
     {   
         auto configOdometry = config.GetOdometry();
         auto featureMatcher = BuildFeatureMatcher(config.GetFeatureExtractor().GetType());
+        auto frameMatcher = std::make_unique<FrameMatcher>(featureMatcher);
 
-        std::unique_ptr<IVisualOdometry<T>> odometry;
-
-        switch (configOdometry.odometryType)
-        {
-            case OdometryType::FRAME_TO_FRAME:
-                odometry = std::make_unique<FrameToFrameOdometry<T>>();
-                break;
-            default:
-                break;
-        }
+        std::unique_ptr<IVisualOdometry> odometry = std::make_unique<FrameToFrameOdometry>(frameMatcher);
 
         if (odometry != nullptr)
         {
-            odometry->SetFrameCreator(BuildFrameCreator(camera, featureMatcher, config.GetFeatureExtractor()));
-            odometry->SetMotionEstimator(BuildMotionEstimator(camera, configOdometry.motionEstimatorType, featureMatcher));
+            odometry->SetMotionEstimator(BuildMotionEstimator(camera, configOdometry.motionEstimatorType));
         }
 
         return odometry;
-    }
-
-    extractor_t BuildFeatureExtractor(const ConfigFeatureExtractor &config)
-    {
-        return std::make_unique<FeatureExtractor>(config);
     }
 
     matcher_t BuildFeatureMatcher(const FeatureExtractorType &type)
@@ -75,29 +62,8 @@ public:
         return nullptr;
     }
 
-    std::unique_ptr<IFrameCreator> BuildFrameCreator(const camera_t* const camera, const matcher_t& matcher, const ConfigFeatureExtractor &config)
-    {
-        auto featureExtractor = BuildFeatureExtractor(config);
-
-        if (camera->isStereo())
-        {
-            return BuildFrameCreatorStereo(camera->GetParameters(), std::move(featureExtractor), matcher);
-        }
-
-        return BuildFrameCreatorRgbd(camera->GetParameters(), std::move(featureExtractor));
-    }
-
-    std::unique_ptr<IFrameCreator> BuildFrameCreatorRgbd(const cv::Mat &cameraParameters, extractor_t&& extractor)
-    {
-        return std::make_unique<FrameCreatorRgbd>(cameraParameters, std::move(extractor));
-    }
-
-    std::unique_ptr<IFrameCreator> BuildFrameCreatorStereo(const cv::Mat &cameraParameters, extractor_t&& extractor, const matcher_t& matcher)
-    {
-        return std::make_unique<FrameCreatorStereo>(cameraParameters, std::move(extractor), matcher);
-    }
-
-    std::unique_ptr<IMotionEstimator> BuildMotionEstimator(const camera_t* const camera, const MotionEstimatorType &type, const matcher_t& matcher)
+    std::unique_ptr<IMotionEstimator> BuildMotionEstimator(const camera_t* const camera,
+        const MotionEstimatorType &type)
     {
         std::unique_ptr<MotionEstimatorBase> motionEstimator;
         switch (type)
@@ -109,8 +75,6 @@ public:
         default:
             motionEstimator = std::make_unique<MotionEstimatorPnP>(camera->GetParameters(), camera->GetDistortion());
         }
-
-        motionEstimator->SetMatcher(matcher);
 
         return motionEstimator;
     }

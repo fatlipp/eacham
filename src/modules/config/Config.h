@@ -11,7 +11,6 @@
 
 #include "data_source/DataSourceTypes.h"
 #include "motion_estimator/MotionEstimatorType.h"
-#include "odometry/OdometryType.h"
 
 
 namespace eacham
@@ -46,11 +45,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MotionEstimatorType, {
     {MotionEstimatorType::PNP, "PNP"},
 })
 
-NLOHMANN_JSON_SERIALIZE_ENUM(OdometryType, {
-    {OdometryType::FRAME_TO_FRAME, "F2F"},
-    {OdometryType::OPT, "OPT"}
-})
-
 }
 
 namespace eacham
@@ -76,12 +70,10 @@ struct ConfigGeneral
 struct ConfigOdometry
 {
     MotionEstimatorType motionEstimatorType;
-    OdometryType odometryType;
 
     friend void from_json(const nlohmann::json& j, ConfigOdometry& value)
     {
         j.at("motionEstimatorType").get_to<MotionEstimatorType>(value.motionEstimatorType);
-        j.at("odometryType").get_to<OdometryType>(value.odometryType);
     }
 };
 
