@@ -1,0 +1,6 @@
+conan install . --output-folder=./build --deployer=libs_deployer
+cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+
+export LD_RUN_PATH=/home/blackdyce/Projects/eacham/build/libs
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/blackdyce/Projects/eacham/build/libs
+./main ../config/ConfigTUM.json 

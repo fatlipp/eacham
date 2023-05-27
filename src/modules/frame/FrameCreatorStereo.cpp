@@ -1,7 +1,7 @@
 #include "FrameCreatorStereo.h"
 
 #include <opencv2/core.hpp>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "tools/Tools3d.h"
 

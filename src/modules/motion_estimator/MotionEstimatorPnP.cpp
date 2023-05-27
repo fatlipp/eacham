@@ -2,7 +2,7 @@
 #include "tools/Tools3d.h"
 
 #include <opencv2/calib3d.hpp>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Geometry>
 
 #include "motion_estimator/MotionEstimatorTools.h"
 

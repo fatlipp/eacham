@@ -92,8 +92,9 @@ namespace eacham
     {
         std::cout << "MapOptimizerBA() map.size = " << this->map->GetSize() << std::endl;
 
-        if (this->map->GetSize() < 2 || config.GetMaxIterations() == 0)
+        if (this->map->GetSize() < 2 || config.GetMaxIterations() == 0 || config.GetMaxFramesCount() == 0)
         {
+            std::cout << "MapOptimizerBA() CANCEL." << std::endl;
             return false;
         }
 
@@ -101,7 +102,6 @@ namespace eacham
         {
             this->onStart();
         }
-        std::lock_guard<Map> lock(*map);
 
         gtsam::NonlinearFactorGraph graph;
         gtsam::Values initialMeasurements;
@@ -109,6 +109,7 @@ namespace eacham
         std::set<int> frameIds;
         std::set<int> mapPointIds;
 
+        map->lock();
         const auto frames = this->map->GetFrames();
         auto startIter = frames.begin();
 
@@ -122,7 +123,6 @@ namespace eacham
             }
         }
 
-        int num = 0;
         std::for_each(startIter, frames.end(), [&](const MapFrame& frame)
         {
             const auto frameId = frame.id;
@@ -138,7 +138,7 @@ namespace eacham
             frameIds.insert(frameId);
             
             // the first frame is static
-            if (num > 0)
+            if (frameId > 0)
             {
                 const auto noise = CreateNoise6(config.GetKeyframeNoiseRot(), config.GetKeyframeNoisePos());
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
@@ -148,8 +148,6 @@ namespace eacham
                 const auto noise = CreateNoise6(0.000001, 0.0000001); 
                 graph.addPrior(gtsam::Symbol('x', frameId), gtsam::Pose3(position), noise);
             }
-
-            ++num;
 
             for (unsigned count = 0; const auto& [_, pointData] : frame.pointsData)
             {
@@ -171,8 +169,9 @@ namespace eacham
                 const auto huber = gtsam::noiseModel::Robust::Create(gtsam::noiseModel::mEstimator::Huber::Create(config.GetHuberUv()), 
                     measurementNoise);
                 
-                graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> >(
-                    measurement2, huber, gtsam::Symbol('x', frameId), gtsam::Symbol('l', pointData.mapPointId), this->cameraMat);
+                graph.emplace_shared<gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2>>(
+                    measurement2, huber,
+                    gtsam::Symbol('x', frameId), gtsam::Symbol('l', pointData.mapPointId), this->cameraMat);
 
             }
         });
@@ -191,10 +190,12 @@ namespace eacham
 
             graph.addPrior(gtsam::Symbol('l', id), mapPointGTSAM, huber);
         });
-
         auto optimizer = MakeOptimizer(config, graph, initialMeasurements);
-        const gtsam::Values optimizationResult = optimizer->optimize();
 
+        // map->unlock();
+        const gtsam::Values optimizationResult = optimizer->optimize();
+        // map->lock();
+        
         std::cout << "frames: " << frameIds.size() << ", mapPoints: " << mapPointIds.size() << std::endl;
         std::cout << "++initial error = " << graph.error(initialMeasurements) << std::endl;
         std::cout << "++final error = " << graph.error(optimizationResult) << std::endl << std::endl;
@@ -212,6 +213,7 @@ namespace eacham
             this->map->GetPoint(id).position = result;
             // std::cout << ", AFTER: " << map->GetPoint(id).position << std::endl;
         });
+
         std::cout << "update frames.........\n";
         // const auto frameRanges = std::views::iota(0, frameId);
         std::for_each(frameIds.begin(), frameIds.end(), [&](const auto& id)
@@ -226,41 +228,60 @@ namespace eacham
             if (!frame.isValid())
             {
                 std::cout << "INVALID!!!------------------------------------------------------frame.id: " << frame.id 
-                            << ", frame.parentId: " << frame.id << std::endl;
+                          << ", frame.parentId: " << frame.id << "\n";
                 return;
             }
 
             // std::cout << "ID: " << id << ", BEFORE:\n" << map->GetFrame(id).position << std::endl;
             frame.position = result.cast<float>();
+            frame.isOptimized = true;
             // std::cout << "AFTER:\n" << map->GetFrame(id).position << std::endl;
         });
+
+        // update non-optimized frames, which added when gtsam was processing
+        {
+            for (auto& frame : map->GetFrames())
+            {
+                if (frame.id < *frameIds.rbegin())
+                {
+                    continue;
+                }
+
+                if (std::find(frameIds.begin(), frameIds.end(), frame.id) == frameIds.end())
+                {
+                    std::cout << "------------------------------------------------------frame.id: " << frame.id 
+                                << ", frame.parentId: " << frame.parentId << std::endl;
+                    const auto parentFrame = map->GetFrame(frame.parentId);
+
+                    if (parentFrame.isValid())
+                    {
+                        const Eigen::Matrix4f newPos = parentFrame.position * frame.odometry;
+                        const Eigen::Matrix4f diff = frame.position.inverse() * newPos;
+
+                        frame.position = newPos;
+                        frame.isOptimized = true;
+
+                        for (const auto& pp : frame.pointsData)
+                        {
+                            if (mapPointIds.find(pp.second.mapPointId) == mapPointIds.end())
+                            {
+                                auto& mp = this->map->GetPoint(pp.second.mapPointId);
+                                mp.position = tools::transformPoint3d(mp.position, diff.inverse());
+
+                                mapPointIds.insert(pp.second.mapPointId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            std::cout << "BA: last pos:\n" << map->GetFrames().back().position << "\n";
+        }
+        map->unlock();
 
         if (this->onComplete != nullptr)
         {
             this->onComplete();
-        }
-
-        {
-
-            // for (auto& frame : map->GetFrames())
-            // {
-            //     if (frame.id < frameIds[frameIds.size() - 1])
-            //     {
-            //         continue;
-            //     }
-
-            //     if (std::find(frameIds.begin(), frameIds.end(), frame.id) == frameIds.end())
-            //     {
-            //         std::cout << "------------------------------------------------------frame.id: " << frame.id 
-            //                     << ", frame.parentId: " << frame.parentId << std::endl;
-            //         const auto parentFrame = map->GetFrame(frame.parentId);
-
-            //         if (parentFrame.isValid())
-            //         {
-            //             // frame.position = parentFrame.position * frame.odometry;
-            //         }
-            //     }
-            // }
         }
 
         return true;

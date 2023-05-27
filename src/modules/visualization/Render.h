@@ -5,7 +5,7 @@
 #include <thread>
 #include <future>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 namespace eacham
 {

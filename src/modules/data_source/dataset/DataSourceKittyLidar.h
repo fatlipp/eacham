@@ -1,8 +1,8 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <algorithm>
 #include <istream>

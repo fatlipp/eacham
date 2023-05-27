@@ -4,7 +4,7 @@
 #include "frame/FramePointData.h"
 
 #include <opencv2/core.hpp>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 namespace eacham
 {

@@ -4,7 +4,7 @@
 #include "motion_estimator/MotionEstimatorTools.h"
 
 #include <opencv2/calib3d.hpp>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Geometry>
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>

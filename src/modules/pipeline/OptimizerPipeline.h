@@ -29,21 +29,28 @@ public:
     OptimizerPipeline(std::unique_ptr<IMapOptimizer> optimizer)
         : optimizer(std::move(optimizer))
         , isNeedOptimize(false)
+        , isProcess(false)
     {
+        this->optimizer->SetOnComplete([&](){
+            isProcess = false;
+        });
     }
 
     void NeedOptimize()
     {
-        isNeedOptimize = true;
+        if (!isNeedOptimize)
+        {
+            isNeedOptimize = true;
+        }
     }
 
 protected:
     void Process() override
     {
-        if (isNeedOptimize)
+        if (isNeedOptimize && !isProcess)
         {
-            isNeedOptimize = false;
             this->optimizer->Optimize();
+            isNeedOptimize = false;
         }
     }
 
@@ -51,6 +58,7 @@ private:
     std::unique_ptr<IMapOptimizer> optimizer;
 
     std::atomic<bool> isNeedOptimize;
+    std::atomic<bool> isProcess;
 
 
 };

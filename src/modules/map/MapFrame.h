@@ -2,7 +2,7 @@
 #pragma once
 
 #include <opencv2/core.hpp>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 namespace eacham
 {
@@ -17,6 +17,7 @@ struct MapFrame
 {
     unsigned id = 0;
     unsigned parentId = 0;
+    bool isOptimized = false;
     Eigen::Matrix4f odometry;
     Eigen::Matrix4f position;
     std::unordered_map<unsigned, KeyPointDataVisual> pointsData;

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include <opencv2/opencv.hpp>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 namespace eacham
 {

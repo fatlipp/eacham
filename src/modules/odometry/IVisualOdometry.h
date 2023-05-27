@@ -4,7 +4,7 @@
 #include "frame/FrameMatcher.h"
 #include "motion_estimator/IMotionEstimator.h"
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 namespace eacham
 {

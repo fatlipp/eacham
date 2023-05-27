@@ -4,7 +4,7 @@
 #include "frame/IFrameLight.h"
 #include "motion_estimator/EstimationResult.h"
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 namespace eacham
 {

@@ -5,7 +5,7 @@
 #include <istream>
 #include <fstream>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "data_source/IDataSourceCamera.h"
 #include "data_source/dataset/IDataset.h"

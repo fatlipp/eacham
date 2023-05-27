@@ -3,52 +3,46 @@
 #include "motion_estimator/EstimationResult.h"
 #include "tools/Tools3d.h"
 
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace eacham
 {
 
 bool Map::AddFrame(const std::vector<FramePointData>& currentFrameData, const EstimationResult& estimation)
 {
-    MapFrame mapFrame { .id = estimation.frameIdCurrent, .parentId = 0, .odometry =  estimation.odometry, .position = Eigen::Matrix4f::Identity() };
+    if (estimation.matches.size() > 100)
+    {
+        // return true;
+    }
+
+    MapFrame mapFrame { .id = estimation.frameIdCurrent, 
+                        .parentId = 0, 
+                        .isOptimized = false,
+                        .odometry = estimation.odometry, 
+                        .position = Eigen::Matrix4f::Identity() };
+
 
     if (estimation.frameIdPrev > 0)
     {
         mapFrame.id = estimation.frameIdCurrent;
         mapFrame.parentId = estimation.frameIdPrev;
 
-        std::lock_guard<Map> lock(*this);
-        
         const auto& prevFrame = GetFrame(estimation.frameIdPrev);
-        const auto& prevFrame2 = GetFrames().back();
-
-        std::cout << "id1: " << prevFrame.id << ", id2: " << prevFrame2.id << std::endl;
 
         if (!prevFrame.isValid())
         {
-            std::cerr << "prevFrame is not found.!!!!!!!!!!!!!!!!!!!!!2222222222222222222222222" << std::endl;
+            std::cerr << "prevFrame is not found." << std::endl;
 
             return false;
         }
 
+        this->lock();
+
         mapFrame.position = prevFrame.position * mapFrame.odometry;
-
-        Eigen::Matrix4f mm = Eigen::Matrix4f::Identity();
-        const Eigen::Matrix4f posInv = mm.inverse();
-
-        int c1 = 0;
-        int c2 = 0;
 
         for (const auto& currentFramePoint : currentFrameData)
         {
-            // if (framePoint.id == 0)
-            // {
-            //     std::cerr << "Wrong frame point." << std::endl;
-
-            //     return false;
-            // }
-
             // a matched point
             if (estimation.matches.contains(currentFramePoint.id))
             {
@@ -61,8 +55,6 @@ bool Map::AddFrame(const std::vector<FramePointData>& currentFrameData, const Es
                     return false;
                 }
 
-                ++c1;
-                
                 const auto prevPointData = prevFrame.pointsData.at(idOnPrevFrame);
                 const auto mapPointId = prevPointData.mapPointId;
 
@@ -74,25 +66,24 @@ bool Map::AddFrame(const std::vector<FramePointData>& currentFrameData, const Es
             // a new point
             else
             {
-                ++c2;
-
                 AddMapPoint(mapFrame, currentFramePoint);
             }
         }
-
-        std::cout << "observed: " << c1 << ", added: " << c2 << std::endl;
     }
     else
     {
+        this->lock();
         for (const auto& currentFramePoint : currentFrameData)
         {
             AddMapPoint(mapFrame, currentFramePoint);
         }
     }
     std::cout << "Full size: " << currentFrameData.size() << ", matches: " << estimation.matches.size() << std::endl;
+    std::cout << "Added frame id: " << mapFrame.id << std::endl;
 
     std::lock_guard<std::mutex> lock(this->globalMutex);
     this->frames.push_back(mapFrame);
+    this->unlock();
 
     return true;
 }

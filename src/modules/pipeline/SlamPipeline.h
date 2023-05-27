@@ -134,9 +134,6 @@ protected:
                     auto dataset = dynamic_cast<IDataset*>(this->dataSource.get());
                     auto gtPos = std::get<1>(dataset->GetGtPose());
 
-
-                    // currentPos = defaultPos * currentPos;
-
                     if (callback != nullptr)
                     {
                         callback.operator()(currentPos);
@@ -151,7 +148,7 @@ protected:
                     std::cout << "GT pos:\n" << gtPos << std::endl;
                     std::cout << "Diff:\n" << diffLen << "\n" << diff << std::endl;
 
-                    if (lastFrame.id > 99)
+                    if (lastFrame.id > 199)
                     {
                         std::cout << "SlamPipeline() Completed" << std::endl;
 

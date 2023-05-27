@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     render->SetOnResetClick([&pipeline]() { pipeline->Reset(); });
     render->SetOnCloseClick([&pipeline, &dataSource]() { pipeline->Deactivate(); });
     render->Add(std::move(frameView));
-    render->Add(std::make_unique<MapView>(mapPtr));
+    // render->Add(std::make_unique<MapView>(mapPtr));
 
     if (dynamic_cast<IDataset*>(dataSourcePtr) != nullptr)
     {

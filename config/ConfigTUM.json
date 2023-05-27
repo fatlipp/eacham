@@ -1,6 +1,6 @@
 {
     "general": {
-        "maxFrames": 100,
+        "maxFrames": 500,
         "mapCapacity": 15,
         "source_type": "DATASET",
         "sensor_type": "CAMERA"
@@ -25,7 +25,7 @@
 
     "featureExtractor": {
         "type": "ORB",
-        "maxFeatures": 1000,
+        "maxFeatures": 600,
         "levelsCount": 8,
         "levelsScale": 1.1
     },
@@ -34,7 +34,7 @@
         "type": 0,
         "maxFramesCount": 8,
         "maxIterations": 4,
-        "mapPointsLimit": 100,
+        "mapPointsLimit": 80,
         "keyframeNoiseRot": 0.2,
         "keyframeNoisePos": 0.5,
         "odomNoiseRot": 0.2,

@@ -1,33 +1,16 @@
 cmake_minimum_required(VERSION 3.19)
 project(eacham)
 
+
+set(CMAKE_TOOLCHAIN_FILE conan_toolchain.cmake)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
 
-# set(CMAKE_BUILD_TYPE Debug)
-
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a")
-message("CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-message("Your C++ compiler supports these C++ features:")
-foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-  message("${i}")
-endforeach()
-
-find_package(OpenCV 4.7 REQUIRED)
-message("OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
-message("OpenCV_LIBRARIES = ${OpenCV_LIBRARIES}")
-
+find_package(OpenCV 4.5.5 REQUIRED)
+find_package(GTSAM 4.1.1 REQUIRED)
+find_package(pcl 1.13.1 REQUIRED)
 find_package(Pangolin REQUIRED)
-message("Pangolin_INCLUDE_DIRS = ${Pangolin_INCLUDE_DIRECTORIES}")
-message("Pangolin_LIBRARIES = ${Pangolin_LIBRARIES}")
 
-find_package(Eigen3 REQUIRED)
-message("EIGEN3_INCLUDE_DIR = ${EIGEN3_INCLUDE_DIR}")
-
-find_package(PCL REQUIRED)
-message("PCL_LIBRARIES = ${PCL_LIBRARIES}")
-
-find_package(GTSAM REQUIRED)
 find_package(realsense2 QUIET)
 
 if (${realsense2_FOUND})
@@ -37,19 +20,13 @@ endif()
 
 set(SOURCE
     src/modules/map/Map.cpp
-
-    # src/modules/motion_estimator/MotionEstimatorBase.cpp
     src/modules/motion_estimator/MotionEstimatorPnP.cpp
     src/modules/motion_estimator/MotionEstimatorOpt.cpp
-    
     src/modules/features/FeatureExtractor.cpp
     src/modules/frame/FrameCreatorStereo.cpp
     src/modules/frame/FrameCreatorRgbd.cpp
-    
     src/modules/optimizer/MapOptimizerBA.cpp
-
     src/modules/visualization/Render.cpp
-
     src/modules/performance/BlockTimer.cpp
 )
 
@@ -68,14 +45,20 @@ target_include_directories(main
         ${OpenCV_INCLUDE_DIRS}
         thirdparty/nlohmann
 )
-target_link_libraries(main 
-    ${OpenCV_LIBRARIES}
+
+message(STATUS "Eigen3_INCLUDE_DIR: ${Eigen3_INCLUDE_DIR}")
+message(STATUS "GTSAM_INCLUDE_DIR: ${GTSAM_INCLUDE_DIR}")
+
+target_link_libraries(main
+    gtsam::gtsam
+    opencv_core
+    opencv_features2d
+    opencv_xfeatures2d
+    opencv_highgui
+    opencv_flann
+    pcl::pcl
     ${Pangolin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    gtsam
-    metis-gtsam
 )
-set_property(TARGET main PROPERTY CXX_STANDARD 20)
 
 if (${REALSENSE_FOUND})
     target_link_libraries(main
@@ -84,3 +67,8 @@ if (${REALSENSE_FOUND})
 endif()
 
 message(STATUS "REALSENSE_FOUND: " ${REALSENSE_FOUND})
+
+# add_custom_command(TARGET main POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#         "${PROJECT_SOURCE_DIR}/libs"
+#         $<TARGET_FILE_DIR:main>)
