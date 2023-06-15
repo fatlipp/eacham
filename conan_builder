@@ -1,6 +1,21 @@
 conan install . --output-folder=./build --deployer=libs_deployer
 cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 
+conan install .. --output-folder=. --deployer=../libs_deployer
+cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+
+conan install .. --output-folder=. --deployer=../libs_deployer --build=missing  -c tools.build:jobs=5
+
 export LD_RUN_PATH=/home/blackdyce/Projects/eacham/build/libs
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/blackdyce/Projects/eacham/build/libs
 ./main ../config/ConfigTUM.json 
+
+
+# conan pangolin
+
+# install requirements
+conan install .
+
+#create package
+conan create .
+conan create . -c tools.build:jobs=2

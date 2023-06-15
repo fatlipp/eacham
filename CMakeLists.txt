@@ -6,12 +6,16 @@ set(CMAKE_TOOLCHAIN_FILE conan_toolchain.cmake)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
 
-find_package(OpenCV 4.5.5 REQUIRED)
-find_package(GTSAM 4.1.1 REQUIRED)
-find_package(pcl 1.13.1 REQUIRED)
-find_package(Pangolin REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(GTSAM REQUIRED)
+find_package(PCL REQUIRED)
+find_package(vtk REQUIRED
+)
 
+find_package(Pangolin REQUIRED)
 find_package(realsense2 QUIET)
+
+message(STATUS "VTK_LIBRARIES = ${VTK_LIBRARIES}")
 
 if (${realsense2_FOUND})
     set(REALSENSE_FOUND 1)
@@ -31,6 +35,7 @@ set(SOURCE
 )
 
 add_executable(main)
+
 target_sources(main
     PRIVATE
         ${SOURCE}
@@ -46,22 +51,23 @@ target_include_directories(main
         thirdparty/nlohmann
 )
 
-message(STATUS "Eigen3_INCLUDE_DIR: ${Eigen3_INCLUDE_DIR}")
-message(STATUS "GTSAM_INCLUDE_DIR: ${GTSAM_INCLUDE_DIR}")
+message(STATUS "realsense2_FOUND: ${realsense2_FOUND}")
+message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+message(STATUS "GLEW_INCLUDE_DIR: ${GLEW_INCLUDE_DIR}")
 
-target_link_libraries(main
+get_target_property(OUT opencv_core INTERFACE_LINK_LIBRARIES)
+message(STATUS "OUT: ${OUT}")
+
+target_link_libraries(main PRIVATE
     gtsam::gtsam
-    opencv_core
-    opencv_features2d
-    opencv_xfeatures2d
-    opencv_highgui
-    opencv_flann
+    opencv::opencv
     pcl::pcl
-    ${Pangolin_LIBRARIES}
+    pangolin::pangolin
 )
+# target_link_libraries(main  "-Wl,-rpath-link ${PROJECT_SOURCE_DIR}/build/libs")
 
 if (${REALSENSE_FOUND})
-    target_link_libraries(main
+    target_link_libraries(main PRIVATE
         realsense2::realsense2
     )
 endif()

@@ -3,7 +3,9 @@ gtsam/4.1.1
 opencv/4.5.5
 eigen/3.4.0
 librealsense/2.49.0
+pangolin/0.8
 pcl/1.13.1
+vtk/[>=5.6.1]@gtel/stable
 
 [options]
 gtsam*:shared=True
@@ -12,8 +14,13 @@ opencv*:nonfree=True
 opencv*:shared=True
 eigen*:shared=True
 librealsense*:shared=True
+pangolin*:shared=True
+pcl*:fPIC=True
 pcl*:shared=True
+pcl*:with_qt=False
+vtk*:shared=True
 
 [generators]
 CMakeDeps
 CMakeToolchain
+VirtualRunEnv
