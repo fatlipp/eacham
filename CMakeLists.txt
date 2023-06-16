@@ -9,18 +9,17 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
 find_package(OpenCV REQUIRED)
 find_package(GTSAM REQUIRED)
 find_package(PCL REQUIRED)
-find_package(vtk REQUIRED
-)
-
 find_package(Pangolin REQUIRED)
 find_package(realsense2 QUIET)
 
-message(STATUS "VTK_LIBRARIES = ${VTK_LIBRARIES}")
+get_target_property(OUT pcl::pcl INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "pcl INTERFACE_LINK_LIBRARIES = ${OUT}")
 
 if (${realsense2_FOUND})
     set(REALSENSE_FOUND 1)
     add_definitions(-DREALSENSE_FOUND)
 endif()
+message(STATUS "REALSENSE_FOUND: " ${REALSENSE_FOUND})
 
 set(SOURCE
     src/modules/map/Map.cpp
@@ -51,30 +50,15 @@ target_include_directories(main
         thirdparty/nlohmann
 )
 
-message(STATUS "realsense2_FOUND: ${realsense2_FOUND}")
-message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
-message(STATUS "GLEW_INCLUDE_DIR: ${GLEW_INCLUDE_DIR}")
-
-get_target_property(OUT opencv_core INTERFACE_LINK_LIBRARIES)
-message(STATUS "OUT: ${OUT}")
-
 target_link_libraries(main PRIVATE
     gtsam::gtsam
     opencv::opencv
     pcl::pcl
     pangolin::pangolin
 )
-# target_link_libraries(main  "-Wl,-rpath-link ${PROJECT_SOURCE_DIR}/build/libs")
 
 if (${REALSENSE_FOUND})
     target_link_libraries(main PRIVATE
         realsense2::realsense2
     )
 endif()
-
-message(STATUS "REALSENSE_FOUND: " ${REALSENSE_FOUND})
-
-# add_custom_command(TARGET main POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory
-#         "${PROJECT_SOURCE_DIR}/libs"
-#         $<TARGET_FILE_DIR:main>)
