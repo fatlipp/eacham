@@ -8,7 +8,7 @@
     
     "dataset": {
         "type": "KITTI",
-        "path": "/home/Datasets/KITTI"
+        "path": "/home/blackdyce/Datasets/KITTI"
     },
     
     "camera": {
@@ -25,23 +25,24 @@
     },
 
     "featureExtractor": {
-        "type": "ORB",
+        "type": "SIFT",
         "maxFeatures": 1500,
         "levelsCount": 8,
         "levelsScale": 1.4
     },
 
     "mapOptimizer": {
-        "type": 2,
+        "type": 0,
+        "maxFramesCount": 4,
         "maxIterations": 4,
-        "mapPointsLimit": 180,
+        "mapPointsLimit": 100,
         "keyframeNoiseRot": 0.2,
-        "keyframeNoisePos": 1.5,
+        "keyframeNoisePos": 0.5,
         "odomNoiseRot": 0.2,
-        "odomNoisePos": 0.25,
-        "measurementNoiseUV": 3.5,
-        "huberUV": 5.0,
-        "measurementNoise3d": 0.25,
-        "huber3d": 0.45
+        "odomNoisePos": 0.12,
+        "measurementNoiseUV": 1.5,
+        "huberUV": 2.0,
+        "measurementNoise3d": 0.15,
+        "huber3d": 1.25
     }
 }

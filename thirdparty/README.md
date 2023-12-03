@@ -1693,7 +1693,7 @@ I deeply appreciate the help of the following people.
 277. [JungHoon Lee](https://github.com/jhnlee) fixed a typo.
 278. [Faruk D.](https://github.com/fdiblen) fixed the CITATION.CFF file.
 279. [Andrea Cocito](https://github.com/puffetto) added a clarification on macro usage to the documentation.
-280. [Krzysiek Karbowiak](https://github.com/kkarbowiak) refactored the tests to use `CHECK_THROWS_WITH_AS`.
+280. [Krzysiek Karbowiak](https://github.com/kkarbowiak) refactored the tests to use `// CHECK_THROWS_WITH_AS`.
 281. [Chaoqi Zhang](https://github.com/prncoprs) fixed a typo.
 282. [ivanovmp](https://github.com/ivanovmp) fixed a whitespace error.
 283. [KsaNL](https://github.com/KsaNL) fixed a build error when including `<windows.h>`.

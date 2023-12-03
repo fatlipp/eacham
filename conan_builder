@@ -1,0 +1,9 @@
+# install requirements using conan:
+conan install . --output-folder=./build -s compiler.cppstd=gnu20 -s compiler.version=13 --build=missing
+cmake --preset conan-release
+cmake --build --preset conan-release
+
+# add env. vars:
+source ./build/conanrun.sh
+
+# ready to run

@@ -1,6 +1,6 @@
 {
     "general": {
-        "maxFrames": 100,
+        "maxFrames": 500,
         "mapCapacity": 15,
         "source_type": "DATASET",
         "sensor_type": "CAMERA"
@@ -8,7 +8,7 @@
 
     "dataset": {
         "type": "TUM",
-        "path": "/home/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
+        "path": "/home/blackdyce/Datasets/TUM/rgbd_dataset_freiburg3_long_office_household"
     },
     
     "camera": {
@@ -20,28 +20,28 @@
     },
 
     "odometry": {
-        "motionEstimatorType": "PNP",
-        "odometryType": "F2F"
+        "motionEstimatorType": "PNP"
     },
 
     "featureExtractor": {
         "type": "ORB",
-        "maxFeatures": 1000,
+        "maxFeatures": 600,
         "levelsCount": 8,
         "levelsScale": 1.1
     },
 
     "mapOptimizer": {
         "type": 0,
+        "maxFramesCount": 8,
         "maxIterations": 4,
         "mapPointsLimit": 80,
         "keyframeNoiseRot": 0.2,
-        "keyframeNoisePos": 1.5,
+        "keyframeNoisePos": 0.5,
         "odomNoiseRot": 0.2,
-        "odomNoisePos": 0.25,
+        "odomNoisePos": 0.12,
         "measurementNoiseUV": 1.5,
-        "huberUV": 5.0,
+        "huberUV": 2.0,
         "measurementNoise3d": 0.15,
-        "huber3d": 0.25
+        "huber3d": 1.25
     }
 }
