@@ -14,6 +14,7 @@
 #include "sfm/ba/MotionBA.h"
 #include "sfm/data/Map.h"
 #include "sfm/utils/Triangulator.h"
+#include "sfm/utils/Saver.h"
 
 #include "sfm/data_source/MonoCameraDataset.h"
 
@@ -153,11 +154,11 @@ int main(int argc, char* argv[])
                 }
             }
 
-            std::cout << "matches: [" << id1 << " - " << id2 
-                << "]: '12': " << matches12.size()
-                << "]: '21': " << matches21.size() 
-                << "]: 'good pair': " << bestMatches12.size() 
-                << std::endl;
+            // std::cout << "matches: [" << id1 << " - " << id2 
+            //     << "]: '12': " << matches12.size()
+            //     << "]: '21': " << matches21.size() 
+            //     << "]: 'good pair': " << bestMatches12.size() 
+            //     << std::endl;
 
             if (bestMatches12.size() > 30)
             {
@@ -191,10 +192,9 @@ int main(int argc, char* argv[])
 
 
     auto [prevId, currentId] = graph->GetBestPair();
-    prevId = 0;
-    currentId = 1;
     std::cout << "initial pair: " << prevId << " - " << currentId << std::endl;
     RecoverPoseTwoView(prevId, currentId, graph, K, globalMap);
+    graph->FixNode(prevId);
 
     auto& factor = graph->Get(prevId)->GetFactor(currentId);
     graph->Get(prevId)->SetTransform(Eigen::Matrix4d::Identity());
@@ -217,13 +217,16 @@ int main(int argc, char* argv[])
     }
     
     std::tie(prevId, currentId) = graph->GetBestPairForValid();
-    graph->FixNode(prevId);
 
-    std::set<unsigned> excluded = {prevId, currentId};
+    std::set<unsigned> excluded;
+    if (prevId < 1000)
+        excluded.insert(prevId);
+    if (currentId < 1000)
+        excluded.insert(currentId);
 
     while (currentId < 1000)
     {
-        // while (waitForNextStep) {}
+        // UI: while (waitForNextStep) {}
         waitForNextStep = true;
 
         if (RecoverPosePnP(prevId, currentId, graph, globalMap, K))
@@ -239,12 +242,14 @@ int main(int argc, char* argv[])
 
         std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
 
-        excluded.insert(prevId);
-        excluded.insert(currentId);
+        if (prevId < 1000)
+            excluded.insert(prevId);
+        if (currentId < 1000)
+            excluded.insert(currentId);
     }
 
 
-    // process excluded frames???
+    // TODO: process excluded frames???
     excluded = {};
     std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
 
@@ -261,12 +266,13 @@ int main(int argc, char* argv[])
         }
 
         std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
-        excluded.insert(prevId);
-        excluded.insert(currentId);
+        if (prevId < 1000)
+            excluded.insert(prevId);
+        if (currentId < 1000)
+            excluded.insert(currentId);
     }
 
-    // process robust global ba refinement
-    //
+    // TODO: process robust global ba refinement
 
     std::cout << "excluded frames: " << excluded.size() << std::endl;
 
@@ -288,7 +294,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            std::cout << "Node: " << node->GetId() << " is invalid";
+            std::cout << "Node: " << node->GetId() << " is invalid\n";
             ++invalidNodes;
         }
     }
@@ -299,8 +305,11 @@ int main(int argc, char* argv[])
     {
         std::cout << "frameId: " << id << "\n" << transform << std::endl;
     }
+        
+    std::cout << "Saving" << std::endl;
+    SavePositions("positions.txt", framePositions);
 
-    // return framePositions to caller
+    // TODO: create a lib, return framePositions to caller
 
     std::cout << "END..." << std::endl;
 
