@@ -21,6 +21,7 @@ Output format: ((frame_id:uint, position:Mat4x4) X valid frames count)
 * Conan 2.x.x (optinal)
 
 **Further developmnent**
-  * Computation time optimization
+  * Comfiguration file
+  * Code refactoring and computation time optimization
   * Create a lib with an interface
   * NERF
