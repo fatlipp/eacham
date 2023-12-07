@@ -14,7 +14,7 @@ namespace eacham
 void RecoverPoseTwoView(const unsigned id1, const unsigned id2, 
     std::shared_ptr<graph_t> graph, 
     const cv::Mat& K,
-    std::shared_ptr<Map> map);
+    std::shared_ptr<Map> map, const float reprErrMax = 4.0f);
 
 bool RecoverPosePnP(
     const unsigned id1, const unsigned id2,

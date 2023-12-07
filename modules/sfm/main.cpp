@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 
         const auto [imageData, gtPosData] = source.Get();
         const auto [gtPos] = gtPosData;
-        auto [ts, image] = imageData;
+        auto [ts, image, name] = imageData;
 
         while (image.rows > 1500.0F)
             ResizeImage(image, 0.95);
@@ -71,7 +71,8 @@ int main(int argc, char* argv[])
 
         frames[frameId] = {
                 .id = frameId,
-                .image = image.clone()
+                .image = image.clone(),
+                .name = name
             };
 
         if (++frameId >= maxFramesCount)
@@ -127,11 +128,25 @@ int main(int argc, char* argv[])
             checkPairs.push_back({id1, id2});
         }
     }
+
+    // map
+    std::shared_ptr<Map> globalMap = std::make_shared<Map>();
+    
+    const double focal = std::max(frames[0].image.rows, frames[0].image.cols) * 1.2;
+    const double cx = frames[0].image.cols / 2.0;
+    const double cy = frames[0].image.rows / 2.0;
+    cv::Mat K = (cv::Mat_<double>(3,3) << focal,  0,      cx, 
+                                          0,      focal,  cy, 
+                                          0,      0,      1);
+
+    std::pair<unsigned, unsigned> bestPair;
+    float bestQuality = 0;
+    std::mutex bestMutex;
     
     std::for_each(std::execution::par, 
         checkPairs.cbegin(), 
         checkPairs.cend(), 
-        [&graph, &featurePipe](const auto& pair12) { 
+        [&graph, &featurePipe, &bestPair, &bestQuality, &bestMutex, &globalMap, &K](const auto& pair12) { 
             const auto [id1, id2] = pair12;
 
             auto node1 = graph->Get(id1);
@@ -164,21 +179,37 @@ int main(int argc, char* argv[])
             {
                 graph->Connect(id1, id2, bestMatches12);
                 graph->Connect(id2, id1, bestMatches21);
+                
+                // TODO: BAD!!! Break after finding optimal correspondence 
+                // (i.e. more than 200 matches)
+                if (bestMatches12.size() > 100)
+                {
+                    std::lock_guard<std::mutex> lock {bestMutex};
+                    RecoverPoseTwoView(id1, id2, graph, K, globalMap, 4.0);
+                    RecoverPoseTwoView(id2, id1, graph, K, globalMap, 4.0);
+
+                    auto& factor12 = node1->GetFactor(node2->GetId());
+                    auto& factor21 = node2->GetFactor(node1->GetId());
+
+                    if (factor21.quality > 100 && factor21.quality > 100)
+                    {
+                        if (factor12.quality > bestQuality)
+                        {
+                            bestQuality = factor12.quality;
+                            bestPair = {id1, id2};
+                        }
+                        if (factor21.quality > bestQuality)
+                        {
+                            bestQuality = factor21.quality;
+                            bestPair = {id2, id1};
+                        }
+                    }
+                }
             }
         });
 
-    // map
-    std::shared_ptr<Map> globalMap = std::make_shared<Map>();
-
     // calc 3d points
     std::cout << "Two View" << std::endl;
-    
-    const double focal = std::max(frames[0].image.rows, frames[0].image.cols) * 1.2;
-    const double cx = frames[0].image.cols / 2.0;
-    const double cy = frames[0].image.rows / 2.0;
-    cv::Mat K = (cv::Mat_<double>(3,3) << focal,  0,      cx, 
-                                          0,      focal,  cy, 
-                                          0,      0,      1);
     // render
     std::atomic<bool> waitForNextStep = true;
     std::atomic<bool> waitForBA = true;
@@ -191,12 +222,68 @@ int main(int argc, char* argv[])
     render.Activate();
 
 
-    auto [prevId, currentId] = graph->GetBestPair();
-    std::cout << "initial pair: " << prevId << " - " << currentId << std::endl;
-    RecoverPoseTwoView(prevId, currentId, graph, K, globalMap);
-    graph->FixNode(prevId);
+    unsigned prevId = bestPair.first;
+    unsigned currentId = bestPair.second;
+    // unsigned prevId = 9999;
+    // unsigned currentId = 9999;
+    // std::set<unsigned> excluded;
+    // while (true)
+    // {
+    //     std::tie(prevId, currentId) = graph->GetBestPair(excluded);
+
+    //     if (prevId < 999 && prevId < 999)
+    //     {
+    //         RecoverPoseTwoView(prevId, currentId, graph, K, globalMap);
+
+    //         auto& factor = graph->Get(prevId)->GetFactor(currentId);
+
+    //         if (factor.quality > 80)
+    //         {
+    //             break;
+    //         }
+
+    //         excluded.insert(prevId);
+    //         excluded.insert(currentId);
+
+    //         prevId = 999;
+    //         currentId = 999;
+    //     }
+    //     else
+    //     {
+    //         throw std::runtime_error("No good initial pair");
+    //     }
+    // }
+
+    // if (prevId > 900 || prevId > 900)
+    // {
+    //     throw std::runtime_error("No good initial pair after Loop");
+    //     return;
+    // }
 
     auto& factor = graph->Get(prevId)->GetFactor(currentId);
+    std::cout << "initial pair: " << prevId << " - " << currentId << ", matches: " 
+        << factor.matches.size() << ", q: " << factor.quality << std::endl;
+    std::cout << "names: " << frames[prevId].name << " -> " << frames[currentId].name << std::endl;
+
+    // DrawMatches("initial", prevId, currentId, graph, 0);
+
+    std::set<unsigned> excluded;
+    excluded.insert(prevId);
+    excluded.insert(currentId);
+
+    // // auto [prevId, currentId] = graph->GetBestPair();
+    // RecoverPoseTwoView(prevId, currentId, graph, K, globalMap);
+
+    // std::cout << "initial pair: " << prevId << " - " << currentId << ", quality: " 
+    //     << factor.quality << std::endl;
+
+    if (factor.quality < 100)
+    {
+        return 0;
+    }
+
+    graph->FixNode(prevId);
+
     graph->Get(prevId)->SetTransform(Eigen::Matrix4d::Identity());
     graph->Get(currentId)->SetTransform(factor.transform);
 
@@ -216,13 +303,7 @@ int main(int argc, char* argv[])
         globalMap->AddObserver(currentId, m.id2, m.triangulatedPointId);
     }
     
-    std::tie(prevId, currentId) = graph->GetBestPairForValid();
-
-    std::set<unsigned> excluded;
-    if (prevId < 1000)
-        excluded.insert(prevId);
-    if (currentId < 1000)
-        excluded.insert(currentId);
+    std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
 
     while (currentId < 1000)
     {
@@ -249,39 +330,39 @@ int main(int argc, char* argv[])
     }
 
 
-    // TODO: process excluded frames???
-    excluded = {};
-    std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
+    // // TODO: process excluded frames???
+    // excluded = {};
+    // std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
 
-    while (currentId < 1000)
-    {
-        if (RecoverPosePnP(prevId, currentId, graph, globalMap, K))
-        {
-            TriangulateFrame(currentId, graph, globalMap, K, 2);
+    // while (currentId < 1000)
+    // {
+    //     if (RecoverPosePnP(prevId, currentId, graph, globalMap, K))
+    //     {
+    //         TriangulateFrame(currentId, graph, globalMap, K, 2);
 
-            EstimateUsingBA(graph, globalMap, K);
-            TriangulateFrame(currentId, graph, globalMap, K, 3);
+    //         EstimateUsingBA(graph, globalMap, K);
+    //         TriangulateFrame(currentId, graph, globalMap, K, 3);
 
-            excluded = {};
-        }
+    //         excluded = {};
+    //     }
 
-        std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
-        if (prevId < 1000)
-            excluded.insert(prevId);
-        if (currentId < 1000)
-            excluded.insert(currentId);
-    }
+    //     std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
+    //     if (prevId < 1000)
+    //         excluded.insert(prevId);
+    //     if (currentId < 1000)
+    //         excluded.insert(currentId);
+    // }
 
-    // TODO: process robust global ba refinement
+    // // TODO: process robust global ba refinement
 
     std::cout << "excluded frames: " << excluded.size() << std::endl;
 
-    for (const auto& frameId : excluded)
-    {
-        std::cout << "frameId: " << frameId << std::endl;
-    }
+    // for (const auto& frameId : excluded)
+    // {
+    //     std::cout << "frameId: " << frameId << std::endl;
+    // }
 
-    std::cout << "Graph stat:\n size: " << graph->Size() << std::endl;
+    // std::cout << "Graph stat:\n size: " << graph->Size() << std::endl;
 
     std::map<unsigned, Eigen::Matrix4d> framePositions; 
 
@@ -301,10 +382,10 @@ int main(int argc, char* argv[])
     std::cout << "invalidNodes: " << invalidNodes << " out of " << graph->Size() << std::endl;
     std::cout << "framePositions: " << framePositions.size() << std::endl;
 
-    for (const auto& [id, transform] : framePositions)
-    {
-        std::cout << "frameId: " << id << "\n" << transform << std::endl;
-    }
+    // for (const auto& [id, transform] : framePositions)
+    // {
+    //     std::cout << "frameId: " << id << "\n" << transform << std::endl;
+    // }
         
     std::cout << "Saving" << std::endl;
     SavePositions("positions.txt", framePositions);

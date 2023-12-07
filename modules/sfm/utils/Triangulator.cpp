@@ -18,6 +18,35 @@
 namespace eacham
 {
 
+bool CheckTriangulationAngle(const Eigen::Matrix4d& transform1,
+                            const Eigen::Matrix4d& transform2,
+                            const Eigen::Vector3d& point3D,
+                            const double angleLim)
+{
+    const Eigen::Vector3d cam1 = transform1.inverse().block<3, 1>(0, 3);
+    const Eigen::Vector3d ray1 = (point3D - cam1);
+    const auto norm1 = ray1.norm();
+
+    if (std::abs(norm1) < 0.0000001f)
+    {
+        return false;
+    }
+
+    const Eigen::Vector3d cam2 = transform2.inverse().block<3, 1>(0, 3);
+    const Eigen::Vector3d ray2 = (point3D - cam2);
+    const auto norm2 = ray2.norm();
+
+    if (std::abs(norm2) < 0.0000001f)
+    {
+        return false;
+    }
+
+    const auto dot = ray1.x() * ray2.x() + ray1.y() * ray2.y() + ray1.z() * ray2.z();
+    const auto angle = std::acos(dot / (norm1 * norm2));
+
+    return std::min(angle, PI - angle) > angleLim * DEG2RAD;
+}
+
 Eigen::Vector3d TriangulatePoint(const Eigen::Matrix4d& cam1Pos,
                                  const Eigen::Matrix4d& cam2Pos,
                                  const Eigen::Vector2d& point1,
@@ -73,6 +102,10 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
     if (size < 3)
     {
         point3d = TriangulatePoint(data[0].point2d, data[1].point2d, data[0].K, data[0].transform, data[1].transform);
+        if (!CheckTriangulationAngle(data[0].transform, data[1].transform, point3d, 3.0f))
+        {
+            return false;
+        }
 
         for (const auto& pt : data)
         {
@@ -111,30 +144,33 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
         point3d = TriangulatePoint(data[r1].point2d, data[r2].point2d, data[0].K, 
             data[r1].transform, data[r2].transform);
 
-        unsigned inl = 0;
-        std::vector<unsigned> inliersLocal;
-
-        for (const auto& pt : data)
+        if (CheckTriangulationAngle(data[r1].transform, data[r2].transform, point3d, 3.0f))
         {
-            const auto pos = tools::transformPoint3d(point3d, pt.transform);
-            const auto err = CalcReprojectionError({pt.point2d.x(), pt.point2d.y()}, {pos.x(), pos.y(), pos.z()}, pt.K);
+            unsigned inl = 0;
+            std::vector<unsigned> inliersLocal;
 
-            if (err < maxErr && IsPositiveDepth(pt.transform, point3d))
+            for (const auto& pt : data)
             {
-                inliersLocal.push_back(1);
+                const auto pos = tools::transformPoint3d(point3d, pt.transform);
+                const auto err = CalcReprojectionError({pt.point2d.x(), pt.point2d.y()}, {pos.x(), pos.y(), pos.z()}, pt.K);
 
-                ++inl;
+                if (err < maxErr && IsPositiveDepth(pt.transform, point3d))
+                {
+                    inliersLocal.push_back(1);
+
+                    ++inl;
+                }
+                else
+                {
+                    inliersLocal.push_back(0);
+                }
             }
-            else
+            
+            if (inl > bestInl)
             {
-                inliersLocal.push_back(0);
+                bestInl = inl;
+                bestInliers = inliersLocal;
             }
-        }
-        
-        if (inl > bestInl)
-        {
-            bestInl = inl;
-            bestInliers = inliersLocal;
         }
 
         ++r2;

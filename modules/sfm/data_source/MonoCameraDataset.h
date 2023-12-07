@@ -8,6 +8,7 @@
 #include <istream>
 #include <fstream>
 #include <utility>
+#include <string>
 
 #include "core/data_source/ICamera.h"
 #include "core/data_source/IDataset.h"
@@ -26,7 +27,7 @@ struct DatasetInputData
 
 };
 
-class MonoCameraDataset : public ICamera<double, cv::Mat>
+class MonoCameraDataset : public ICamera<double, cv::Mat, std::string>
 {
 public:
     MonoCameraDataset(const std::string& calibPath, const std::string& imagesPath, const unsigned startFrameId)
@@ -55,7 +56,7 @@ public:
         auto im = cv::imread(imagePatches[currentId]);
         
         std::lock_guard<std::mutex> lock(this->dataMutex);
-        data = { currentId, im };
+        data = { currentId, im, imagePatches[currentId] };
         
         currentId += 1;
     }

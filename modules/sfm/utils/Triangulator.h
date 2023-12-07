@@ -12,6 +12,8 @@
 
 namespace eacham
 {
+constexpr double PI = 3.14159265358979323846;
+constexpr double DEG2RAD = M_PI / 180.0;
 
 struct EstimatorData
 {
@@ -20,6 +22,11 @@ struct EstimatorData
     cv::Mat K;
     
 };
+
+bool CheckTriangulationAngle(const Eigen::Matrix4d& cam1,
+                            const Eigen::Matrix4d& cam2,
+                            const Eigen::Vector3d& point3D,
+                            const double angleLim = 1.5);
 
 Eigen::Vector3d TriangulatePoint(const Eigen::Matrix4d& cam1Pos,
                                  const Eigen::Matrix4d& cam2Pos,

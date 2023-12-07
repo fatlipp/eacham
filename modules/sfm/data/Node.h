@@ -181,7 +181,7 @@ public:
 
         for (const auto& [id1, factor] : factors)
         {
-            if (exludedIds.count(id1) == 0 && factor.quality > bestQuality && id + 1 == id1)
+            if (exludedIds.count(id1) == 0 && factor.quality > bestQuality)
             {
                 bestQuality = factor.quality;
                 bestQualityId = id1;

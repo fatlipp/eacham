@@ -8,6 +8,9 @@
 #include "base/tools/Tools3d.h"
 #include "base/tools/Tools2d.h"
 
+#include <opencv4/opencv2/calib3d.hpp>
+#include <opencv4/opencv2/highgui.hpp>
+
 #include <Eigen/Geometry>
 
 #include <iostream>
@@ -95,18 +98,16 @@ std::vector<Match> CreateMatches(
 
 void RecoverPoseTwoView(const unsigned id1, const unsigned id2, 
     std::shared_ptr<graph_t> graph, const cv::Mat& K,
-    std::shared_ptr<Map> map)
+    std::shared_ptr<Map> map, const float reprErrMax)
 {
     auto node1 = graph->Get(id1);
     auto node2 = graph->Get(id2);
     auto& factor = node1->GetFactor(node2->GetId());
 
-    std::cout << "RecoverPoseTwoView: " << node1->GetId() << " -> " << node2->GetId() << 
-        ", frameMatches: " << factor.matches.size() << ":\n";
+    // std::cout << "RecoverPoseTwoView: " << node1->GetId() << " -> " << node2->GetId() << 
+    //     ", frameMatches: " << factor.matches.size() << ":\n";
 
     const auto& [pts1, pts2] = GetMatchedPoints(node1, node2);
-
-    std::cout << "pts1: " << pts1.size();
 
     cv::Mat mask; // CV_8U
     auto E = cv::findEssentialMat(pts1, pts2, 
@@ -122,8 +123,8 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
 
         E_Inliers = points1_H.size();
 
-        std::cout << ", points1_E: " << E_Inliers;
-        std::cout << ", E_inliers_ratio: " << E_Inliers / static_cast<float>(pts1.size());
+        // std::cout << ", points1_E: " << E_Inliers;
+        // std::cout << ", E_inliers_ratio: " << E_Inliers / static_cast<float>(pts1.size());
     }
 
     cv::Mat mask2;
@@ -138,12 +139,12 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
 
         H_Inliers = points1_H.size();
 
-        std::cout << "; points1_H: " << H_Inliers;
-        std::cout << ", H_inliers_ratio: " << H_Inliers / static_cast<float>(pts1.size()) << std::endl;
+        // std::cout << "; points1_H: " << H_Inliers;
+        // std::cout << ", H_inliers_ratio: " << H_Inliers / static_cast<float>(pts1.size()) << std::endl;
     }
 
     const float H_E_ratio = (H_Inliers > 0.0) ? (H_Inliers / E_Inliers) : 0;
-    std::cout << "H/E ratio: " << H_E_ratio << std::endl;
+    // std::cout << "H/E ratio: " << H_E_ratio << std::endl;
 
     if (H_E_ratio > 0.9)
     {
@@ -153,7 +154,7 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
         std::vector<std::pair<unsigned, Eigen::Vector3d>> bestMatches;
         Eigen::Matrix4d bestTransform;
         unsigned bestNum = 99;
-        std::cout << "recoverPose by H, solutions: " << solutions << std::endl;
+        // std::cout << "recoverPose by H, solutions: " << solutions << std::endl;
 
         for (int i = 0; i < solutions; ++i)
         {
@@ -183,10 +184,9 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
                     std::pow(p1.y() - manualProj.y, 2));
 
 
-                const Eigen::Vector3d c1 = {0, 0, 0};
-                const Eigen::Vector3d c2 = transform.inverse().block<3, 1>(0, 3);
-
-                if (reprojectionError < 4.0F)
+                if (CheckTriangulationAngle(Eigen::Matrix4d::Identity(), transform, 
+                    point3d, 4.0) 
+                && (reprojectionError < reprErrMax))
                 {
                     matches.push_back({j, point3d});
                 }
@@ -200,7 +200,7 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
             }
         }
 
-        std::cout << "Best solution = " << bestNum << ", bestMatches: " << bestMatches.size() << std::endl;
+        // std::cout << "Best solution = " << bestNum << ", bestMatches: " << bestMatches.size() << std::endl;
 
         if (bestMatches.size() > 20)
         {
@@ -220,7 +220,7 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
     }
     else
     {
-        std::cout << "recoverPose by E()\n";
+        // std::cout << "recoverPose by E()\n";
 
         cv::Mat R;
         cv::Mat t;
@@ -250,7 +250,9 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
             const float reprojectionError = std::sqrt(std::pow(p1.x() - manualProj.x, 2) + 
                 std::pow(p1.y() - manualProj.y, 2));
 
-            if (reprojectionError < 4.0F)
+            if (CheckTriangulationAngle(Eigen::Matrix4d::Identity(), transform, 
+                point3d, 2.0) 
+                && (reprojectionError < reprErrMax))
             {
                 factor.matches[i].triangulatedPointId = map->Add(point3d, {0.3, 0, 0.3});
 
@@ -262,8 +264,7 @@ void RecoverPoseTwoView(const unsigned id1, const unsigned id2,
         factor.quality = goodReprojections;
     }
 
-    auto& factorEnd = node1->GetFactor(node2->GetId());
-    std::cout << "factor.qulity: " << factor.quality << ", quality2: " << factorEnd.quality << std::endl;
+    // std::cout << "factor.qulity: " << factor.quality << std::endl;
 }
 
 bool RecoverPosePnP(

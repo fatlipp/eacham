@@ -32,11 +32,13 @@ public:
 public:
     bool CheckExists(const unsigned id)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         return points.find(id) != points.end();
     }
 
     unsigned Add(const Eigen::Vector3d& point)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         ++mapPointId;
 
         points.insert({mapPointId, {mapPointId, point, {0, 255, 0}, false}});
@@ -46,6 +48,8 @@ public:
 
     unsigned Add(const Eigen::Vector3d& point, const Eigen::Vector3d& color)
     {
+        std::lock_guard<std::mutex> lock(mutex);
+
         ++mapPointId;
 
         points.insert({mapPointId, {mapPointId, point, color, false}});
@@ -55,6 +59,7 @@ public:
 
     void UpdatePoint(const unsigned id, const Eigen::Vector3d& point)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(id);
 
         if (iter == points.end())
@@ -68,6 +73,7 @@ public:
 
     void UpdateColor(const unsigned id, const Eigen::Vector3d& color)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(id);
 
         if (iter == points.end())
@@ -81,6 +87,7 @@ public:
 
     void UpdateStatus(const unsigned id, const bool isValid)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(id);
 
         if (iter == points.end())
@@ -94,6 +101,7 @@ public:
 
     Eigen::Vector3d Get(const unsigned id) const
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(id);
 
         if (iter == points.end())
@@ -107,6 +115,7 @@ public:
 
     bool GetStatus(const unsigned id) const
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(id);
 
         if (iter == points.end())
@@ -121,6 +130,7 @@ public:
     void AddObserver(const unsigned frame, const unsigned point2d,
         const unsigned point3d)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(point3d);
 
         if (iter == points.end())
@@ -143,6 +153,7 @@ public:
     void RemoveObserver(const unsigned frame, const unsigned point2d,
         const unsigned point3d)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(point3d);
 
         if (iter == points.end())
@@ -161,6 +172,7 @@ public:
 
     std::unordered_map<unsigned, unsigned> GetObservers(const unsigned id) const
     {
+        std::lock_guard<std::mutex> lock(mutex);
         const auto iter = points.find(id);
 
         if (iter == points.end())
@@ -192,7 +204,7 @@ public:
 
 private:
     unsigned mapPointId;
-    std::mutex mutex;
+    mutable std::mutex mutex;
 };
 
 

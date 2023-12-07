@@ -14,6 +14,7 @@ struct Frame
 {
     unsigned id;
     cv::Mat image;
+    std::string name;
 };
 
 }

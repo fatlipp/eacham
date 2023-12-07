@@ -46,7 +46,7 @@ public:
 
         factor.quality = matches.size();
 
-        std::cout << "Connect: " << node1->id << " with " << node2->id << ", quality: " << factor.quality << std::endl; 
+        // std::cout << "Connect: " << node1->id << " with " << node2->id << ", quality: " << factor.quality << std::endl; 
     }
 
     Node<FT, DT>* Get(const unsigned id)
@@ -65,31 +65,31 @@ public:
         return nodes;
     }
 
-    std::pair<unsigned, unsigned> GetBestPair()
-    {
-        float bestScore = 0;
-        std::pair<unsigned, unsigned> bestPair{
-            std::numeric_limits<unsigned>::max(),
-            std::numeric_limits<unsigned>::max()
-        };
+    // std::pair<unsigned, unsigned> GetBestPair(const std::set<unsigned>& excluded = {})
+    // {
+    //     float bestScore = 0;
+    //     std::pair<unsigned, unsigned> bestPair{
+    //         std::numeric_limits<unsigned>::max(),
+    //         std::numeric_limits<unsigned>::max()
+    //     };
 
-        for (auto [id, node] : nodes)
-        {
-            const auto bestFactorId = node->GetBestFactor({});
-            if (bestFactorId > 99999)
-                continue;
+    //     for (auto [id, node] : nodes)
+    //     {
+    //         const auto bestFactorId = node->GetBestFactor({});
+    //         if (bestFactorId > 99999)
+    //             continue;
                 
-            const auto score = node->GetFactor(bestFactorId).quality;
+    //         const auto score = node->GetFactor(bestFactorId).quality;
 
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestPair = {id, bestFactorId};
-            }
-        }
+    //         if (score > bestScore)
+    //         {
+    //             bestScore = score;
+    //             bestPair = {id, bestFactorId};
+    //         }
+    //     }
 
-        return bestPair;
-    }
+    //     return bestPair;
+    // }
 
     std::pair<unsigned, unsigned> GetBestPairForValid(const std::set<unsigned>& excluded = {})
     {
