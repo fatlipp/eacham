@@ -9,12 +9,11 @@ find_package(Eigen3 REQUIRED)
 # find_package(flann REQUIRED)
 
 set(SOURCE
-    reconstruction/EpipolarGeometry.cpp
     ba/MotionBA.cpp
-    utils/ProjectionHelper.cpp
-    utils/Triangulator.cpp
+    reconstruction/EpipolarGeometry.cpp
+    reconstruction/ProjectionHelper.cpp
+    reconstruction/Triangulator.cpp
     view/Render.cpp
-
     main.cpp
 )
 

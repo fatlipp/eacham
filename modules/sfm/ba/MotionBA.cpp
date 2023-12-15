@@ -1,6 +1,6 @@
 #include "base/tools/Tools3d.h"
 #include "sfm/ba/MotionBA.h"
-#include "sfm/utils/Triangulator.h"
+#include "sfm/reconstruction/Triangulator.h"
 
 #include <opencv2/calib3d.hpp>
 #include <Eigen/Geometry>
@@ -14,7 +14,7 @@
 // #include <gtsam/linear/Preconditioner.h>
 // #include <gtsam/linear/PCGSolver.h>
 
-#include <gtsam/slam/GeneralSFMFactor.h>  // does calibration !
+#include <gtsam/slam/GeneralSFMFactor.h>
 
 #include <concepts>
 #include <tuple>
@@ -29,6 +29,7 @@ gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2_1(const float posNoise, c
     return gtsam::noiseModel::Diagonal::Sigmas(
                 (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
 }
+
 void EstimateUsingBA(std::shared_ptr<graph_t> graph, 
     std::shared_ptr<Map> map, cv::Mat& K, const unsigned maxIters)
 {

@@ -1,6 +1,6 @@
 #include "sfm/reconstruction/EpipolarGeometry.h"
-#include "sfm/utils/ProjectionHelper.h"
-#include "sfm/utils/Triangulator.h"
+#include "sfm/reconstruction/ProjectionHelper.h"
+#include "sfm/reconstruction/Triangulator.h"
 
 #include "sfm/data/Map.h"
 #include "sfm/view/Gui.h"

@@ -8,6 +8,10 @@ __global__ void advanceParticles(float dt, particle * pArray, int nParticles)
 	if(idx < nParticles)
 	{
 		pArray[idx].advance(dt);
+		pArray[idx].advance(dt);
+		pArray[idx].advance(dt);
+		pArray[idx].advance(dt);
+		pArray[idx].advance(dt);
 	}
 }
 
@@ -21,14 +25,16 @@ int main(int argc, char ** argv)
 	error = cudaGetLastError();
 	if (error != cudaSuccess)
   	{
-  	printf("0 %s\n",cudaGetErrorString(error));
-  	exit(1);
+		printf("0 %s\n",cudaGetErrorString(error));
+		exit(1);
   	}
 
 	particle * pArray = new particle[n];
 	particle * devPArray = NULL;
 	cudaMalloc(&devPArray, n*sizeof(particle));
-	cudaDeviceSynchronize(); error = cudaGetLastError();
+	cudaDeviceSynchronize(); 
+	error = cudaGetLastError();
+	
 	if (error != cudaSuccess)
   	{
         printf("1 %s\n",cudaGetErrorString(error));
@@ -36,7 +42,9 @@ int main(int argc, char ** argv)
   	}
 
 	cudaMemcpy(devPArray, pArray, n*sizeof(particle), cudaMemcpyHostToDevice);
-	cudaDeviceSynchronize(); error = cudaGetLastError();
+	cudaDeviceSynchronize(); 
+	error = cudaGetLastError();
+	
 	if (error != cudaSuccess)
   	{
         printf("2 %s\n",cudaGetErrorString(error));
@@ -46,12 +54,12 @@ int main(int argc, char ** argv)
 	for(int i=0; i<100; i++)
 	{
 		float dt = (float)rand()/(float) RAND_MAX; // Random distance each step
-		advanceParticles<<< 1 +  n/256, 256>>>(dt, devPArray, n);
+		advanceParticles<<< 1 + n / 64, 64>>>(dt, devPArray, n);
 		error = cudaGetLastError();
 		if (error != cudaSuccess)
     	{
-    	printf("3 %s\n",cudaGetErrorString(error));
-    	exit(1);
+			printf("3 %s\n",cudaGetErrorString(error));
+			exit(1);
     	}
 
 		cudaDeviceSynchronize();

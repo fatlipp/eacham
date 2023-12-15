@@ -11,9 +11,9 @@
 #include "sfm/data/Types.h"
 #include "sfm/data/Graph.h"
 #include "sfm/reconstruction/EpipolarGeometry.h"
+#include "sfm/reconstruction/Triangulator.h"
 #include "sfm/ba/MotionBA.h"
 #include "sfm/data/Map.h"
-#include "sfm/utils/Triangulator.h"
 #include "sfm/utils/Saver.h"
 
 #include "sfm/data_source/MonoCameraDataset.h"
@@ -364,18 +364,18 @@ int main(int argc, char* argv[])
 
     // std::cout << "Graph stat:\n size: " << graph->Size() << std::endl;
 
-    std::map<unsigned, Eigen::Matrix4d> framePositions; 
+    std::map<unsigned, std::pair<std::string, Eigen::Matrix4d>> framePositions; 
 
     unsigned invalidNodes = 0;
     for (const auto [id, node] : graph->GetNodes())
     {
         if (node->IsValid())
         {
-            framePositions.insert({node->GetId(), node->GetTransform()});
+            framePositions.insert({id, {frames[id].name, node->GetTransform()}});
         }
         else
         {
-            std::cout << "Node: " << node->GetId() << " is invalid\n";
+            std::cout << "Node: " << id << " is invalid\n";
             ++invalidNodes;
         }
     }

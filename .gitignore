@@ -13,3 +13,5 @@ build/*
 .vscode/*
 CMakeUserPresets.json
 positions.txt
+*.sqlite
+*.nsys-rep
