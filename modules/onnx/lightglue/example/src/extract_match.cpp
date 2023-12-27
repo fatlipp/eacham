@@ -42,18 +42,18 @@ int main(int argc, const char* argv[])
 
     cv::RNG rng(12345);
     
-    for (int i = 0; i < matches.size(); ++i)
+    for (const auto& [id1, id2] : matches)
     {
         const auto color = cv::Scalar(rng.uniform(0,255), 
                                 rng.uniform(0, 255), 
                                 rng.uniform(0, 255));
 
 
-        const auto f1 = keypoints1[std::get<0>(matches[i])];
+        const auto f1 = keypoints1[id1];
         cv::Point2f p1 = f1 / scale1;
         cv::circle(output, p1, 3, color, 2);
 
-        const auto f2 = keypoints2[std::get<1>(matches[i])];
+        const auto f2 = keypoints2[id2];
         cv::Point2f p2 = f2 / scale2 + cv::Point2f{image1.cols, 0};
         cv::circle(output, p2, 3, color, 2);
 

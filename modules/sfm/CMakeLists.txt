@@ -6,11 +6,14 @@ find_package(OpenCV REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(GTSAM REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+find_package(VTK REQUIRED)
 # find_package(flann REQUIRED)
 
 set(SOURCE
-    ba/MotionBA.cpp
-    reconstruction/EpipolarGeometry.cpp
+
+reconstruction/BundleAdjuster.cpp
+    reconstruction/ReconstructionManager.cpp
     reconstruction/ProjectionHelper.cpp
     reconstruction/Triangulator.cpp
     view/Render.cpp
@@ -29,20 +32,37 @@ target_include_directories(${PROJ_NAME}
     PRIVATE
         src
         ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC
-        ${EIGEN3_INCLUDE_DIR}
-        ${OpenCV_INCLUDE_DIRS}
+        ${ROOT_FOLDER}/thirdparty
 )
 
 target_link_libraries(${PROJ_NAME} PRIVATE
+    eacham_base
     opencv::opencv
-    pangolin::pangolin
     gtsam
     lightglue_feature
-    eacham_base
-    # visualization
     tbb
+    PCL::PCL
+    Eigen3::Eigen
+    # visualization
+    pangolin::pangolin
+    ${VTK_LIBRARIES}
 )
 
 # target_compile_options(${PROJ_NAME} PRIVATE -Werror -Wall -Wextra)
 target_compile_options(${PROJ_NAME} PRIVATE -Wno-conversion -Wno-narrowing)
+
+
+add_executable(TransformToNerf)
+target_sources(TransformToNerf
+    PRIVATE
+        TransformToNerf.cpp
+)
+target_include_directories(TransformToNerf
+    PRIVATE
+        src
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${ROOT_FOLDER}/thirdparty
+)
+target_link_libraries(TransformToNerf PRIVATE
+    Eigen3::Eigen
+)

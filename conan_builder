@@ -7,3 +7,6 @@ cmake --build --preset conan-release
 source ./build/conanrun.sh
 
 # ready to run
+
+ffmpeg -i Video.MOV -vf fps=5 out%d.png
+

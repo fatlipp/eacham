@@ -4,6 +4,7 @@ opencv/4.5.5
 eigen/3.4.0
 librealsense/2.49.0
 pangolin/0.8
+pcl/1.13.1
 
 [options]
 gtsam*:shared=True
@@ -14,6 +15,9 @@ eigen*:shared=True
 librealsense*:shared=True
 pangolin*:shared=True
 flann*:shared=True
+pcl*:shared=True
+pcl*:visualization=True
+pcl*:with_vtk=True
 
 [generators]
 CMakeDeps

@@ -112,14 +112,14 @@ FeatureMatcherLightglue::MatchType
         return {};
     }
 
-    std::vector<std::pair<unsigned, unsigned>> matches;
+    FeatureMatcherLightglue::MatchType matches;
     for (int i = 0; i < matchesCount; ++i)
     {
         if (scoresRaw[i] > 0.5)
         {
             const int m1 = matchesRaw[i * 2];
             const int m2 = matchesRaw[i * 2 + 1];
-            matches.push_back({m1, m2});
+            matches.insert({m1, m2});
         }
     }
 

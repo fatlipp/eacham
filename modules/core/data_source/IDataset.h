@@ -33,8 +33,8 @@ public:
     {
         camera->Read();
 
-        currentCamData = std::move(camera->Get());
-        gtData = std::move(groundTruth->Get());
+        currentCamData = camera->Get();
+        gtData = groundTruth->Get();
 
         isDataAvailable = true;
     }

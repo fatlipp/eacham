@@ -23,10 +23,9 @@ struct EstimatorData
     
 };
 
-bool CheckTriangulationAngle(const Eigen::Matrix4d& cam1,
+double TriangulationAngle(const Eigen::Matrix4d& cam1,
                             const Eigen::Matrix4d& cam2,
-                            const Eigen::Vector3d& point3D,
-                            const double angleLim = 1.5);
+                            const Eigen::Vector3d& point3D);
 
 Eigen::Vector3d TriangulatePoint(const Eigen::Matrix4d& cam1Pos,
                                  const Eigen::Matrix4d& cam2Pos,
@@ -40,6 +39,7 @@ Eigen::Vector3d TriangulatePoint(const Eigen::Vector2d& p1, const Eigen::Vector2
     const Eigen::Matrix4d& transform);
 
 void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph, 
-    std::shared_ptr<Map> map, const cv::Mat& K, const unsigned minObservers);
+    std::shared_ptr<Map> map, const cv::Mat& K, 
+    const unsigned minObservers, const float maxReprError, const float minTriAngle);
 
 }

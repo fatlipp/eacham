@@ -55,10 +55,7 @@ static void DrawMatches(const std::string name, const unsigned id1, const unsign
         pts2.push_back({p2.x, p2.y});
 
 
-        if (math.triangulatedPointId < 9999999)
-            colors.push_back({0, 255, 0});
-        else
-            colors.push_back({0, 0, 255});
+        colors.push_back({0, 0, 255});
     });
 
     DrawMatches(name, node1->GetImage(), node2->GetImage(), pts1, pts2, delay, colors);

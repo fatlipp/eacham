@@ -1,14 +1,19 @@
 3D reconstruction
 
+SfM positions + Instant-NGP (https://github.com/NVlabs/instant-ngp):<br /> 
+<img src="./images/SHIP_NGP.jpg"  width="60%" height="60%"> <br /> 
+
 Nerf lego: <br /> 
 
 <img src="./images/reconstructed.png"  width="60%" height="60%"> <br /> 
 
 Usage:<br /> 
-**./build/modules/sfm/eacham_sfm** *PATH_TO_IMAGES_FOLDER* *[optional: START_ID [END_ID]]*
+**./build/modules/sfm/eacham_sfm** *PATH_TO_CONFIG_FOLDER*
 
-The result will be written to *'positions.txt'* <br /> 
-Output format: ((frame_id:uint, position:Mat4x4) X valid frames count)
+The result will be written to *'positions.json'* <br /> 
+
+To use the result in Instant-NGP, one should to convert it using <br />
+*./TransformToNerf* 'folder with dataset' 
 
 **Dependencies:**
 * GTSAM (optimization)

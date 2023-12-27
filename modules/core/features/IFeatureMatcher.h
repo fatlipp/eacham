@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <unordered_map>
 
 namespace eacham
 {
@@ -9,7 +9,7 @@ template<typename T>
 class IFeatureMatcher
 {
 public:
-    using MatchType = std::vector<std::pair<unsigned, unsigned>>;
+    using MatchType = std::unordered_map<unsigned, unsigned>;
 
 public:
     virtual ~IFeatureMatcher() = default;

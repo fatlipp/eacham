@@ -29,24 +29,20 @@ public:
 
     void Connect(const unsigned id1, const unsigned id2, const match_t& matches)
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        Connect(Get(id1), Get(id2), matches);
+    }
 
-        auto* node1 = Get(id1);
-        auto* node2 = Get(id2);
-
+    void Connect(Node<FT, DT>* node1, Node<FT, DT>* node2, const match_t& matches)
+    {
+        // std::lock_guard<std::mutex> lock(mutex);
         auto& factor = node1->AddFactor(node2);
 
         for (const auto& [id1, id2] : matches)
         {
-            Match m;
-            m.id1 = id1;
-            m.id2 = id2;
-            factor.matches.push_back(m);
+            factor.matches.emplace_back(id1, id2);
         }
 
         factor.quality = matches.size();
-
-        // std::cout << "Connect: " << node1->id << " with " << node2->id << ", quality: " << factor.quality << std::endl; 
     }
 
     Node<FT, DT>* Get(const unsigned id)
@@ -64,32 +60,6 @@ public:
     {
         return nodes;
     }
-
-    // std::pair<unsigned, unsigned> GetBestPair(const std::set<unsigned>& excluded = {})
-    // {
-    //     float bestScore = 0;
-    //     std::pair<unsigned, unsigned> bestPair{
-    //         std::numeric_limits<unsigned>::max(),
-    //         std::numeric_limits<unsigned>::max()
-    //     };
-
-    //     for (auto [id, node] : nodes)
-    //     {
-    //         const auto bestFactorId = node->GetBestFactor({});
-    //         if (bestFactorId > 99999)
-    //             continue;
-                
-    //         const auto score = node->GetFactor(bestFactorId).quality;
-
-    //         if (score > bestScore)
-    //         {
-    //             bestScore = score;
-    //             bestPair = {id, bestFactorId};
-    //         }
-    //     }
-
-    //     return bestPair;
-    // }
 
     std::pair<unsigned, unsigned> GetBestPairForValid(const std::set<unsigned>& excluded = {})
     {

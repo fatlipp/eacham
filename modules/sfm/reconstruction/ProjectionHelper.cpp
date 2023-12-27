@@ -8,7 +8,7 @@
 namespace eacham
 {
 
-Eigen::Matrix4d ConvertToTransformInv(const cv::Mat& R, const cv::Mat& t)
+Eigen::Matrix4d ConvertToTransform(const cv::Mat& R, const cv::Mat& t)
 {
     // Non const to use ptr*
     cv::Mat Rinv = R;
@@ -23,28 +23,8 @@ Eigen::Matrix4d ConvertToTransformInv(const cv::Mat& R, const cv::Mat& t)
     motion.linear() = R_Eigen;
     motion.translation() = T_Eigen;
 
-    // from camera to world CS
     // return motion.inverse(Eigen::TransformTraits::Isometry).matrix(); // from camera to world CS
-    return motion.matrix(); // from camera to world CS
-}
-
-Eigen::Matrix4d ConvertToTransformInvManual(const cv::Mat& R, const cv::Mat& t)
-{
-    // from camera to world CS
-    cv::Mat Rinv = R.inv();
-    cv::Mat tinv = -Rinv * t;
-
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> 
-        R_Eigen(Rinv.ptr<double>(), Rinv.rows, Rinv.cols);
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> 
-        T_Eigen(tinv.ptr<double>(), tinv.rows, tinv.cols);
-
-    Eigen::Matrix4d matr = Eigen::Matrix4d::Identity();
-    matr.template topLeftCorner<3, 3>() = R_Eigen;
-    matr.template topRightCorner<3, 1>() = T_Eigen;
-    // matr.template block<1,3>(3,0).setZero();
-    // matr.coeffRef(3,3) = 1;
-    return matr;
+    return motion.matrix();
 }
 
 Eigen::Vector3d ViewDirection(const Eigen::Matrix4d& matrix)

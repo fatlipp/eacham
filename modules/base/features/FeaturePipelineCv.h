@@ -9,6 +9,11 @@ template<typename TE, typename TM>
 class FeaturePipelineCv
 {
 public:
+    FeaturePipelineCv(TE&& extractor, TE&& matcher)
+        : extractor{std::move(extractor)}
+        , matcher{std::move(matcher)}
+        {}
+public:
     TE::ReturnType Extract(const cv::Mat &image)
     {
         return extractor.Extract(image);

@@ -3,9 +3,9 @@
 namespace eacham
 {
 
-FeatureExtractorSift::FeatureExtractorSift()
+FeatureExtractorSift::FeatureExtractorSift(const int maxFeatures)
 {
-    this->detector = cv::SIFT::create(20000, 3, 0.009, 10, 1.3);
+    this->detector = cv::SIFT::create(maxFeatures, 3, 0.009, 10, 1.3);
     // explicit SIFT_Impl( int nfeatures = 0, int nOctaveLayers = 3,
     //                       double contrastThreshold = 0.04, double edgeThreshold = 10,
     //                       double sigma = 1.6, int descriptorType = CV_32F );

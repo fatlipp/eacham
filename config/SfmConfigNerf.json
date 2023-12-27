@@ -1,0 +1,43 @@
+{
+    "root_path": "./Datasets/nerf/NeRF/nerf_synthetic/ship",
+    "images_path": "/train",
+    "transform_path": "/transform.json",
+    "nerfy": true,
+    "max_data_count": 0,
+    "ui": true,
+    "feature":{
+        "min_features_count": 100,
+        "max_features_count": 10000,
+        "inliers_ratio": 0.8
+    },
+    "reconstruction":{
+        "initial_pair":{
+            "min_inliers": 350,
+            "min_matches": 10,
+            "min_corrs": 10,
+            "max_reprojection_error": 3.5,
+            "min_angle": 3.0
+        },
+        "processing":{
+            "min_matches": 10,
+            "min_corrs": 10,
+            "max_reprojection_error": 8.0,
+            "min_angle": 3.0,
+            "min_pnp_inliers": 15
+        }
+    },
+    "refine_ba":{
+        "method": "LM",
+        "max_iter": 50,
+        "max_toler": 1e-3,
+        "delta": 10.0,
+        "use_preconditioner": false
+    },
+    "global_ba":{
+        "method": "LM",
+        "max_iter": 50,
+        "max_toler": 1e-4,
+        "delta": 10.0,
+        "use_preconditioner": false
+    }
+}

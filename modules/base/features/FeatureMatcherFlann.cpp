@@ -5,7 +5,8 @@
 
 namespace eacham
 {
-FeatureMatcherFlann::FeatureMatcherFlann()
+FeatureMatcherFlann::FeatureMatcherFlann(const float inliersRatio)
+    : inliersRatio{inliersRatio}
 {
     mather = cv::DescriptorMatcher::create("FlannBased");
 }
@@ -16,17 +17,12 @@ FeatureMatcherFlann::MatchType FeatureMatcherFlann::Match(const cv::Mat& descrip
     mather->knnMatch(descriptor1, descriptor2, matches, 2);
 
     MatchType  matchesPair;
-    std::unordered_set<int>  matchesPairMapSet;
 
     for (const auto& m : matches)
     {
         if (m[0].distance / m[1].distance < 0.8)
         {
-            if (!matchesPairMapSet.contains(m[0].trainIdx))
-            {
-                matchesPair.push_back({m[0].queryIdx, m[0].trainIdx});
-                matchesPairMapSet.insert(m[0].trainIdx);
-            }
+            matchesPair.insert({m[0].queryIdx, m[0].trainIdx});
         }
     }
 

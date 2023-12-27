@@ -1,5 +1,6 @@
+#include "sfm/reconstruction/BundleAdjuster.h"
+
 #include "base/tools/Tools3d.h"
-#include "sfm/ba/MotionBA.h"
 #include "sfm/reconstruction/Triangulator.h"
 
 #include <opencv2/calib3d.hpp>
@@ -10,9 +11,10 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/geometry/Cal3_S2.h>
-// #include <gtsam/linear/Preconditioner.h>
-// #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/PCGSolver.h>
 
 #include <gtsam/slam/GeneralSFMFactor.h>
 
@@ -30,10 +32,17 @@ gtsam::noiseModel::Diagonal::shared_ptr CreateNoise6_2_1(const float posNoise, c
                 (gtsam::Vector(6) << gtsam::Vector3::Constant(rotNoise), gtsam::Vector3::Constant(posNoise)).finished());  
 }
 
-void EstimateUsingBA(std::shared_ptr<graph_t> graph, 
-    std::shared_ptr<Map> map, cv::Mat& K, const unsigned maxIters)
+void AddFrameToGraph()
 {
-    std::cout << "EstimateUsingBA()\n";
+
+}
+
+void RefineBA(const int currentFrameId, 
+    std::shared_ptr<graph_t> graph, 
+    std::shared_ptr<Map> map, cv::Mat& K,
+    const OptimizerConfig& config)
+{
+    // std::cout << "RefineBA()\n";
 
     gtsam::Cal3_S2 cameraMat(K.at<double>(0, 0), K.at<double>(1, 1), 
                                 0.0, 
@@ -42,32 +51,15 @@ void EstimateUsingBA(std::shared_ptr<graph_t> graph,
     gtsam::NonlinearFactorGraph graphGtsam;
     gtsam::Values initialMeasurements;
 
-    auto frameNoise = CreateNoise6_2_1(0.35, 45.0);
-    const auto frameNoiseHuber = gtsam::noiseModel::Robust::Create(
-        gtsam::noiseModel::mEstimator::Huber::Create(2.5f), 
-        frameNoise);
-
-    const auto noise3dPoint1N = gtsam::noiseModel::Isotropic::Sigma(3, 0.4f);
-    const auto noise3dPoint1 = gtsam::noiseModel::Robust::Create(
-        gtsam::noiseModel::mEstimator::Huber::Create(1.0f), 
-        noise3dPoint1N);
-
     std::vector<unsigned> frameIds;
     std::set<unsigned> mapIds;
 
-    for (const auto [id, currentNode] : graph->GetNodes())
-    {
-        if (currentNode == nullptr)
-        {
-            throw std::runtime_error("Node is null");
-        }
+    auto frameAdder = [&graphGtsam, &initialMeasurements, &graph, &map, &mapIds](auto currentNode) {
 
-        if (!currentNode->IsValid())
-        {
-            continue;
-        }
-
-        frameIds.push_back(id);
+        auto frameNoise = CreateNoise6_2_1(0.35, 45.0);
+        const auto frameNoiseHuber = gtsam::noiseModel::Robust::Create(
+            gtsam::noiseModel::mEstimator::Huber::Create(2.5f), 
+            frameNoise);
 
         const Eigen::Matrix4d position = currentNode->GetTransform().inverse();
 
@@ -112,6 +104,12 @@ void EstimateUsingBA(std::shared_ptr<graph_t> graph,
                 const auto mapPointGTSAM = gtsam::Point3(p3d);
 
                 initialMeasurements.insert(gtsam::Symbol('l', id3d), mapPointGTSAM);
+
+                const auto obs = map->GetObservers(id3d).size();
+                const auto noise3dPoint1N = gtsam::noiseModel::Isotropic::Sigma(3, 1.0f / obs);
+                const auto noise3dPoint1 = gtsam::noiseModel::Robust::Create(
+                    gtsam::noiseModel::mEstimator::Huber::Create(3.0f / obs), 
+                    noise3dPoint1N);
                 graphGtsam.addPrior(gtsam::Symbol('l', id3d), mapPointGTSAM, noise3dPoint1);
 
                 ++countUnique;
@@ -119,13 +117,58 @@ void EstimateUsingBA(std::shared_ptr<graph_t> graph,
 
             ++countt;
         }
+    };
 
-        std::cout << "added for frame id (" << currentNode->GetId() 
-            << "): ---- unique = " << countUnique
-            << "; overall = " << countt << std::endl;
+    if (currentFrameId > -1)
+    {
+        std::cout << "BA() local" << std::endl;
+
+        auto startNode = graph->Get(currentFrameId);
+        frameIds.push_back(currentFrameId);
+        frameAdder(startNode);
+
+        for (const auto [id, factor] : startNode->GetFactors())
+        {
+            auto currentNode = graph->Get(id);
+
+            if (currentNode == nullptr)
+            {
+                throw std::runtime_error("Node is null");
+            }
+
+            if (!currentNode->IsValid())
+            {
+                continue;
+            }
+
+            frameIds.push_back(id);
+
+            frameAdder(currentNode);
+        }
+    }
+    else
+    {
+        std::cout << "BA() global" << std::endl;
+
+        for (const auto [id, currentNode] : graph->GetNodes())
+        {
+            if (currentNode == nullptr)
+            {
+                throw std::runtime_error("Node is null");
+            }
+
+            if (!currentNode->IsValid())
+            {
+                continue;
+            }
+
+            frameIds.push_back(id);
+
+            frameAdder(currentNode);
+        }
     }
 
-    std::cout << "mapIds = " << mapIds.size() << std::endl;
+    std::cout << "BA() frames: " << frameIds.size() << ", map size: " << mapIds.size() << std::endl;
 
     if (mapIds.size() < 50)
     {
@@ -141,25 +184,49 @@ void EstimateUsingBA(std::shared_ptr<graph_t> graph,
 
     std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
 
-    gtsam::LevenbergMarquardtParams params;
-    gtsam::LevenbergMarquardtParams::SetCeresDefaults(&params);
-    params.setVerbosityLM("SUMMARY");
-    params.absoluteErrorTol = 1e-4;
-    params.relativeErrorTol = 1e-4;
-    params.maxIterations = maxIters;
-    optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graphGtsam, initialMeasurements, params);
+    std::cout << "BA() method: " << config.method << "\n";
+
+    if (config.method == "LM")
+    {
+        gtsam::LevenbergMarquardtParams params;
+        gtsam::LevenbergMarquardtParams::SetCeresDefaults(&params);
+        // params.setVerbosityLM("SUMMARY");
+        // params.orderingType = gtsam::Ordering::METIS;
+        params.absoluteErrorTol = config.maxTolerance;
+        params.relativeErrorTol = config.maxTolerance;
+        params.maxIterations = config.maxIter;
+
+        if (config.usePreconditioner)
+        {
+            params.linearSolverType = gtsam::NonlinearOptimizerParams::Iterative;
+            gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
+            pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
+            pcg->setEpsilon_abs(1e-10);
+            pcg->setEpsilon_rel(1e-10);
+            params.iterativeParams = pcg;
+        }
+
+        optimizer = std::make_unique<gtsam::LevenbergMarquardtOptimizer>(graphGtsam, initialMeasurements, params);
+    }
+    else if (config.method == "DogLeg")
+    {
+        gtsam::DoglegParams params;
+        // gtsam::DoglegParams::SetCeresDefaults(&params);
+        // params.setVerbosityLM("SUMMARY");
+        params.absoluteErrorTol = config.maxTolerance;
+        params.relativeErrorTol = config.maxTolerance;
+        params.maxIterations = config.maxIter;
+        params.setDeltaInitial(config.delta);
+        optimizer = std::make_unique<gtsam::DoglegOptimizer>(graphGtsam, initialMeasurements, params);
+    }
 
     const gtsam::Values optimizationResult = optimizer->optimize();
 
-    std::cout << "MapPoints: " << mapIds.size() << std::endl;
     std::cout << "Optimization Initial error = " << graphGtsam.error(initialMeasurements) << std::endl;
     std::cout << "Optimization Final error = " << graphGtsam.error(optimizationResult) << std::endl << std::endl;
 
     const gtsam::Cal3_S2 newCamMat =
             optimizationResult.at<gtsam::Cal3_S2>(gtsam::Symbol('K', 0));
-
-    std::cout << "oldCamMat: " << cameraMat << std::endl;
-    std::cout << "newCamMat: " << newCamMat << std::endl;
 
     K.at<double>(0, 0) = newCamMat.fx();
     K.at<double>(1, 1) = newCamMat.fy();

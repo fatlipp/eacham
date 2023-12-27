@@ -6,7 +6,6 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/features2d.hpp"
 #include "opencv2/features2d/features2d.hpp"
-#include "opencv2/xfeatures2d/nonfree.hpp"
 
 namespace eacham
 {
@@ -20,7 +19,7 @@ class FeatureExtractorSift :
     public IFeatureExtractor<FeatureExtractorSiftTypes::feature_t, FeatureExtractorSiftTypes::descriptor_t>
 {
 public:
-    FeatureExtractorSift();
+    FeatureExtractorSift(const int maxFeatures); 
 
     typename FeatureExtractorSift::ReturnType Extract(const cv::Mat &image) override;
 

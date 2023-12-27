@@ -11,9 +11,7 @@
 namespace eacham
 {
 
-Eigen::Matrix4d ConvertToTransformInv(const cv::Mat& R, const cv::Mat& t);
-
-Eigen::Matrix4d ConvertToTransformInvManual(const cv::Mat& R, const cv::Mat& t);
+Eigen::Matrix4d ConvertToTransform(const cv::Mat& R, const cv::Mat& t);
 
 Eigen::Vector3d ViewDirection(const Eigen::Matrix4d& matrix);
 

@@ -18,10 +18,9 @@
 namespace eacham
 {
 
-bool CheckTriangulationAngle(const Eigen::Matrix4d& transform1,
+double TriangulationAngle(const Eigen::Matrix4d& transform1,
                             const Eigen::Matrix4d& transform2,
-                            const Eigen::Vector3d& point3D,
-                            const double angleLim)
+                            const Eigen::Vector3d& point3D)
 {
     const Eigen::Vector3d cam1 = transform1.inverse().block<3, 1>(0, 3);
     const Eigen::Vector3d ray1 = (point3D - cam1);
@@ -44,7 +43,7 @@ bool CheckTriangulationAngle(const Eigen::Matrix4d& transform1,
     const auto dot = ray1.x() * ray2.x() + ray1.y() * ray2.y() + ray1.z() * ray2.z();
     const auto angle = std::acos(dot / (norm1 * norm2));
 
-    return std::min(angle, PI - angle) > angleLim * DEG2RAD;
+    return std::min(angle, PI - angle);
 }
 
 Eigen::Vector3d TriangulatePoint(const Eigen::Matrix4d& cam1Pos,
@@ -90,7 +89,8 @@ bool IsPositiveDepth(const Eigen::Matrix4d& transform,
 }
 
 bool TriangulatePointRansac(const std::vector<EstimatorData>& data, 
-    Eigen::Vector3d& point3d, std::vector<unsigned>& inliers, const float maxErr)
+    Eigen::Vector3d& point3d, std::vector<unsigned>& inliers, 
+    const float maxReprError, const float minTriAngle)
 {
     const auto size = data.size();
 
@@ -102,7 +102,7 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
     if (size < 3)
     {
         point3d = TriangulatePoint(data[0].point2d, data[1].point2d, data[0].K, data[0].transform, data[1].transform);
-        if (!CheckTriangulationAngle(data[0].transform, data[1].transform, point3d, 3.0f))
+        if (TriangulationAngle(data[0].transform, data[1].transform, point3d) < minTriAngle)
         {
             return false;
         }
@@ -112,7 +112,7 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
             const auto pos = tools::transformPoint3d(point3d, pt.transform);
             const auto err = CalcReprojectionError({pt.point2d.x(), pt.point2d.y()}, {pos.x(), pos.y(), pos.z()}, pt.K);
 
-            if (err < maxErr && IsPositiveDepth(pt.transform, point3d))
+            if (err < maxReprError && IsPositiveDepth(pt.transform, point3d))
             {
                 inliers.push_back(1);
             }
@@ -144,7 +144,7 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
         point3d = TriangulatePoint(data[r1].point2d, data[r2].point2d, data[0].K, 
             data[r1].transform, data[r2].transform);
 
-        if (CheckTriangulationAngle(data[r1].transform, data[r2].transform, point3d, 3.0f))
+        if (TriangulationAngle(data[r1].transform, data[r2].transform, point3d) >= minTriAngle)
         {
             unsigned inl = 0;
             std::vector<unsigned> inliersLocal;
@@ -154,7 +154,7 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
                 const auto pos = tools::transformPoint3d(point3d, pt.transform);
                 const auto err = CalcReprojectionError({pt.point2d.x(), pt.point2d.y()}, {pos.x(), pos.y(), pos.z()}, pt.K);
 
-                if (err < maxErr && IsPositiveDepth(pt.transform, point3d))
+                if (err < maxReprError && IsPositiveDepth(pt.transform, point3d))
                 {
                     inliersLocal.push_back(1);
 
@@ -193,7 +193,8 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
 }
 
 void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph, 
-    std::shared_ptr<Map> map, const cv::Mat& K, const unsigned minObservers)
+    std::shared_ptr<Map> map, const cv::Mat& K, 
+    const unsigned minObservers, const float maxReprError, const float minTriAngle)
 {
     static int seed = 12345;
     seed += 10;
@@ -232,7 +233,7 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
 
                 const auto err = CalcReprojectionError(pt2d, {pt3d.x(), pt3d.y(), pt3d.z()}, K);
 
-                if (err < 4.0f)
+                if (err < maxReprError)
                 {
                     graph->Get(frameId)->SetPoint3d(m.id1, graph->Get(id)->GetPoint3d(m.id2));
                     map->AddObserver(frameId, m.id1, graph->Get(id)->GetPoint3d(m.id2));
@@ -246,7 +247,7 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
         }
         std::cout << "--- " << id << ") factor added: " << addd << " of " << factor.matches.size() << std::endl;
     }
-    std::cout << "observersFull: " << observersFull.size() << std::endl;
+    std::cout << "Triangulation() observersFull: " << observersFull.size() << std::endl;
 
     unsigned total = 0;
     unsigned added = 0;
@@ -272,7 +273,7 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
 
         Eigen::Vector3d point3d;
         std::vector<unsigned> mask;
-        if (TriangulatePointRansac(datas, point3d, mask, 4.0f) && mask.size() > 0)
+        if (TriangulatePointRansac(datas, point3d, mask, maxReprError, minTriAngle) && mask.size() > 0)
         {
             if (mask.size() != datas.size())
             {
@@ -305,7 +306,7 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
         ++total;
     }
 
-    std::cout << "added: " << added << ", total: " << total << std::endl;
+    std::cout << "Triangulation() added: " << added << ", total: " << total << std::endl;
 }
 
 }

@@ -15,22 +15,22 @@ namespace eacham
 template<typename FT, typename DT>
 class Graph;
 
-enum class MatchSide
-{
-    Left = 0,
-    Right = 1
-};
-
 struct Match
 {
     unsigned id1 = std::numeric_limits<unsigned>::max();
     unsigned id2 = std::numeric_limits<unsigned>::max();
-    unsigned triangulatedPointId = std::numeric_limits<unsigned>::max();
+};
+
+struct MatchTwoView
+{
+    Eigen::Matrix4d transform;
+    std::vector<std::tuple<unsigned, unsigned, Eigen::Vector3d>> matches;
 };
 
 struct Factor
 {
     unsigned id; // connected node id
+    // bool isValid;
     float quality;
     std::vector<Match> matches;
     Eigen::Matrix4d transform;
@@ -150,6 +150,7 @@ public:
 public:
     Factor& AddFactor(const Node* node)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         if (factors.count(node->id) == 0)
         {
             factors.insert({node->id, {node->id}});
@@ -216,6 +217,8 @@ private:
     std::unordered_map<unsigned, Factor> factors;
     std::unordered_map<unsigned, unsigned> points3d;
     Eigen::Matrix4d transform;
+
+    std::mutex mutex;
     
     friend class Graph<FT, DT>;
 };

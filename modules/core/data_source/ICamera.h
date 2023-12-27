@@ -23,6 +23,9 @@ public:
         : type(CameraType::MONO)
         {
         }
+
+    virtual bool Initialize() { return true; }
+
 public:
     typename IDataSource<Ts...>::ReturnType Get() const override
     {
