@@ -13,11 +13,11 @@ find_package(VTK REQUIRED)
 set(SOURCE
 
 reconstruction/BundleAdjuster.cpp
-    reconstruction/ReconstructionManager.cpp
-    reconstruction/ProjectionHelper.cpp
-    reconstruction/Triangulator.cpp
-    view/Render.cpp
-    main.cpp
+    # reconstruction/ReconstructionManager.cpp
+    # reconstruction/ProjectionHelper.cpp
+    # reconstruction/Triangulator.cpp
+    # view/Render.cpp
+    obj_viewer.cpp
 )
 
 set(PROJ_NAME "eacham_sfm")

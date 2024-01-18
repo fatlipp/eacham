@@ -1,9 +1,11 @@
 #pragma once
 
 #include "sfm/data/Types.h"
+#include "base/performance/BlockTimer.h"
 #include "sfm/reconstruction/ReconstructionManager.h"
 
 #include <opencv4/opencv2/core.hpp>
+#include <boost/type_index.hpp>
 
 namespace eacham::utils
 {
@@ -62,6 +64,14 @@ std::pair<unsigned, unsigned> FindBestPair(std::shared_ptr<graph_t> graph, std::
 
     return {std::numeric_limits<unsigned>::max(), 
             std::numeric_limits<unsigned>::max()};
+}
+
+
+template<typename T, typename... Args>
+auto CallWithTimer(T&& f, Args&&... args)
+{
+    BlockTimer timer(boost::typeindex::type_id<T>().pretty_name() );
+    return std::forward<decltype(f)>(f)(std::forward<decltype(args)>(args)...);
 }
 
 }

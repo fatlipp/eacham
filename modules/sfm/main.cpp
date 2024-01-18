@@ -30,6 +30,8 @@
 #include <opencv2/features2d.hpp>
 #include <execution>
 
+#include <functional>
+
 using namespace eacham;
 using namespace eacham::dataset;
 
@@ -42,7 +44,9 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    const auto config = parser::Parse<SfmConfig>(argv[1]);
+    // const auto config = parser::Parse<SfmConfig>(argv[1]);
+    auto parserFunc = std::bind(&parser::Parse<SfmConfig>, std::placeholders::_1);
+    const auto config = utils::CallWithTimer(parserFunc, argv[1]);
 
     std::cout << "Read data from: " << config.imagesPath << std::endl;
     MonoImageReader imageReader { config.imagesPath };
@@ -144,6 +148,9 @@ int main(int argc, char* argv[])
     render.SetOnStepClick([&](){ waitForNextStep = false; });
     render.SetOnBAClick([&](){ waitForBA = false; });
     render.Activate();
+
+    // func();
+
 
     ReconstructionManager reconstructor(graph, globalMap, config.initialMaxReprError, config.initialMinTriAngle, config.minPnpInliers);
     std::cout << "Find Best Pair" << std::endl;

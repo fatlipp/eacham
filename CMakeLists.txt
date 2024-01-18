@@ -8,4 +8,5 @@ set(ROOT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR})
 # set(CMAKE_CXX_STANDARD 20)
 # set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
 
+add_subdirectory(${ROOT_FOLDER}/thirdparty/tiny-cuda-nn)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/modules)

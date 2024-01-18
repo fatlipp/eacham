@@ -1,5 +1,5 @@
 {
-    "root_path": "./Datasets/nerf/NeRF/nerf_synthetic/ship",
+    "root_path": "/home/blackdyce/Projects/AI/Datasets/nerf/NeRF/nerf_synthetic/ship",
     "images_path": "/train",
     "transform_path": "/transform.json",
     "nerfy": true,

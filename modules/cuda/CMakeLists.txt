@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 set(CMAKE_CUDA_STANDARD 17)
 project(cmake_and_cuda CXX CUDA)
 
-find_package(CUDA 11.8 REQUIRED)
+find_package(CUDA 12.2 REQUIRED)
 find_package(OpenCV REQUIRED)
 
 message(STATUS "Found CUDA ${CUDA_VERSION_STRING} at ${CUDA_TOOLKIT_ROOT_DIR}")
