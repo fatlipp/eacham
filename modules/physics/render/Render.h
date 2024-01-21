@@ -44,7 +44,7 @@ private:
     int oy;
     int buttonState = 0;
 
-    float cameraPos[3] = {0, 0, -10};
+    float cameraPos[3] = {0, 0, -7};
     float cameraRot[3] = {0, 0, 0};
     float cameraPosDelta[3] = {0, 0, 0};
     float cameraRotDelta[3] = {0, 0, 0};

@@ -35,20 +35,19 @@ inline __device__ float3 normalize(float3 a)
 
     return {a / n};
 }
-inline __device__ float3 clamp(float3 a, float min, float max)
+inline __device__ void clamp(float3& a, float min, float max)
 {
-    if (a.x > max) a.x = max;
-    if (a.y > max) a.y = max;
-    if (a.z > max) a.z = max;
-    if (a.x < min) a.x = min;
-    if (a.y < min) a.y = min;
-    if (a.z < min) a.z = min;
+    if (a.x <= min) a.x = min;
+    if (a.y <= min) a.y = min;
+    if (a.z <= min) a.z = min;
 
-    return a;
+    if (a.x >= max) a.x = max;
+    if (a.y >= max) a.y = max;
+    if (a.z >= max) a.z = max;
 }
-inline __device__ float3 clamp01(float3 a)
+inline __device__ void clamp01(float3& a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    clamp(a, 0.0f, 1.0f);
 }
 
 inline __device__ float3 operator-(float3 a, float3 b)
@@ -107,6 +106,16 @@ inline __device__ void operator+=(float3 &a, float3 b)
     a.x += b.x;
     a.y += b.y;
     a.z += b.z;
+}
+
+inline __host__ __device__ float3 operator+(float3 a, float3 b)
+{
+    return {a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+inline __device__ float3 operator+(float3 &a, float b)
+{
+    return {a.x + b, a.y + b, a.z + b};
 }
 
 inline __device__ void operator-=(float3 &a, float3 b)

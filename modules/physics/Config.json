@@ -1,0 +1,22 @@
+{
+    "objects":
+    {
+        "lines": {
+            "count": 3,
+            "length": 10,
+            "point_size": 0.3
+        },
+        "cubes": [
+            {
+                "width": 2,
+                "height": 2,
+                "point_size": 0.45
+            },
+            {
+                "width": 3,
+                "height": 3,
+                "point_size": 0.3
+            }
+        ]
+    }
+}

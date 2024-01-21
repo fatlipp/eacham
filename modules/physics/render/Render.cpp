@@ -50,9 +50,6 @@ void Render::OnDisplay()
     glRotatef(cameraRotDelta[0], 1.0, 0.0, 0.0);
     glRotatef(cameraRotDelta[1], 0.0, 1.0, 0.0);
 
-    glColor3f(1.0, 1.0, 1.0);
-    glutWireCube(6.0);
-
     if (drawCallback != nullptr)
       drawCallback(width, height);
 

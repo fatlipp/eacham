@@ -8,7 +8,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cuda)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/onnx)
 # add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/visualization)
 # add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/sfm)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/nerf)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/physics)
 
 # include(${CMAKE_CURRENT_SOURCE_DIR}/data_source)
 # include(${CMAKE_CURRENT_SOURCE_DIR}/map)

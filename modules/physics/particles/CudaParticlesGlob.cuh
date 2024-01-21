@@ -101,7 +101,7 @@ __global__ void update(float* posData, const uint count,
     }
 
     vel1 += float3{0, gravity * STEP, 0};
-    vel1 = clamp(vel1, -3, 3);
+    clamp(vel1, -3, 3);
     pos1 += vel1 * STEP;
 
     if (pos1.x <= -bound + radius) vel1.x *= -1;
@@ -110,7 +110,7 @@ __global__ void update(float* posData, const uint count,
     if (pos1.x >= bound - radius) vel1.x *= -1;
     if (pos1.y >= bound - radius) vel1.y *= -1;
     if (pos1.z >= bound - radius) vel1.z *= -1;
-    pos1 = clamp(pos1, -bound + radius, bound - radius);
+    clamp(pos1, -bound + radius, bound - radius);
 
     posData[pointStartId1 + 0] = pos1.x;
     posData[pointStartId1 + 1] = pos1.y;
