@@ -1,6 +1,6 @@
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 20)
 project(cmake_and_cuda CXX CUDA)
 message(ERROR "CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
 
@@ -19,8 +19,10 @@ set(SOURCE
     main.cpp
     cuda/CudaHelper.cpp
     render/Render.cpp
-    particles/CudaParticles.cu
-    rigid/CudaRigid.cu
+    soft/CudaRigid.cu
+    soft/SoftObjects2d.cpp
+    soft/SoftObjects3d.cpp
+    tools/BlockTimer.cpp
 )
 
 set(PROJ_NAME "eacham_ngp")
@@ -36,6 +38,7 @@ target_include_directories(${PROJ_NAME}
         src
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CUDA_INCLUDE}
+        ${ROOT_FOLDER}/thirdparty
 )
 target_link_libraries(${PROJ_NAME} 
 PRIVATE

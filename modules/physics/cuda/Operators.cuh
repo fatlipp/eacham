@@ -33,7 +33,7 @@ inline __device__ float3 normalize(float3 a)
 {
     const auto n = norm(a);
 
-    return {a / n};
+    return a / n;
 }
 inline __device__ void clamp(float3& a, float min, float max)
 {
@@ -89,7 +89,7 @@ inline  __device__ float3 operator*(float b, float3 a)
     return make_float3(b * a.x, b * a.y, b * a.z);
 }
 
-inline  __device__ void operator*=(float3 &a, float b)
+inline  __host__ __device__ void operator*=(float3 &a, float b)
 {
     a.x *= b;
     a.y *= b;
@@ -123,4 +123,14 @@ inline __device__ void operator-=(float3 &a, float3 b)
     a.x -= b.x;
     a.y -= b.y;
     a.z -= b.z;
+}
+
+inline __device__ float3 operator-(const float3 &a)
+{
+    float3 r {0, 0, 0};
+    r.x -= a.x;
+    r.y -= a.y;
+    r.z -= a.z;
+
+    return r;
 }

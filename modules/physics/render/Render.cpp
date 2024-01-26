@@ -1,26 +1,36 @@
 #include "render/Render.h"
 
-#include "helpers/Tools.h"
+#include <iostream>
 
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/freeglut.h>
 
-
 #define TO_LAMBDA(M) [this]{M();}
-#define TO_LAMBDA_ARGS(M) [this](int x, int y){M(x, y);}
+#define TO_LAMBDA_ARGS_2(M) [this](int x, int y){M(x, y);}
+#define TO_LAMBDA_ARGS_3(M) [this](unsigned char key, int x, int y){M(key, x, y);}
 #define TO_LAMBDA_ARGS_4(M) [this](int button, int state, int x, int y){M(button, state, x, y);}
+
 
 void Render::Start()
 {
-    glutIdleFunc(lambda_to_pointer(TO_LAMBDA(OnIdle)));
-    glutDisplayFunc(lambda_to_pointer(TO_LAMBDA(OnDisplay)));
-    glutReshapeFunc(lambda_to_pointer(TO_LAMBDA_ARGS(OnReshape)));
+  auto l_to_ptr = [](auto lambda) {
+        static auto lambda_copy = lambda;
 
-    glutMouseFunc(lambda_to_pointer(TO_LAMBDA_ARGS_4(OnMouse)));
-    glutMotionFunc(lambda_to_pointer(TO_LAMBDA_ARGS(OnMouseMotion)));
+        return []<typename... Args>(Args... args) {
+            return lambda_copy(args...);
+        };
+    };
 
-    glutMainLoop();
+  glutIdleFunc(l_to_ptr(TO_LAMBDA(OnIdle)));
+  glutDisplayFunc(l_to_ptr(TO_LAMBDA(OnDisplay)));
+  glutReshapeFunc(l_to_ptr(TO_LAMBDA_ARGS_2(OnReshape)));
+
+  glutMouseFunc(l_to_ptr(TO_LAMBDA_ARGS_4(OnMouse)));
+  glutMotionFunc(l_to_ptr(TO_LAMBDA_ARGS_2(OnMouseMotion)));
+  glutKeyboardFunc(l_to_ptr(keyboardCallback));
+
+  glutMainLoop();
 }
 
 void Render::OnIdle()
@@ -30,38 +40,40 @@ void Render::OnIdle()
 
 void Render::OnDisplay() 
 {
-    if (cudaKernelCallback != nullptr)
-    {
-      cudaKernelCallback(deltaTime);
-    }
+  if (cudaKernelCallback != nullptr)
+  {
+    cudaKernelCallback(deltaTime);
+  }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+  for (int c = 0; c < 3; ++c) 
+  {
+    cameraTrans[c] += (cameraTransDelta[c] - cameraTrans[c]) * inertia;
+    cameraTrans[c + 3] += (cameraTransDelta[c + 3] - cameraTrans[c + 3]) * inertia;
+  }
 
-    for (int c = 0; c < 3; ++c) 
-    {
-        cameraPosDelta[c] += (cameraPos[c] - cameraPosDelta[c]) * inertia;
-        cameraRotDelta[c] += (cameraRot[c] - cameraRotDelta[c]) * inertia;
-    }
+  glTranslatef(cameraTrans[0], cameraTrans[1], cameraTrans[2]);
+  glRotatef(cameraTrans[3], 1.0, 0.0, 0.0);
+  glRotatef(cameraTrans[4], 0.0, 1.0, 0.0);
 
-    glTranslatef(cameraPosDelta[0], cameraPosDelta[1], cameraPosDelta[2]);
-    glRotatef(cameraRotDelta[0], 1.0, 0.0, 0.0);
-    glRotatef(cameraRotDelta[1], 0.0, 1.0, 0.0);
+  if (drawCallback != nullptr)
+    drawCallback(width, height);
 
-    if (drawCallback != nullptr)
-      drawCallback(width, height);
+  if (postRenderCallback != nullptr)
+    postRenderCallback();
 
-    glutSwapBuffers();
-    glutReportErrors();
+  glutSwapBuffers();
+  glutReportErrors();
 }
 
 void Render::OnReshape(int w, int h) 
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(fov, (float)w / (float)h, 0.1, 500.0);
+    gluPerspective(fov, (float)w / (float)h, 0.1, 5000.0);
 
     glMatrixMode(GL_MODELVIEW);
     glViewport(0, 0, w, h);
@@ -72,57 +84,65 @@ void Render::OnReshape(int w, int h)
 
 void Render::OnMouse(int button, int state, int x, int y) 
 {
-  if (state == GLUT_DOWN) 
+  if (state == GLUT_UP) 
   {
-    buttonState |= 1 << button;
-  } 
-  else if (state == GLUT_UP) 
+    buttonState = ButtonState::ROTATE;
+  }
+  else
   {
-    buttonState = 0;
+    const int modifiers = glutGetModifiers();
+
+    if (modifiers & GLUT_ACTIVE_SHIFT || button == 1)
+    {
+      buttonState = ButtonState::MOVE;
+    } 
+    else if (modifiers & GLUT_ACTIVE_CTRL || button == 2) 
+    {
+      buttonState = ButtonState::SCALE;
+    }
+    else if (button == 0)
+    {
+      buttonState = ButtonState::ROTATE;
+    }
+    else
+    {
+      buttonState = ButtonState::NONE;
+    }
+
+    if (mouseClickCallback != nullptr)
+      mouseClickCallback(x, y, width, height);
   }
 
-  int mods = glutGetModifiers();
-
-  if (mods & GLUT_ACTIVE_SHIFT) 
-  {
-    buttonState = 2;
-  } 
-  else if (mods & GLUT_ACTIVE_CTRL) 
-  {
-    buttonState = 3;
-  }
-
-  ox = x;
-  oy = y;
+  mouseX = x;
+  mouseY = y;
 
   glutPostRedisplay();
 }
 
 void Render::OnMouseMotion(int x, int y) 
 {
-    float dx = (float)(x - ox);
-    float dy = (float)(y - oy);
+    const float dx = (float)(x - mouseX);
+    const float dy = (float)(y - mouseY);
 
-    if (buttonState == 3) 
+    switch (buttonState)
     {
-        // left+middle = zoom
-        cameraPos[2] += (dy / 100.0f) * 0.5f * std::abs(cameraPos[2]);
-    } 
-    else if (buttonState & 2) 
-    {
-        // middle = translate
-        cameraPos[0] += dx / 100.0f;
-        cameraPos[1] -= dy / 100.0f;
-    } 
-    else if (buttonState & 1) 
-    {
-        // left = rotate
-        cameraRot[0] += dy / 5.0f;
-        cameraRot[1] += dx / 5.0f;
+    case ButtonState::ROTATE:
+      cameraTransDelta[3] += dy / 5.0f;
+      cameraTransDelta[4] += dx / 5.0f;
+      break;
+    case ButtonState::SCALE:
+      cameraTransDelta[2] += (dy / 200.0f) * std::abs(cameraTransDelta[2]);
+      break;
+    case ButtonState::MOVE:
+      float speed = 1000.0f / std::abs(cameraTrans[2]);
+      cameraTransDelta[0] += dx / speed;
+      cameraTransDelta[1] -= dy / speed;
+      break;
+    
     }
 
-    ox = x;
-    oy = y;
+    mouseX = x;
+    mouseY = y;
 
     glutPostRedisplay();
 }

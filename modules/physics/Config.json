@@ -1,22 +1,50 @@
 {
-    "objects":
-    {
-        "lines": {
-            "count": 3,
-            "length": 10,
-            "point_size": 0.3
-        },
-        "cubes": [
-            {
-                "width": 2,
-                "height": 2,
-                "point_size": 0.45
-            },
-            {
-                "width": 3,
-                "height": 3,
-                "point_size": 0.3
+    "gravity": 0.001,
+    "delta_time": 1.0,
+    "max_speed": 10.61,
+    "bounds": {
+        "min": {"x": -8, "y": -1, "z": -3},
+        "max": {"x": 8, "y": 200, "z": 3}
+    },
+    "objects": [
+        {
+            "type": "Cube3d2",
+            "radius": 0.25,
+            "mass": 2.0,
+            "bounce": 0.85,
+            "damping": 0.002,
+            "tan_vel": 0.01,
+            "count": 1500,
+            "self_collision": true,
+            "spring": {
+                "length": 0.23,
+                "k": 0.13,
+                "damping": 0.015
             }
-        ]
+        },
+        {
+            "type": "Particle",
+            "radius": 1.0,
+            "mass": 5.0,
+            "bounce": 0.1505,
+            "damping": 0.002,
+            "tan_vel": 0.01,
+            "count": 1,
+            "self_collision": true,
+            "spring": {
+                "length": 0.3,
+                "k": 0.13,
+                "damping": 0.015
+            }
+        }
+    ],
+    "command": { 
+        "type": "instantiate", 
+        "index": 1,
+        "pos": {
+            "x": 0,
+            "y": 3,
+            "z": 0
+        } 
     }
 }

@@ -2,6 +2,14 @@
 
 #include <functional>
 
+enum class ButtonState
+{
+    NONE,
+    ROTATE,
+    SCALE,
+    MOVE
+};
+
 class Render
 {
 public:
@@ -9,10 +17,17 @@ public:
         : width { width } 
         , height { height } 
         , fov { fov } 
-        , deltaTime { 0.1 } 
+        , deltaTime { 0.1 }
+        , buttonState(ButtonState::NONE)
     {}
 
 public:
+    void SetKeyboardCallback(std::function<void(const unsigned char, 
+        const int, const int)>&& cb)
+    {
+        keyboardCallback = std::move(cb);
+    }
+
     void SetCudaKernelCallback(std::function<void(float)>&& cb)
     {
         cudaKernelCallback = std::move(cb);
@@ -21,6 +36,17 @@ public:
     void SetDrawCallback(std::function<void(const int, const int)>&& cb)
     {
         drawCallback = std::move(cb);
+    }
+
+    void SetPostRenderCallback(std::function<void()>&& cb)
+    {
+        postRenderCallback = std::move(cb);
+    }
+
+    void SetMouseClickCallback(
+        std::function<void(const int, const int, const int, const int)>&& cb)
+    {
+        mouseClickCallback = std::move(cb);
     }
 
 public:
@@ -36,18 +62,18 @@ private:
     uint height;
     uint fov;
     float deltaTime;
-
     std::function<void(float)> cudaKernelCallback;
     std::function<void(const int, const int)> drawCallback;
+    std::function<void(const unsigned char, const int, const int)> keyboardCallback;
+    std::function<void()> postRenderCallback;
+    std::function<void(const int, const int, const int, const int)> mouseClickCallback;
 
-    int ox;
-    int oy;
-    int buttonState = 0;
-
-    float cameraPos[3] = {0, 0, -7};
-    float cameraRot[3] = {0, 0, 0};
-    float cameraPosDelta[3] = {0, 0, 0};
-    float cameraRotDelta[3] = {0, 0, 0};
-    const float inertia = 1.1f;
+    // camera control
+    int mouseX;
+    int mouseY;
+    ButtonState buttonState;
+    std::array<float, 6> cameraTrans = {0, 0, 0, 0, 0, 0};
+    std::array<float, 6> cameraTransDelta = {0, 0, -75, 0, 0, 0};
+    const float inertia = 1.0f;
 
 };
