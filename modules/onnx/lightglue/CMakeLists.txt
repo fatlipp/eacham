@@ -1,10 +1,10 @@
 find_package(OpenCV REQUIRED)
 
 add_library(lightglue_feature
-    core/FeatureExtractorLightglue.cpp
-    core/FeatureExtractorLightglue.h
-    core/FeatureMatcherLightglue.cpp
-    core/FeatureMatcherLightglue.h
+    feature/FeatureExtractorLightglue.cpp
+    feature/FeatureExtractorLightglue.h
+    feature/FeatureMatcherLightglue.cpp
+    feature/FeatureMatcherLightglue.h
 )
 target_link_libraries(lightglue_feature
     opencv::opencv

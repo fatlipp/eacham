@@ -1,6 +1,6 @@
 
-#include "onnx/lightglue/core/FeatureExtractorLightglue.h"
-#include "onnx/lightglue/core/FeatureMatcherLightglue.h"
+#include "onnx/lightglue/feature/FeatureExtractorLightglue.h"
+#include "onnx/lightglue/feature/FeatureMatcherLightglue.h"
 
 #include <onnxruntime_cxx_api.h>
 

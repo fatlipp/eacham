@@ -4796,7 +4796,7 @@ emsdk
 
 MIT/Expat license
 
-https://github.com/emscripten-core/emsdk
+https://github.com/emscripten-base/emsdk
 
 Copyright (c) 2018 Emscripten authors (see AUTHORS in Emscripten)
 

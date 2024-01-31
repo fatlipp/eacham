@@ -1,5 +1,5 @@
 {
-    "root_path": "./Datasets/my_chair_2",
+    "root_path": "/home/blackdyce/Projects/AI/Datasets/my_chair_fake",
     "images_path": "/images",
     "transform_path": "/transform.json",
     "nerfy": true,
@@ -12,18 +12,18 @@
     },
     "reconstruction":{
         "initial_pair":{
-            "min_inliers": 350,
+            "min_inliers": 650,
             "min_matches": 10,
             "min_corrs": 10,
-            "max_reprojection_error": 3.5,
-            "min_angle": 3.0
+            "max_reprojection_error": 3.0,
+            "min_angle": 4.0
         },
         "processing":{
             "min_matches": 10,
             "min_corrs": 10,
             "max_reprojection_error": 8.0,
             "min_angle": 3.0,
-            "min_pnp_inliers": 15
+            "min_pnp_inliers": 40
         }
     },
     "refine_ba":{

@@ -5,7 +5,6 @@
 #include <pangolin/gl/gl.h>
 #include <pangolin/gl/gldraw.h>
 
-
 namespace eacham::view_tools
 {
 

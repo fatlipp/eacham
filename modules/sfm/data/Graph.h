@@ -27,21 +27,16 @@ public:
         node->SetImage(image);
     } 
 
-    void Connect(const unsigned id1, const unsigned id2, const match_t& matches)
+    void Connect(const unsigned id1, const unsigned id2, match_t&& matches)
     {
-        Connect(Get(id1), Get(id2), matches);
+        Connect(Get(id1), Get(id2), std::move(matches));
     }
 
-    void Connect(Node<FT, DT>* node1, Node<FT, DT>* node2, const match_t& matches)
+    void Connect(Node<FT, DT>* node1, Node<FT, DT>* node2, match_t&& matches)
     {
-        // std::lock_guard<std::mutex> lock(mutex);
         auto& factor = node1->AddFactor(node2);
 
-        for (const auto& [id1, id2] : matches)
-        {
-            factor.matches.emplace_back(id1, id2);
-        }
-
+        factor.matches = std::move(matches);
         factor.quality = matches.size();
     }
 

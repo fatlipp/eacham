@@ -2,6 +2,7 @@
 
 #include <opencv4/opencv2/core.hpp>
 #include <set>
+#include <unordered_map>
 
 namespace eacham
 {
@@ -30,6 +31,6 @@ struct comp
     }
 };
 
-using match_t = std::set<std::pair<unsigned, unsigned>, comp>;
+using match_t = std::unordered_map<unsigned, unsigned>;
 
 }

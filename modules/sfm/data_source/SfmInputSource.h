@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sfm/data/Frame.h"
+#include "base/tools/Tools2d.h"
 #include <string>
 
 namespace eacham::dataset

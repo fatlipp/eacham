@@ -1,7 +1,6 @@
 #pragma once
 
-#include "core/types/DataTypes.h"
-#include "core/features/IFeatureExtractor.h"
+#include "base/features/IFeatureExtractor.h"
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/features2d.hpp"

@@ -15,12 +15,6 @@ namespace eacham
 template<typename FT, typename DT>
 class Graph;
 
-struct Match
-{
-    unsigned id1 = std::numeric_limits<unsigned>::max();
-    unsigned id2 = std::numeric_limits<unsigned>::max();
-};
-
 struct MatchTwoView
 {
     Eigen::Matrix4d transform;
@@ -32,7 +26,7 @@ struct Factor
     unsigned id; // connected node id
     // bool isValid;
     float quality;
-    std::vector<Match> matches;
+    std::unordered_map<unsigned, unsigned> matches;
     Eigen::Matrix4d transform;
 };
 

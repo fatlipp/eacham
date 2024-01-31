@@ -1,20 +1,13 @@
 #include "sfm/reconstruction/ReconstructionManager.h"
 #include "sfm/reconstruction/ProjectionHelper.h"
 #include "sfm/reconstruction/Triangulator.h"
-
 #include "sfm/data/Map.h"
-#include "sfm/view/Gui.h"
-
 #include "base/tools/Tools3d.h"
 #include "base/tools/Tools2d.h"
 
 #include <opencv4/opencv2/calib3d.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-
 #include <Eigen/Geometry>
-
 #include <iostream>
-#include <unordered_map>
 
 namespace eacham
 {
@@ -27,10 +20,10 @@ std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>> GetMatchedPoints(
     std::vector<cv::Point2f> points1;
     std::vector<cv::Point2f> points2;
 
-    for (const auto& m : factor.matches)
+    for (const auto& [k, v] : factor.matches)
     {
-        points1.push_back(node1->GetKeyPoint(m.id1));
-        points2.push_back(node2->GetKeyPoint(m.id2));
+        points1.push_back(node1->GetKeyPoint(k));
+        points2.push_back(node2->GetKeyPoint(v));
     }
 
     return {points1, points2};
@@ -65,7 +58,7 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
     cv::Mat mask; // CV_8U
     auto E = cv::findEssentialMat(pts1, pts2, 
         K.at<double>(0, 0), 
-        cv::Point2f{K.at<double>(0, 2), K.at<double>(1, 2)}, cv::LMEDS, 0.99, 4.0, 1000, mask);
+        cv::Point2d{K.at<double>(0, 2), K.at<double>(1, 2)}, cv::LMEDS, 0.99f, 4.0f, 1000, mask);
 
     float E_Inliers = 0.0;
 
@@ -91,30 +84,27 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
     }
 
     const float H_E_ratio = (H_Inliers > 0.0) ? (H_Inliers / E_Inliers) : 0;
-    // std::cout << "H/E ratio: " << H_E_ratio << std::endl;
 
     if (H_E_ratio > 0.9)
     {
         std::vector<cv::Mat> Rs_decomp, ts_decomp, normals_decomp;
         const int solutions = cv::decomposeHomographyMat(H, K, Rs_decomp, ts_decomp, normals_decomp);
         
-        std::vector<std::pair<unsigned, Eigen::Vector3d>> bestMatches;
+        std::vector<std::tuple<unsigned, unsigned, Eigen::Vector3d>> bestMatches;
         Eigen::Matrix4d bestTransform;
         unsigned bestNum = 0;
 
         for (int i = 0; i < solutions; ++i)
         {
-            std::vector<std::pair<unsigned, Eigen::Vector3d>> matches;
+            std::vector<std::tuple<unsigned, unsigned, Eigen::Vector3d>> matches;
 
             cv::Mat R = Rs_decomp[i];
             cv::Mat t = ts_decomp[i];
 
             const auto transform = ConvertToTransform(R, t); 
 
-            for (size_t j = 0; j < factor.matches.size(); ++j)
+            for (const auto& [m1, m2] : factor.matches)
             {
-                const auto& [m1, m2] = factor.matches[j];
-
                 const auto p1 = node1->GetKeyPointEigen(m1);
                 const auto p2 = node2->GetKeyPointEigen(m2);
 
@@ -125,15 +115,16 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
                     continue;
                 }
 
-                const auto manualProj = tools::project3dPoint({point3d.x(), point3d.y(), point3d.z()}, K);
-                float reprojectionError = std::sqrt(std::pow(p1.x() - manualProj.x, 2) + 
-                    std::pow(p1.y() - manualProj.y, 2));
+                const auto manualProj = tools::Project3dPoint(point3d, K);
+
+                float reprojectionError = std::sqrt(std::pow(p1.x() - manualProj.x(), 2) + 
+                    std::pow(p1.y() - manualProj.y(), 2));
 
 
                 if (reprojectionError < maxReprError &&
                     TriangulationAngle(Eigen::Matrix4d::Identity(), transform, point3d) > minTriAngle)
                 {
-                    matches.push_back({j, point3d});
+                    matches.push_back({m1, m2, point3d});
                 }
             }
 
@@ -147,11 +138,7 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
 
         if (bestMatches.size() > 20)
         {
-            for (const auto& [matchId, p3d] : bestMatches)
-            {
-                result.matches.push_back({factor.matches[matchId].id1, factor.matches[matchId].id2, p3d});
-            }
-
+            result.matches = bestMatches;
             result.transform = bestTransform;
         }
     }
@@ -162,10 +149,8 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
         const int goodPoints = cv::recoverPose(E, pts1, pts2, K, R, t, 50.0f, mask);
         const auto transform = ConvertToTransform(R, t);
 
-        for (size_t i = 0; i < factor.matches.size(); ++i)
+        for (const auto& [m1, m2] : factor.matches)
         {
-            const auto& [m1, m2] = factor.matches[i];
-
             const auto v1 = node1->GetKeyPoint(m1);
             const Eigen::Vector2d p1 = Eigen::Vector2d{v1.x, v1.y};
 
@@ -180,13 +165,13 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
                 continue;
             }
 
-            const auto manualProj = tools::project3dPoint({point3d.x(), point3d.y(), point3d.z()}, K);
-            const float reprojectionError = std::sqrt(std::pow(p1.x() - manualProj.x, 2) + 
-                std::pow(p1.y() - manualProj.y, 2));
+            const auto manualProj = tools::Project3dPoint(point3d, K);
+            const float reprojectionError = std::sqrt(std::pow(p1.x() - manualProj.x(), 2) + 
+                std::pow(p1.y() - manualProj.y(), 2));
 
             if (reprojectionError < maxReprError)
             {
-                result.matches.push_back({factor.matches[i].id1, factor.matches[i].id2, point3d});
+                result.matches.push_back({m1, m2, point3d});
             }
         }
 
@@ -206,25 +191,23 @@ bool ReconstructionManager::RecoverPosePnP(const unsigned id1,
     std::cout << "RecoverPosePnP: " << node1->GetId() << " -> " << node2->GetId() << 
         ", frameMatches: " << factor.matches.size() << ":\n";
 
-    std::vector<cv::Point3f> pts3d1;
+    std::vector<cv::Point3d> pts3d1;
     std::vector<cv::Point2f> pts2d1;
     std::vector<cv::Point2f> pts2d2;
 
     unsigned counts = 0; 
-    for (const auto& m : factor.matches)
+    for (const auto& [m1, m2] : factor.matches)
     {
-        if (node1->HasPoint3d(m.id1))
+        if (node1->HasPoint3d(m1))
         {
-            const auto point3d = map->Get(node1->GetPoint3d(m.id1));
+            const auto point3d = map->Get(node1->GetPoint3d(m1));
             pts3d1.push_back({point3d.x(), point3d.y(), point3d.z()});
-            pts2d1.push_back(node1->GetKeyPoint(m.id1));
-            pts2d2.push_back(node2->GetKeyPoint(m.id2));
+            pts2d1.push_back(node1->GetKeyPoint(m1));
+            pts2d2.push_back(node2->GetKeyPoint(m2));
         }
 
         ++counts;
     }
-
-    // DrawMatches("HH", node1->GetImage(), node2->GetImage(), pts2d1, pts2d2, 0, {});
 
     std::cout << "Prepared for PnP matches count: " << pts2d2.size() 
               << " (of " <<  counts << ")\n";

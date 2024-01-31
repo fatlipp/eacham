@@ -1,9 +1,6 @@
 #include "sfm/reconstruction/ProjectionHelper.h"
 
 #include "base/tools/Tools3d.h"
-#include <opencv4/opencv2/calib3d.hpp>
-
-#include <iostream>
 
 namespace eacham
 {
@@ -32,10 +29,12 @@ Eigen::Vector3d ViewDirection(const Eigen::Matrix4d& matrix)
   return matrix.block<1, 3>(2, 0);
 }
 
-float CalcReprojectionError(const cv::Point2f& point2d, const cv::Point3f& point3d, const cv::Mat& K)
+float CalcReprojectionError(const Eigen::Vector2d& point2d, 
+    const Eigen::Vector3d& point3d, const cv::Mat& K)
 {
-    const auto manualProj = tools::project3dPoint(point3d, K);
-    return std::sqrt(std::pow(point2d.x - manualProj.x, 2) + std::pow(point2d.y - manualProj.y, 2));
+    const auto manualProj = tools::Project3dPoint(point3d, K);
+    return std::sqrt(std::pow(point2d.x() - manualProj.x(), 2) + 
+        std::pow(point2d.y() - manualProj.y(), 2));
 }
 
 } // namespace eacham

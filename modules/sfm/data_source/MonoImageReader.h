@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/data_source/ICamera.h"
+#include "base/data_source/ICamera.h"
 
 #include <opencv2/opencv.hpp>
 

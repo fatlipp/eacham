@@ -109,8 +109,8 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
 
         for (const auto& pt : data)
         {
-            const auto pos = tools::transformPoint3d(point3d, pt.transform);
-            const auto err = CalcReprojectionError({pt.point2d.x(), pt.point2d.y()}, {pos.x(), pos.y(), pos.z()}, pt.K);
+            const Eigen::Vector3d pos = tools::transformPoint3d(point3d, pt.transform);
+            const auto err = CalcReprojectionError(pt.point2d, pos, pt.K);
 
             if (err < maxReprError && IsPositiveDepth(pt.transform, point3d))
             {
@@ -152,7 +152,7 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
             for (const auto& pt : data)
             {
                 const auto pos = tools::transformPoint3d(point3d, pt.transform);
-                const auto err = CalcReprojectionError({pt.point2d.x(), pt.point2d.y()}, {pos.x(), pos.y(), pos.z()}, pt.K);
+                const auto err = CalcReprojectionError(pt.point2d, pos, pt.K);
 
                 if (err < maxReprError && IsPositiveDepth(pt.transform, point3d))
                 {
@@ -219,30 +219,30 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
 
         unsigned addd = 0;
         
-        for (const auto m : factor.matches)
+        for (const auto& [m1, m2] : factor.matches)
         {
-            if (graph->Get(id)->HasPoint3d(m.id2) 
+            if (graph->Get(id)->HasPoint3d(m2) 
                 && 
-                map->GetObservers(graph->Get(id)->GetPoint3d(m.id2)).size() > 2
+                map->GetObservers(graph->Get(id)->GetPoint3d(m2)).size() > 2
                 )
             {
-                const auto pt2d = graph->Get(frameId)->GetKeyPoint(m.id1);
+                const auto pt2d = graph->Get(frameId)->GetKeyPoint(m1);
                 const auto pt3d = tools::transformPoint3d(
-                            map->Get(graph->Get(id)->GetPoint3d(m.id2)),
+                            map->Get(graph->Get(id)->GetPoint3d(m2)),
                             currentNode->GetTransform());
 
-                const auto err = CalcReprojectionError(pt2d, {pt3d.x(), pt3d.y(), pt3d.z()}, K);
+                const auto err = CalcReprojectionError({pt2d.x, pt2d.y}, pt3d, K);
 
                 if (err < maxReprError)
                 {
-                    graph->Get(frameId)->SetPoint3d(m.id1, graph->Get(id)->GetPoint3d(m.id2));
-                    map->AddObserver(frameId, m.id1, graph->Get(id)->GetPoint3d(m.id2));
+                    graph->Get(frameId)->SetPoint3d(m1, graph->Get(id)->GetPoint3d(m2));
+                    map->AddObserver(frameId, m1, graph->Get(id)->GetPoint3d(m2));
                     continue;
                 }
             }
 
-            observersFull[m.id1][frameId] = m.id1;
-            observersFull[m.id1][id] = m.id2;
+            observersFull[m1][frameId] = m1;
+            observersFull[m1][id] = m2;
             ++addd;
         }
         std::cout << "--- " << id << ") factor added: " << addd << " of " << factor.matches.size() << std::endl;

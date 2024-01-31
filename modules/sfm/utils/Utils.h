@@ -1,7 +1,7 @@
 #pragma once
 
 #include "sfm/data/Types.h"
-#include "base/performance/BlockTimer.h"
+#include "base/tools/BlockTimer.h"
 #include "sfm/reconstruction/ReconstructionManager.h"
 
 #include <opencv4/opencv2/core.hpp>

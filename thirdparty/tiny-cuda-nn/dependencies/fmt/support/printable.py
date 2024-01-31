@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # This script is based on
-# https://github.com/rust-lang/rust/blob/master/library/core/src/unicode/printable.py
+# https://github.com/rust-lang/rust/blob/master/library/base/src/unicode/printable.py
 # distributed under https://github.com/rust-lang/rust/blob/master/LICENSE-MIT.
 
 # This script uses the following Unicode tables:

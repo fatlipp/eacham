@@ -197,7 +197,7 @@ Test programs for CUTLASS. Tests are organized hierarchically, mirroring the org
 test/                        # unit tests for CUTLASS Template Library
   unit/
     arch/
-    core/
+    base/
     gemm/
       device/
       kernel/
