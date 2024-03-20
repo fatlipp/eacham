@@ -26,7 +26,5 @@ To use the result in Instant-NGP, one should to convert it using <br />
 * Conan 2.x.x (optinal)
 
 **Further developmnent**
-  * Comfiguration file
   * Code refactoring and computation time optimization
-  * Create a lib with an interface
-  * NERF
+  * Instant NGP Runner

@@ -24,9 +24,9 @@ struct MatchTwoView
 struct Factor
 {
     unsigned id; // connected node id
-    // bool isValid;
     float quality;
-    std::unordered_map<unsigned, unsigned> matches;
+    match_t matches;
+    unsigned points3dCount;
     Eigen::Matrix4d transform;
 };
 
@@ -64,14 +64,26 @@ public:
         this->bestFactorId = id;
     }
 
-    void SetPoint3d(const unsigned id2d, const unsigned id3d)
+    void SetPoint3d(const unsigned id2d, const unsigned id3d, const bool isTwoView)
     {
         this->points3d[id2d] = id3d;
+        this->points3dTwoView[id2d] = isTwoView;
     }
 
     bool HasPoint3d(const unsigned id2d)
     {
         return points3d.count(id2d) > 0;
+    }
+
+    bool IsPoint3dTwoView(const unsigned id2d)
+    {
+        if (points3dTwoView.count(id2d) == 0)
+        {
+            throw std::runtime_error(
+                cv::format("Node::IsPoint3dTwoView() point %i is not found", id2d));
+        }
+
+        return points3dTwoView[id2d];
     }
 
     unsigned GetPoint3d(const unsigned id2d)
@@ -210,6 +222,7 @@ private:
     cv::Mat image;
     std::unordered_map<unsigned, Factor> factors;
     std::unordered_map<unsigned, unsigned> points3d;
+    std::unordered_map<unsigned, bool> points3dTwoView;
     Eigen::Matrix4d transform;
 
     std::mutex mutex;

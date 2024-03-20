@@ -51,14 +51,14 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
 
     auto node1 = graph->Get(id1);
     auto node2 = graph->Get(id2);
-    auto& factor = node1->GetFactor(node2->GetId());
 
     const auto& [pts1, pts2] = GetMatchedPoints(node1, node2);
 
     cv::Mat mask; // CV_8U
     auto E = cv::findEssentialMat(pts1, pts2, 
         K.at<double>(0, 0), 
-        cv::Point2d{K.at<double>(0, 2), K.at<double>(1, 2)}, cv::LMEDS, 0.99f, 4.0f, 1000, mask);
+        cv::Point2d{K.at<double>(0, 2), K.at<double>(1, 2)}, 
+        cv::LMEDS, 0.99f, 4.0f, 1000, mask);
 
     float E_Inliers = 0.0;
 
@@ -83,6 +83,7 @@ MatchTwoView ReconstructionManager::RecoverPoseTwoView(const unsigned id1, const
         H_Inliers = points1_H.size();
     }
 
+    auto& factor = node1->GetFactor(node2->GetId());
     const float H_E_ratio = (H_Inliers > 0.0) ? (H_Inliers / E_Inliers) : 0;
 
     if (H_E_ratio > 0.9)
@@ -187,9 +188,6 @@ bool ReconstructionManager::RecoverPosePnP(const unsigned id1,
     auto node1 = graph->Get(id1);
     auto node2 = graph->Get(id2);
     auto& factor = node1->GetFactor(node2->GetId());
-
-    std::cout << "RecoverPosePnP: " << node1->GetId() << " -> " << node2->GetId() << 
-        ", frameMatches: " << factor.matches.size() << ":\n";
 
     std::vector<cv::Point3d> pts3d1;
     std::vector<cv::Point2f> pts2d1;

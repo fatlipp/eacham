@@ -89,7 +89,7 @@ bool IsPositiveDepth(const Eigen::Matrix4d& transform,
 }
 
 bool TriangulatePointRansac(const std::vector<EstimatorData>& data, 
-    Eigen::Vector3d& point3d, std::vector<unsigned>& inliers, 
+    Eigen::Vector3d& point3d, std::vector<bool>& inliers, 
     const float maxReprError, const float minTriAngle)
 {
     const auto size = data.size();
@@ -112,14 +112,9 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
             const Eigen::Vector3d pos = tools::transformPoint3d(point3d, pt.transform);
             const auto err = CalcReprojectionError(pt.point2d, pos, pt.K);
 
-            if (err < maxReprError && IsPositiveDepth(pt.transform, point3d))
-            {
-                inliers.push_back(1);
-            }
-            else
-            {
-                inliers.push_back(0);
-            }
+            const bool isInlier = (err < maxReprError 
+                && IsPositiveDepth(pt.transform, point3d));
+            inliers.push_back(isInlier);
         }
 
         return point3d.z() > 0.0f;
@@ -131,7 +126,7 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
     // const auto r1 = static_cast<unsigned>(dist6(rng));
 
     unsigned bestInl = 0;
-    std::vector<unsigned> bestInliers;
+    std::vector<bool> bestInliers;
 
     std::vector<std::pair<unsigned, unsigned>> usedPairs;
 
@@ -147,22 +142,20 @@ bool TriangulatePointRansac(const std::vector<EstimatorData>& data,
         if (TriangulationAngle(data[r1].transform, data[r2].transform, point3d) >= minTriAngle)
         {
             unsigned inl = 0;
-            std::vector<unsigned> inliersLocal;
+            std::vector<bool> inliersLocal;
 
             for (const auto& pt : data)
             {
                 const auto pos = tools::transformPoint3d(point3d, pt.transform);
                 const auto err = CalcReprojectionError(pt.point2d, pos, pt.K);
 
-                if (err < maxReprError && IsPositiveDepth(pt.transform, point3d))
-                {
-                    inliersLocal.push_back(1);
+                const bool isInlier = (err < maxReprError 
+                    && IsPositiveDepth(pt.transform, point3d));
+                inliersLocal.push_back(isInlier);
 
-                    ++inl;
-                }
-                else
+                if (isInlier)
                 {
-                    inliersLocal.push_back(0);
+                    ++inl;
                 }
             }
             
@@ -217,37 +210,36 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
             continue;
         }
 
-        unsigned addd = 0;
-        
         for (const auto& [m1, m2] : factor.matches)
         {
-            if (graph->Get(id)->HasPoint3d(m2) 
-                && 
-                map->GetObservers(graph->Get(id)->GetPoint3d(m2)).size() > 2
-                )
+            // if normal 3d point is exists => skip triangulation
+            if (graph->Get(id)->HasPoint3d(m2))
             {
-                const auto pt2d = graph->Get(frameId)->GetKeyPoint(m1);
-                const auto pt3d = tools::transformPoint3d(
-                            map->Get(graph->Get(id)->GetPoint3d(m2)),
-                            currentNode->GetTransform());
+                const auto point3d2 = graph->Get(id)->GetPoint3d(m2);
 
-                const auto err = CalcReprojectionError({pt2d.x, pt2d.y}, pt3d, K);
-
-                if (err < maxReprError)
+                if (map->GetObservers(point3d2).size() > 2)
                 {
-                    graph->Get(frameId)->SetPoint3d(m1, graph->Get(id)->GetPoint3d(m2));
-                    map->AddObserver(frameId, m1, graph->Get(id)->GetPoint3d(m2));
-                    continue;
+                    const auto pt2d = graph->Get(frameId)->GetKeyPoint(m1);
+                    const auto pt3d = tools::transformPoint3d(
+                                map->Get(point3d2),
+                                currentNode->GetTransform());
+
+                    const auto err = CalcReprojectionError({pt2d.x, pt2d.y}, pt3d, K);
+
+                    if (err < maxReprError)
+                    {
+                        graph->Get(frameId)->SetPoint3d(m1, point3d2, false);
+                        map->AddObserver(frameId, m1, point3d2);
+                        continue;
+                    }
                 }
             }
 
             observersFull[m1][frameId] = m1;
             observersFull[m1][id] = m2;
-            ++addd;
         }
-        std::cout << "--- " << id << ") factor added: " << addd << " of " << factor.matches.size() << std::endl;
     }
-    std::cout << "Triangulation() observersFull: " << observersFull.size() << std::endl;
+    // std::cout << "Triangulation() observersFull: " << observersFull.size() << std::endl;
 
     unsigned total = 0;
     unsigned added = 0;
@@ -272,12 +264,13 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
         }
 
         Eigen::Vector3d point3d;
-        std::vector<unsigned> mask;
-        if (TriangulatePointRansac(datas, point3d, mask, maxReprError, minTriAngle) && mask.size() > 0)
+        std::vector<bool> mask;
+        if (TriangulatePointRansac(datas, point3d, mask, maxReprError, minTriAngle) 
+            && mask.size() > 0)
         {
             if (mask.size() != datas.size())
             {
-                std::bad_exception();
+                throw std::bad_exception();
             }
 
             const int inliersCount = std::accumulate(mask.begin(), mask.end(), 0);
@@ -294,7 +287,7 @@ void TriangulateFrame(const unsigned frameId, std::shared_ptr<graph_t> graph,
                         map->UpdateStatus(graph->Get(frame)->GetPoint3d(pointId2), false);
                     }
 
-                    graph->Get(frame)->SetPoint3d(pointId2, mapPointId);
+                    graph->Get(frame)->SetPoint3d(pointId2, mapPointId, false);
                     map->AddObserver(frame, pointId2, mapPointId);
                 }
                 map->UpdateStatus(mapPointId, true);

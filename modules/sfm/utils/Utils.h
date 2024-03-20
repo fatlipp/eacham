@@ -32,7 +32,8 @@ std::pair<unsigned, unsigned> FindBestPair(std::shared_ptr<graph_t> graph, std::
             MatchTwoView rec1 = reconstructor.RecoverPoseTwoView(id1, id2, K);
             MatchTwoView rec2 = reconstructor.RecoverPoseTwoView(id2, id1, K);
 
-            if (rec1.matches.size() > minInitialInliers && rec2.matches.size() > minInitialInliers)
+            if (rec1.matches.size() > minInitialInliers && 
+                rec2.matches.size() > minInitialInliers)
             {
                 graph->FixNode(id1);
 
@@ -51,8 +52,8 @@ std::pair<unsigned, unsigned> FindBestPair(std::shared_ptr<graph_t> graph, std::
                     const auto p2d2 = std::get<1>(m);
                     const auto id3d = map->Add(std::get<2>(m), {0.3, 0.3, 0.3});
 
-                    node1->SetPoint3d(p2d1, id3d);
-                    node2->SetPoint3d(p2d2, id3d);
+                    node1->SetPoint3d(p2d1, id3d, true);
+                    node2->SetPoint3d(p2d2, id3d, true);
                     map->AddObserver(id1, p2d1, id3d);
                     map->AddObserver(id2, p2d2, id3d);
                 }

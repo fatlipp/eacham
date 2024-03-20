@@ -1,13 +1,13 @@
 {
-    "root_path": "/home/blackdyce/Projects/AI/Datasets/nerf/NeRF/nerf_synthetic/ship",
-    "images_path": "/train",
+    "root_path": "path...",
+    "images_path": "/images",
     "transform_path": "/transform.json",
     "nerfy": true,
     "max_data_count": 0,
     "ui": true,
     "feature":{
         "min_features_count": 100,
-        "max_features_count": 10000,
+        "max_features_count": 15000,
         "inliers_ratio": 0.8
     },
     "reconstruction":{
@@ -28,8 +28,8 @@
     },
     "refine_ba":{
         "method": "LM",
-        "max_iter": 50,
-        "max_toler": 1e-3,
+        "max_iter": 100,
+        "max_toler": 1e-5,
         "delta": 10.0,
         "use_preconditioner": false
     },

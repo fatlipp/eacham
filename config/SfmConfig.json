@@ -1,5 +1,5 @@
 {
-    "root_path": "/home/blackdyce/Projects/AI/Datasets/my_chair_fake",
+    "root_path": "path...",
     "images_path": "/images",
     "transform_path": "/transform.json",
     "nerfy": true,
@@ -7,35 +7,35 @@
     "ui": true,
     "feature":{
         "min_features_count": 100,
-        "max_features_count": 20000,
+        "max_features_count": 15000,
         "inliers_ratio": 0.8
     },
     "reconstruction":{
         "initial_pair":{
-            "min_inliers": 650,
+            "min_inliers": 450,
             "min_matches": 10,
             "min_corrs": 10,
-            "max_reprojection_error": 3.0,
-            "min_angle": 4.0
+            "max_reprojection_error": 4.0,
+            "min_angle": 3.0
         },
         "processing":{
             "min_matches": 10,
             "min_corrs": 10,
             "max_reprojection_error": 8.0,
-            "min_angle": 3.0,
-            "min_pnp_inliers": 40
+            "min_angle": 2.0,
+            "min_pnp_inliers": 15
         }
     },
     "refine_ba":{
         "method": "LM",
-        "max_iter": 50,
-        "max_toler": 1e-4,
+        "max_iter": 100,
+        "max_toler": 1e-5,
         "delta": 10.0,
         "use_preconditioner": false
     },
     "global_ba":{
         "method": "LM",
-        "max_iter": 500,
+        "max_iter": 150,
         "max_toler": 1e-7,
         "delta": 10.0,
         "use_preconditioner": false

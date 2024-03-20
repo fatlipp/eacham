@@ -41,37 +41,35 @@ int main(int argc, char* argv[])
     auto parserFunc = std::bind(&parser::Parse<SfmConfig>, std::placeholders::_1);
     const auto config = utils::CallWithTimer(parserFunc, argv[1]);
 
-    std::cout << "Graph" << std::endl;
-    std::shared_ptr<graph_t> graph = std::make_shared<graph_t>();
-    std::shared_ptr<Map> globalMap = std::make_shared<Map>();
+    auto graph = std::make_shared<graph_t>();
+    auto globalMap = std::make_shared<Map>();
     
     // render
     std::atomic<bool> waitForNextStep = true;
     std::atomic<bool> waitForBA = true;
     std::atomic<bool> start = false;
 
-    std::unique_ptr<Render> render = std::make_unique<Render>();
+    auto render = std::make_unique<Render>();
     render->Add(std::make_unique<GraphView>(graph));
     render->Add(std::make_unique<MapView>(globalMap));
     render->SetOnPlayClick([&start](){ start = true; });
     render->SetOnStepClick([&waitForNextStep](){ waitForNextStep = false; });
     render->SetOnBAClick([&waitForBA](){ waitForBA = false; });
     render->Activate();
-
     while (!start) {}
 
     std::cout << "Read data from: " << config.imagesPath << std::endl;
     MonoImageReader imageReader { config.imagesPath };
     dataset::SfmInputSource<MonoImageReader> source { std::move(imageReader) };
-    const auto frames = source.GetAll(config.maxDataSize);
 
+    const auto frames = source.GetAll(config.maxDataSize);
     std::cout << "frames: " << frames.size() << std::endl;
 
     std::cout << "Extract Features" << std::endl;
     FeatureExtractorSift extractor{config.maxFeaturesCount};
     FeatureMatcherFlann matcher{config.inliersRatio};
-    // FeaturePipelineCv<FeatureExtractorSift, FeatureMatcherFlann> featurePipe{config.maxFeaturesCount};
-    std::for_each(std::execution::par_unseq, frames.begin(), frames.end(), 
+    
+    std::for_each(std::execution::par, frames.begin(), frames.end(), 
         [&graph, &extractor, &config](auto& frame) {  
             const auto [features, descriptors] = extractor.Extract(frame.image);
             if (features.size() >= config.minFeaturesCount)
@@ -99,8 +97,10 @@ int main(int argc, char* argv[])
 
     std::for_each(std::execution::par_unseq, 
             pairs.begin(), pairs.end(),
-            [&graph, &matcher, &mutex, &checkedBuffer](const auto& pair) {
-        auto& [frame1, frame2] = pair;
+            [&graph, &matcher, &mutex, &checkedBuffer, &frames](const auto& pair) {
+        const auto frame1 = frames[pair.first].id;
+        const auto frame2 = frames[pair.second].id;
+
         auto node1 = graph->Get(frame1);
         auto node2 = graph->Get(frame2);
 
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
             return;
         }
 
-        const unsigned hash = std::min(frame1, frame2) + std::max(frame1, frame2) * 1000;
+        const unsigned hash = std::min(frame1, frame2) + std::max(frame1, frame2) * 10000;
 
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -151,16 +151,15 @@ int main(int argc, char* argv[])
     const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
     std::cout << "[Match] time1: " << duration << "ms" << std::endl;
 
-    cv::Mat K = utils::ImageToCameraParams(frames[0].image);
+    auto K = utils::ImageToCameraParams(frames[0].image);
 
     // calc 3d points
     std::cout << "Two View" << std::endl;
-    ReconstructionManager reconstructor(graph, globalMap, config.initialMaxReprError, config.initialMinTriAngle, config.minPnpInliers);
+    ReconstructionManager reconstructor{graph, 
+    globalMap, config.initialMaxReprError, config.initialMinTriAngle, config.minPnpInliers};
     std::cout << "Find Best Pair" << std::endl;
-    std::pair<unsigned, unsigned> bestPair = 
+    auto [prevId, currentId] = 
         utils::FindBestPair(graph, globalMap, reconstructor, K, config.initialMinInliers);
-    unsigned prevId = bestPair.first;
-    unsigned currentId = bestPair.second;
 
     std::cout << "prevId: " << prevId << ", currentId: " << currentId << std::endl;
 
@@ -168,11 +167,22 @@ int main(int argc, char* argv[])
     {
         return -1;
     }
+    auto node1 = graph->Get(prevId);
+    auto node2 = graph->Get(currentId);
+
+    std::cout << "1: " << frames[prevId].name << "" << std::endl;
+    std::cout << "2: " << frames[currentId].name << "" << std::endl;
+
+    // cv::imshow("1", node1->GetImage());
+    // cv::imshow("2", node2->GetImage());
+    // cv::waitKey(0);
 
     std::set<unsigned> excluded;
     excluded.insert(prevId);
     excluded.insert(currentId);
-    std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
+
+    unsigned bestCount3d = 0;
+    std::tie(prevId, currentId, bestCount3d) = graph->GetBestPairForValid(excluded);
 
     if (prevId > graph->Size())
     {
@@ -184,18 +194,26 @@ int main(int argc, char* argv[])
 
     while (true)
     {
-        // while (waitForNextStep) {}
-        // waitForNextStep = true;
+        std::printf("RecoverPosePnP: %d - %d: %d\n", prevId, currentId, bestCount3d);
+        std::cout << "names: " << frames[prevId].name << " <-> ";
+        std::cout << "" << frames[currentId].name << ".\n";
+
         if (reconstructor.RecoverPosePnP(prevId, currentId, K))
         {
-            TriangulateFrame(currentId, graph, globalMap, K, 2, config.maxReprError, config.minTriAngle);
+            TriangulateFrame(currentId, graph, globalMap, K, 2, 
+                config.maxReprError, config.minTriAngle);
+
+            std::cout << "RefineBA...\n";
             RefineBA(currentId, graph, globalMap, K, config.refineOpt);
+
+            TriangulateFrame(currentId, graph, globalMap, K, 3,
+                config.maxReprError, config.minTriAngle);
 
             // ?? reset if frame a new frame has been added
             excluded = {};
         }
 
-        std::tie(prevId, currentId) = graph->GetBestPairForValid(excluded);
+        std::tie(prevId, currentId, bestCount3d) = graph->GetBestPairForValid(excluded);
 
         if (prevId > graph->Size() || currentId > graph->Size())
         {
@@ -227,7 +245,10 @@ int main(int argc, char* argv[])
         }
         else
         {
-            std::cout << "Node: " << id << " is invalid\n";
+            std::cout << "Node: " << id << " is invalid: ";
+            std::cout << "id: " << frames[id].id << ", ";
+            std::cout << "file: " << frames[id].name << ".\n";
+
             ++invalidNodes;
         }
     }

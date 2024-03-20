@@ -56,12 +56,14 @@ public:
         return nodes;
     }
 
-    std::pair<unsigned, unsigned> GetBestPairForValid(const std::set<unsigned>& excluded = {})
+    std::tuple<unsigned, unsigned, unsigned> 
+        GetBestPairForValid(const std::set<unsigned>& excluded = {})
     {
         float bestScore = 0;
-        std::pair<unsigned, unsigned> bestPair{
+        std::tuple<unsigned, unsigned, unsigned> bestPair{
             std::numeric_limits<unsigned>::max(),
-            std::numeric_limits<unsigned>::max()
+            std::numeric_limits<unsigned>::max(),
+            0
         };
 
         for (auto [id, node] : nodes)
@@ -75,16 +77,28 @@ public:
 
             for (auto [id2, factor] : factors)
             {
-                if (excluded.count(id2) > 0 || bestScore > factor.quality)
+                if (Get(id2)->IsValid() || excluded.count(id2) > 0)
+                {
+                    continue;
+                }
+
+                unsigned points3dCount = 0;
+
+                for (const auto& [m1, m2] : factor.matches)
+                {
+                    if (node->HasPoint3d(m1) && !node->IsPoint3dTwoView(m1))
+                    {
+                        ++points3dCount;
+                    }
+                }
+
+                if (bestScore > points3dCount)
                 {
                     continue;
                 }
                 
-                if (!Get(id2)->IsValid())
-                {
-                    bestScore = factor.quality;
-                    bestPair = {id, id2};
-                }
+                bestScore = points3dCount;
+                bestPair = {id, id2, points3dCount};
             }
         }
 
@@ -105,34 +119,6 @@ public:
     size_t Size() const
     {
         return nodes.size();
-    }
-
-    void Print() const
-    {
-        // for (const auto& [id, node] : nodes)
-        // {
-        //     const auto* child = node->GetBestFactor();
-        //     std::cout << "id: " << id << ", children: [";
-        //     for (const auto& c : node->children)
-        //         std::cout << c->id << ", ";
-        //     std::cout << "], best: " << (child ? child->id : -1) << std::endl;
-        // }
-    }
-
-public:
-    void lock()
-    {
-        mutex.lock();
-        // while (!mutex.try_lock()) 
-        // {
-        //     std::cout << "wait_for_lock()\n";
-        //     std::this_thread::sleep_for(interval);
-        // }
-    }
-
-    void unlock()
-    {
-        mutex.unlock();
     }
 
 private:

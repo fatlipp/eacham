@@ -118,13 +118,4 @@ static Eigen::Vector2d Project3dPoint(const T& point3d, const cv::Mat &camera)
 			 ((camera.at<double>(1, 1) * point3d.y()) / point3d.z()) + camera.at<double>(1, 2)};
 }
 
-static float GetDistance(const cv::Point3f &point1, const cv::Point3f &point2)
-{
-	const float d1 = (point1.x - point2.x);
-	const float d2 = (point1.y - point2.y);
-	const float d3 = (point1.z - point2.z);
-
-	return std::sqrt(d1 * d1 + d2 * d2 + d3 * d3);
-}
-	
 }

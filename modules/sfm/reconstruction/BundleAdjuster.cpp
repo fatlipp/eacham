@@ -54,7 +54,8 @@ void RefineBA(const int currentFrameId,
     std::vector<unsigned> frameIds;
     std::set<unsigned> mapIds;
 
-    auto frameAdder = [&graphGtsam, &initialMeasurements, &graph, &map, &mapIds](auto currentNode) {
+    auto frameAdder = [&graphGtsam, &initialMeasurements, 
+        &graph, &map, &mapIds](auto currentNode) {
 
         auto frameNoise = CreateNoise6_2_1(0.35, 45.0);
         const auto frameNoiseHuber = gtsam::noiseModel::Robust::Create(
@@ -85,7 +86,7 @@ void RefineBA(const int currentFrameId,
                 continue;
             }
 
-            const auto noisePoint2dN = gtsam::noiseModel::Isotropic::Sigma(2, 1.0f);
+            const auto noisePoint2dN = gtsam::noiseModel::Isotropic::Sigma(2, 1.5f);
             const auto noisePoint2d = gtsam::noiseModel::Robust::Create(
                 gtsam::noiseModel::mEstimator::Huber::Create(3.0f), noisePoint2dN);
 
@@ -121,8 +122,6 @@ void RefineBA(const int currentFrameId,
 
     if (currentFrameId > -1)
     {
-        std::cout << "BA() local" << std::endl;
-
         auto startNode = graph->Get(currentFrameId);
         frameIds.push_back(currentFrameId);
         frameAdder(startNode);
@@ -136,20 +135,16 @@ void RefineBA(const int currentFrameId,
                 throw std::runtime_error("Node is null");
             }
 
-            if (!currentNode->IsValid())
+            if (currentNode->IsValid())
             {
-                continue;
+                frameIds.push_back(id);
+
+                frameAdder(currentNode);
             }
-
-            frameIds.push_back(id);
-
-            frameAdder(currentNode);
         }
     }
     else
     {
-        std::cout << "BA() global" << std::endl;
-
         for (const auto [id, currentNode] : graph->GetNodes())
         {
             if (currentNode == nullptr)
@@ -157,14 +152,12 @@ void RefineBA(const int currentFrameId,
                 throw std::runtime_error("Node is null");
             }
 
-            if (!currentNode->IsValid())
+            if (currentNode->IsValid())
             {
-                continue;
+                frameIds.push_back(id);
+
+                frameAdder(currentNode);
             }
-
-            frameIds.push_back(id);
-
-            frameAdder(currentNode);
         }
     }
 
@@ -177,14 +170,14 @@ void RefineBA(const int currentFrameId,
 
     initialMeasurements.insert(gtsam::Symbol('K', 0), cameraMat);
 
-    gtsam::noiseModel::Diagonal::shared_ptr cal_noise = 
-        gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(5) << 25, 25, 0.00001, 0.0001, 0.0001).finished());
+    gtsam::noiseModel::Diagonal::shared_ptr cameraMatNoise = 
+        gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(5) << 
+            25, 25, 0.00001, 0.0001, 0.0001).finished());
         
-    graphGtsam.emplace_shared<gtsam::PriorFactor<gtsam::Cal3_S2>>(gtsam::Symbol('K', 0), cameraMat, cal_noise);
+    graphGtsam.emplace_shared<gtsam::PriorFactor<gtsam::Cal3_S2>>(gtsam::Symbol('K', 0), 
+        cameraMat, cameraMatNoise);
 
     std::unique_ptr<gtsam::NonlinearOptimizer> optimizer;
-
-    std::cout << "BA() method: " << config.method << "\n";
 
     if (config.method == "LM")
     {
